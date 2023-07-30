@@ -1,4 +1,5 @@
 #!/bin/bash
+# DATASET can take value Tg or bandgap, SAMPLING can take the value random or error_diversity
 DATASET="Tg"
 SAMPLING="random"
 EXPERIMENTBASE="prompt_5_$SAMPLING"
