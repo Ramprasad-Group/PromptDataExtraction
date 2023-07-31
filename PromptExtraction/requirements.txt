@@ -1,0 +1,17 @@
+python-dotenv
+spacy
+torch==2.0.1
+safetensors
+transformers
+debugpy
+lxml
+ninja
+nltk
+openai
+pandas
+scikit-learn
+scipy
+tqdm
+wandb
+huggingface-hub
+tokenizers
