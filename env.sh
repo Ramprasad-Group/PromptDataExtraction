@@ -1,4 +1,4 @@
-if [ $(basename $0) = "env.sh" ]; then
+if [[ $(basename '$0') = "env.sh" ]]; then
     echo "Please source this script: 'source env.sh'"
     exit 1  # not sourced
 fi
