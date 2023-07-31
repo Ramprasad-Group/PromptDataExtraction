@@ -6,10 +6,14 @@ fi
 if [[ ! -f _conda_env/bin/pip ]]; then
     conda create --prefix _conda_env python=3.10 -c conda-forge || exit 10
     conda activate $(realpath _conda_env)
-    # conda install -c conda-forge ambertools
-    # conda install -c conda-forge cxx-compiler==1.5.2 # gcc11
-    # conda install -c conda-forge cudatoolkit cudatoolkit-dev
-    if [[ -f requirements.txt ]]; then pip -v install -r requirements.txt; fi
+
+    conda install -c conda-forge cxx-compiler==1.5.2 # gcc11
+    conda install -c conda-forge cudatoolkit cudatoolkit-dev
+
+    pip -v install -r PromptExtraction/requirements.txt
+    pip -v install -r frontend/requirements.txt
+
+    python -m spacy download en_core_web_sm
 fi
 
 conda activate $(realpath _conda_env)
