@@ -59,6 +59,6 @@ if __name__ == "__main__":
 
     if not os.getenv("OPENAI_API_KEY"):
         print("OPENAI_API_KEY not set, please check the .env file.")
-        exit(1)
+        # exit(1)
 
     main()
