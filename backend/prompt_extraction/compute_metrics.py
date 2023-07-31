@@ -4,6 +4,9 @@
 
 # Compute score of information retrieval on data extracted by the system
 
+
+relevant_properties = ['Tg', 'Bandgap']
+
 import argparse
 import debugpy
 
@@ -12,7 +15,7 @@ import pandas as pd
 from collections import defaultdict, namedtuple
 import ast
 
-from create_dataset import CreatePSCDataset
+# from create_dataset import CreatePSCDataset
 from utils import jaccard
 
 from itertools import combinations
@@ -67,7 +70,7 @@ class PSCEval:
         self.nlp_generated_file = args.nlp_generated_file
         self.debug = args.debug
         self.align_tuples = args.align_tuples # Not used presently
-        self.create_dataset = CreatePSCDataset()
+        # self.create_dataset = CreatePSCDataset()
         # initialize dictionary of values used for NLP evaluation
         self.extracted_tuple = namedtuple('extracted_tuple', ['donor', 'acceptor', 'donor_coreferents', 'acceptor_coreferents', 'property_name', 'property_value'])
         self.performance_metrics = {'4-tuple': {'tp': 0, 'fp': 0, 'fn': 0, 'precision': 0, 'recall': 0, 'F1': 0},
@@ -176,7 +179,7 @@ class PSCEval:
                 donor_coreferents = [row_DOI['donor']]
             if not acceptor_coreferents:
                 acceptor_coreferents = [row_DOI['acceptor']]
-            for property_name in self.create_dataset.relevant_properties:
+            for property_name in relevant_properties:
                 if row_DOI[property_name]:
                     nlp_tuples[str(row_DOI['hash'])[:13]].append(self.extracted_tuple(row_DOI['donor'],
                                                     row_DOI['acceptor'],
@@ -213,7 +216,7 @@ class PSCEval:
                 curated_tuples = defaultdict(list)
 
             # Find all curated information
-            for property_name in self.create_dataset.relevant_properties:
+            for property_name in relevant_properties:
                 if row[property_name] and not (type(row[property_name]) is str and row[property_name].startswith("='") and row[property_name].endswith("'")): # Accounting for conditions where full text data is added
                     if row['hash'] == '':
                         row['hash'] = hash((doi, row['donor'], row['acceptor']))

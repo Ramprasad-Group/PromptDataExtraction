@@ -11,7 +11,7 @@ import ast
 import debugpy
 import argparse
 
-from PromptExtraction import utils
+from prompt_extraction import utils
 
 import config
 

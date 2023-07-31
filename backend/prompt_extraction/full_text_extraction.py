@@ -3,10 +3,10 @@ logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt=
 logger = logging.getLogger()
 
 import config
-from PromptExtraction.run_inference import RunInformationExtraction
-from PromptExtraction.parse_args import parse_args
-from PromptExtraction.utils import connect_remote_database, LoadNormalizationDataset, ner_feed
-from PromptExtraction.pre_processing import PreProcessor
+from prompt_extraction.run_inference import RunInformationExtraction
+from prompt_extraction.parse_args import parse_args
+from prompt_extraction.utils import connect_remote_database, LoadNormalizationDataset, ner_feed
+from prompt_extraction.pre_processing import PreProcessor
 
 from record_extraction import record_extractor
 
@@ -54,12 +54,12 @@ class FullTextExtraction(RunInformationExtraction):
         self.query = {'$and':[{'abstract': {'$regex': 'poly', '$options': 'i'}},
                              {'full_text': {'$exists': True}}
                              ]}
-        self.metadata = {'Tg':{'ground_truth_data': f'/data/pranav/projects/PromptExtraction/output/Tg/dataset_ground.json',
+        self.metadata = {'Tg':{'ground_truth_data': f'/data/pranav/projects/prompt_extraction/output/Tg/dataset_ground.json',
                                 'coreferents': ['Tg', 'T_{g}', 'T g', 'T_{g})', "T_{g} 's", 'glass transition', 'glass transitions', 'glass transition temperature', 'glass transition temperatures', 'glass transition temperatures', 'T_{g}s', 'glass-transition temperatures'],
                                 'DOI_list': ['10.1002/pola.1179', '10.1002/app.34170'],
                                 'unit_list': ['K', '° C', '°C']
                                 },
-                        'bandgap':{'ground_truth_data': f'/data/pranav/projects/PromptExtraction/output/bandgap/dataset_ground.json',
+                        'bandgap':{'ground_truth_data': f'/data/pranav/projects/prompt_extraction/output/bandgap/dataset_ground.json',
                                    'coreferents': ['bandgap', 'band gap', 'band-gap', 'band-gaps', 'bandgaps', 'band gaps', 'E_{g}', 'optical bandgap', 'optical band gap', 'optical band gaps', 'optical bandgaps', 'bandgap energies', 'optical energy bandgaps', 'optical energy gap', 'energy bandgap', 'optical band-gaps', 'optical-band-gap energies', 'optical band-gap', 'optical band gap energy', 'band gap energies', 'band gap energy', 'electrochemical band gap', 'electrochemical band gaps', 'Eg'],
                                    'DOI_list': ['10.1039/c8nj04453h', '10.1021/cm202247a', '10.1016/j.eurpolymj.2014.07.006'],
                                    'unit_list': ['eV']

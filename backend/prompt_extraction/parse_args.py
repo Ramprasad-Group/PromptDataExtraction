@@ -1,6 +1,4 @@
 from dataclasses import dataclass, field
-# from typing import Optional
-
 from transformers import HfArgumentParser
 
 @dataclass
@@ -41,6 +39,10 @@ class Arguments:
 
     mode: str = field(
         default="Tg", metadata={"help": "mode can be Tg or bandgap"}
+    )
+
+    out_dir: str = field(
+        default="output", metadata={"help": "path to the output directory"}
     )
 
     doi_error_list_file: str = field(

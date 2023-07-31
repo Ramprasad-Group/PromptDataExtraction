@@ -1,15 +1,14 @@
 """Create dataset and run API inference on the text"""
-
+import os
 import logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 logger = logging.getLogger()
 
-from PromptExtraction.dataset_creation import DatasetCreation
-from PromptExtraction.parse_args import parse_args
-from PromptExtraction.configs import config
-from PromptExtraction.compute_embeddings import ComputeEmbeddings
-from PromptExtraction.diversity_selection import diversity_selection
-from PromptExtraction.utils import compute_metrics
+from prompt_extraction.dataset_creation import DatasetCreation
+from prompt_extraction.parse_args import parse_args
+from prompt_extraction.compute_embeddings import ComputeEmbeddings
+from prompt_extraction.diversity_selection import diversity_selection
+from prompt_extraction.utils import compute_metrics
 
 import openai
 
@@ -20,29 +19,23 @@ import random
 random.seed(42)
 import sys
 from collections import defaultdict
-
-# import argparse
-
-import debugpy
 import torch
-
+import debugpy
 import json
-
-
 from time import sleep
 
 # Setup logging
 
 # logger.setLevel(logging.INFO)
 
-openai.api_key = config.API_KEY
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 class RunInformationExtraction:
     def __init__(self, args):
         # Setup API connection
         self.args = args
         assert args.mode in ['Tg', 'bandgap']
-        self.output_path = f'/data/pranav/projects/PromptExtraction/output/{self.args.mode}'
+        self.output_path = f'{self.args.data_dir}/output/{self.args.mode}'
         
     def run_inference(self):
         """Run inference on the dataset"""
@@ -299,6 +292,10 @@ class RunInformationExtraction:
 
 
 if __name__ == '__main__':
+    import dotenv
+    if not dotenv.load_dotenv():
+        print("WARN!! .env not loaded")
+
     # args = parser.parse_args()
     args = parse_args(sys.argv[1:])
     args = args[0]

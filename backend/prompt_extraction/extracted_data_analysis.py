@@ -4,11 +4,11 @@
 
 # have a bandgap mode and Tg mode
 
-from PromptExtraction.utils import connect_remote_database, config_plots
-from PromptExtraction.full_text_extraction import FullTextExtraction
+from prompt_extraction.utils import connect_remote_database, config_plots
+from prompt_extraction.full_text_extraction import FullTextExtraction
 
-from record_extraction_pipeline.base_classes import PropertyValuePair
-from record_extraction_pipeline.property_extraction import PropertyExtractor
+from record_extraction.base_classes import PropertyValuePair
+from record_extraction.property_extraction import PropertyExtractor
 
 import matplotlib.pyplot as plt
 
@@ -71,8 +71,8 @@ class AnalyzeData(FullTextExtraction):
         # Connect to the database
         self.setup_connection()
         self.property_extractor = PropertyExtractor()
-        self.output_dir = f'/data/pranav/projects/PromptExtraction/output/{args.mode}'
-        # property_metadata_file = '/data/pranav/projects/PromptExtraction/data/property_metadata.json'
+        self.output_dir = f'/data/pranav/projects/prompt_extraction/output/{args.mode}'
+        # property_metadata_file = '/data/pranav/projects/prompt_extraction/data/property_metadata.json'
         # with open(property_metadata_file, 'r') as f:
         #     self.metadata = json.load(f)
         # self.map_dict = {'Tg': 'glass transition temperature', 'bandgap': 'bandgap'}

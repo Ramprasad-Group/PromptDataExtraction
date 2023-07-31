@@ -18,3 +18,5 @@ tokenizers
 levenshtein
 # ChemDataExtractor
 pymongo
+unidecode
+openpyxl
