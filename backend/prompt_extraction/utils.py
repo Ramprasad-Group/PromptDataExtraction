@@ -1,22 +1,22 @@
-from pymongo import MongoClient
-
 import json
-
 import spacy
+import logging
 
+from pymongo import MongoClient
 from collections import namedtuple
 
-import logging
 logger = logging.getLogger()
 logging.basicConfig()
 
-def connect_database(user='admin', pwd='EntyWeSTEREc'):
+
+def connect_database():
     """Connects to the database containing the text version of all our data"""
-    db_name = 'polymer_records'
-    client = MongoClient('localhost', username=user, password=pwd, authSource=db_name, port=8161)
+    db_name = 'corpus'
+    client = MongoClient('localhost', port=5455)
     # client.admin.authenticate(user, pwd, source=db_name)
     db = client[db_name]
     return db
+
 
 def connect_remote_database(user='admin', pwd='EntyWeSTEREc'):
     """Connects to the database containing the text version of all our data"""
