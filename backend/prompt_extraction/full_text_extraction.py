@@ -2,13 +2,13 @@ import logging
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 logger = logging.getLogger()
 
+import config
 from PromptExtraction.run_inference import RunInformationExtraction
-from PromptExtraction.configs import config
 from PromptExtraction.parse_args import parse_args
 from PromptExtraction.utils import connect_remote_database, LoadNormalizationDataset, ner_feed
 from PromptExtraction.pre_processing import PreProcessor
 
-from record_extraction_pipeline import record_extractor
+from record_extraction import record_extractor
 
 import sys
 import debugpy

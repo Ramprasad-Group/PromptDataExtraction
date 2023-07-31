@@ -13,6 +13,8 @@ import argparse
 
 from PromptExtraction import utils
 
+import config
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
@@ -27,13 +29,13 @@ logger = logging.getLogger()
 class DatasetCreation:
     def __init__(self):
         """Create dataset for zero shot inference"""
-        self.Tg_dataset_location = '/data/pranav/projects/PromptExtraction/data/glass_transition_temperature/glass_transition_temperature_curated_data.xlsx'
-        self.Tg_nlp_extracted_dataset_location = '/data/pranav/projects/PromptExtraction/data/glass_transition_temperature/glass_transition_temperature_extracted_data.csv'
+        self.Tg_dataset_location = config.DATA_DIR+'/data/glass_transition_temperature/glass_transition_temperature_curated_data.xlsx'
+        self.Tg_nlp_extracted_dataset_location = config.DATA_DIR+'/data/glass_transition_temperature/glass_transition_temperature_extracted_data.csv'
         
-        self.bandgap_dataset_location = '/data/pranav/projects/PromptExtraction/data/bandgap/bandgap_curated_data.xlsx'
-        self.bandgap_nlp_extracted_dataset_location = '/data/pranav/projects/PromptExtraction/data/bandgap/bandgap_extracted_data.csv'
+        self.bandgap_dataset_location = config.DATA_DIR+'/data/bandgap/bandgap_curated_data.xlsx'
+        self.bandgap_nlp_extracted_dataset_location = config.DATA_DIR+'/data/bandgap/bandgap_extracted_data.csv'
         
-        self.PSC_dataset_location = '/data/pranav/projects/PromptExtraction/data/polymer_solar_cells/polymer_solar_cell_extracted_data_curated.xlsx'
+        self.PSC_dataset_location = config.DATA_DIR+'/data/polymer_solar_cells/polymer_solar_cell_extracted_data_curated.xlsx'
         # Setup database connection
         self.setup_connection()
     

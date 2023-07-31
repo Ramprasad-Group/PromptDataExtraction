@@ -23,6 +23,8 @@ import debugpy
 from typing import List
 from os import path
 
+import config
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument(

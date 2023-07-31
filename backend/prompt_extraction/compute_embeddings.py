@@ -1,18 +1,18 @@
+import os
 import json
-
+import spacy
+import torch
 from transformers import AutoTokenizer, AutoModel
 
-import spacy
-
-import torch
+import config
 
 class ComputeEmbeddings:
     def __init__(self):
-        property_metadata_file = '/data/pranav/projects/PromptExtraction/data/property_metadata.json'
+        property_metadata_file = config.DATA_DIR + '/data/property_metadata.json'
         with open(property_metadata_file, 'r') as f:
             self.property_metadata = json.load(f)
         # self.property_metadata = json.load(open('property_metadata.json', 'r'))
-        model_location = '/data/pranav/projects/PromptExtraction/models/MaterialsBERT'
+        model_location = config.DATA_DIR + '/models/MaterialsBERT'
         self.tokenizer = AutoTokenizer.from_pretrained(model_location)
         self.model = AutoModel.from_pretrained(model_location)
         
