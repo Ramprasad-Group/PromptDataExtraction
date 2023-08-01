@@ -10,7 +10,7 @@ if [[ ! -f _conda_env/bin/pip ]]; then
     conda install -c conda-forge cxx-compiler==1.5.2 # gcc11
     conda install -c conda-forge cudatoolkit cudatoolkit-dev
 
-    pip -v install -r PromptExtraction/requirements.txt
+    pip -v install -r backend/requirements.txt
     pip -v install -r frontend/requirements.txt
 
     python -m spacy download en_core_web_sm
