@@ -12,6 +12,7 @@ from prompt_extraction.diversity_selection import diversity_selection
 from prompt_extraction.utils import compute_metrics
 
 import openai
+import polyai.api
 
 from typing import Dict, List
 from os import path, makedirs
@@ -82,6 +83,7 @@ class RunInformationExtraction:
             logger.info(f'Running in debug mode with {self.args.debug_count} positive and {self.args.debug_count} negative DOI\'s')
 
         logger.info(f'Number of positive DOI\'s: {len(dataset_ground)}')
+        logger.debug("Log level: DEBUG")
 
         dataset_llm = defaultdict(list)
         if self.args.seed_count>0:
@@ -134,7 +136,8 @@ class RunInformationExtraction:
             json.dump(llm_error_doi_list, f, indent=2)
 
         llm_metrics = {
-            "model": 'gpt-3.5-turbo', 'precision': precision,
+            "model": 'polyai' if self.args.polyai else 'openai',
+            'precision': precision,
             'recall': recall, 'F1': f1, 'token_usage': sum(total_usage)
         }
 
@@ -200,7 +203,12 @@ class RunInformationExtraction:
         logger.info(f'Baseline diversity DOI list: {doi_list}')
         data_dict = dict()
         for doi in doi_list:
-            data_dict[doi] = ground_truth_dataset[doi][0]['abstract']
+            try:
+                data_dict[doi] = ground_truth_dataset[doi][0]['abstract']
+            except Exception as e:
+                print(e)
+                import pdb
+                pdb.set_trace()
         
         return data_dict
     
@@ -271,10 +279,16 @@ class RunInformationExtraction:
         seed_message.append({"role": "user", "content": prompt})
         while True:
             try:
-                output = openai.ChatCompletion.create(
-                                            model="gpt-3.5-turbo",
-                                            messages=seed_message,
-                                            temperature=0.01)
+                if self.args.polyai:
+                    output = polyai.api.ChatCompletion.create(
+                                                model="polyai",
+                                                messages=seed_message,
+                                                temperature=0.01)
+                else:
+                    output = openai.ChatCompletion.create(
+                                                model="gpt-3.5-turbo",
+                                                messages=seed_message,
+                                                temperature=0.01)
                 break
 
             # Retry on specified errors
@@ -333,6 +347,12 @@ if __name__ == '__main__':
         debugpy.listen(5678)
         debugpy.wait_for_client()
         debugpy.breakpoint()
+
+    if args.polyai:
+        polyai.api.api_key = os.environ.get("POLYAI_API_KEY")
+
+    if not openai.api_key and not polyai.api.api_key:
+        logger.error("API key not loaded")
 
     config.DATA_DIR = args.out_dir
     run_inference = RunInformationExtraction(args=args)

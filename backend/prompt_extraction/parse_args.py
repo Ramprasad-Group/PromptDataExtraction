@@ -22,6 +22,10 @@ class Arguments:
         default=False, metadata={"help": "Run full text extraction code using OpenAI API"}
     )
 
+    polyai: bool = field(
+        default=False, metadata={"help": "Use POLYAI API to get the LLM response."}
+    )
+
     collection_output_name: str = field(
         default="full_text_data", metadata={"help": "Name of output collection"}
     )
