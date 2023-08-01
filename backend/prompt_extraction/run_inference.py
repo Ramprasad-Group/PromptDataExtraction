@@ -203,13 +203,7 @@ class RunInformationExtraction:
         logger.info(f'Baseline diversity DOI list: {doi_list}')
         data_dict = dict()
         for doi in doi_list:
-            try:
-                data_dict[doi] = ground_truth_dataset[doi][0]['abstract']
-            except Exception as e:
-                print(e)
-                import pdb
-                pdb.set_trace()
-        
+            data_dict[doi] = ground_truth_dataset[doi][0]['abstract']
         return data_dict
     
     def seed_prompt(self, dataset, dataset_embeddings, error_doi_list=None):
@@ -299,9 +293,12 @@ class RunInformationExtraction:
                 # Check if max retries has been reached
                 if num_retries > max_retries:
                     seed_message.pop()
-                    raise Exception(
-                        f"Maximum number of retries ({max_retries}) exceeded."
-                    )
+                    if self.args.polyai:
+                        sleep(60)
+                    else:
+                        raise Exception(
+                            f"Maximum number of retries ({max_retries}) exceeded."
+                        )
 
                 # Increment the delay
                 delay *= exponential_base * (1 + jitter * random.random())
