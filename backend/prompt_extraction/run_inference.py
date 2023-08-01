@@ -74,7 +74,7 @@ class RunInformationExtraction:
                 with open(self.args.doi_error_list_file, 'r') as fi:
                    llm_error_doi_list = json.load(fi)
             else:
-                logger.info(f'Error DOI list file {self.args.doi_error_list_file} does not exist.')
+                logger.warning(f'DOI list file {self.args.doi_error_list_file} does not exist.')
 
         if self.args.debug:
             dataset_ground = {k: v for k, v in dataset_ground.items() if k in list(dataset_ground.keys())[:self.args.debug_count]}
@@ -133,18 +133,27 @@ class RunInformationExtraction:
         with open(path.join(self.experiment_path, 'llm_error_doi_list.json'), 'w') as f:
             json.dump(llm_error_doi_list, f, indent=2)
 
+        llm_metrics = {
+            "model": 'gpt-3.5-turbo', 'precision': precision,
+            'recall': recall, 'F1': f1, 'token_usage': sum(total_usage)
+        }
+
         # Save precision, recall and f1 scores in a text file
-        with open(path.join(self.experiment_path, 'metrics.txt'), 'w') as f:
+        with open(path.join(self.experiment_path, 'metrics.txt'), 'w+') as f:
             f.write('\n')
             f.write('Metrics for LLM extracted data\n')
             f.write(f'Precision: {precision}\n')
             f.write(f'Recall: {recall}\n')
             f.write(f'F1: {f1}\n')
 
-
         # Compute metrics over ground truth and the classical NLP extracted data
         logger.info('Computing metrics over ground truth and the classical NLP extracted data')
         precision, recall, f1, _ = compute_metrics(ground_truth=dataset_ground, extracted=dataset_nlp)
+
+        nlp_metrics = {
+            "model": 'materials-bert', 'precision': precision,
+            'recall': recall, 'F1': f1, 'token_usage': 0
+        }
 
         with open(path.join(self.experiment_path, 'metrics.txt'), 'a') as f:
             f.write('\n')
@@ -153,6 +162,9 @@ class RunInformationExtraction:
             f.write(f'Recall: {recall}\n')
             f.write(f'F1: {f1}\n')
             f.write(f'Total number of tokens used: {sum(total_usage)}\n')
+
+        with open(path.join(self.experiment_path, 'metrics.json'), 'w+') as fp:
+            json.dump({'llm': llm_metrics, 'nlp': nlp_metrics}, fp, indent=2)
 
         # Save all the datasets created in order to examine it later
     
@@ -303,6 +315,7 @@ class RunInformationExtraction:
         """Parse the output from the API"""
         str_output = output["choices"][0]["message"]["content"]
         usage = output["usage"]["total_tokens"]
+        logger.debug(f"Total {usage} tokens: {str_output}")
         return str_output, usage
 
 
