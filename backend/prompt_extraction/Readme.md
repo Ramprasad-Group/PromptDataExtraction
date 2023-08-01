@@ -38,6 +38,7 @@ Create "seed message" for the prompt
 
 Load any previously saved dataset of the LLM outputs.
 For each of the doi,
+    Skip if doi is one of the shots.
     Get LLM response using the abstract and seed message.
     Post-process the output json to extract values.
     Add the parsed output to the LLM dataset.
