@@ -1,7 +1,8 @@
 """Create dataset and run API inference on the text"""
 import os
 import logging
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s [%(funcName)s at %(filename)s]',
+                    datefmt='%Y-%m-%d', level=logging.DEBUG)
 logger = logging.getLogger()
 
 from prompt_extraction.dataset_creation import DatasetCreation
@@ -24,25 +25,25 @@ import debugpy
 import json
 from time import sleep
 
+import config
+
 # Setup logging
 
 # logger.setLevel(logging.INFO)
 
-openai.api_key = os.getenv('OPENAI_API_KEY')
 
 class RunInformationExtraction:
     def __init__(self, args):
         # Setup API connection
         self.args = args
         assert args.mode in ['Tg', 'bandgap']
-        self.output_path = f'{self.args.data_dir}/output/{self.args.mode}'
+        self.output_path = f'{self.args.out_dir}/output/{self.args.mode}'
         
     def run_inference(self):
         """Run inference on the dataset"""
         
         self.experiment_path = path.join(self.output_path, self.args.experiment_name)
-        if not path.exists(self.experiment_path):
-            makedirs(self.experiment_path)
+        makedirs(self.experiment_path, exist_ok=True)
 
         # Load dataset
         if path.exists(path.join(self.output_path, 'dataset_ground.json')) and path.exists(path.join(self.output_path, 'dataset_nlp.json')) and \
@@ -51,17 +52,19 @@ class RunInformationExtraction:
             dataset_ground = json.load(open(path.join(self.output_path, 'dataset_ground.json')))
             dataset_nlp = json.load(open(path.join(self.output_path, 'dataset_nlp.json')))
         else:
+            logger.debug("Creating ground and NLP json dataset.")
             dataset_ground, dataset_nlp = DatasetCreation().create_dataset(self.args.mode)
             with open(path.join(self.output_path, 'dataset_ground.json'), 'w') as f:
-                json.dump(dataset_ground, f)
+                json.dump(dataset_ground, f, indent=2)
             
             with open(path.join(self.output_path, 'dataset_nlp.json'), 'w') as f:
-                json.dump(dataset_nlp, f)
+                json.dump(dataset_nlp, f, indent=2)
         
         if path.exists(path.join(self.output_path, 'dataset_ground_embeddings.pt')) and not self.args.create_embeddings:
             logger.info('Loading embeddings from file')
             dataset_ground_embeddings = torch.load(path.join(self.output_path, 'dataset_ground_embeddings.pt'))
         else:
+            logger.debug("Creating embeddings file.")
             dataset_ground_embeddings = ComputeEmbeddings().run(dataset_ground, self.args.mode)
             torch.save(dataset_ground_embeddings, path.join(self.output_path, 'dataset_ground_embeddings.pt'))
         
@@ -82,9 +85,11 @@ class RunInformationExtraction:
 
         dataset_llm = defaultdict(list)
         if self.args.seed_count>0:
+            logger.info("Creating seed messages using the embeddings.")
             seed_message, doi_list = self.seed_prompt(dataset=dataset_ground, dataset_embeddings=dataset_ground_embeddings, error_doi_list=llm_error_doi_list)
             logger.info(f'Seed DOI list: {doi_list}')
         else:
+            logger.info("Not using seed message.")
             seed_message = []
             doi_list = []
 
@@ -92,9 +97,11 @@ class RunInformationExtraction:
         json_decode_error_count = 0
 
         if path.exists(path.join(self.experiment_path, 'dataset_llm.json')):
+            logger.info("Loading existing LLM dataset json")
             dataset_llm = json.load(open(path.join(self.experiment_path, 'dataset_llm.json')))
 
         else:
+            logger.info("Creating LLM dataset json")
             for index, doi in enumerate(dataset_ground.keys()):
                 if index%100==0:
                     logger.info(f'Done with {index} documents')
@@ -112,7 +119,7 @@ class RunInformationExtraction:
                         json_decode_error_count+=1
 
             with open(path.join(self.experiment_path, 'dataset_llm.json'), 'w') as f:
-                json.dump(dataset_llm, f)
+                json.dump(dataset_llm, f, indent=2)
         
             logger.info(f'Total token usage so far with positive examples: {sum(total_usage)}')
             logger.info(f'Number of JSON decode errors: {json_decode_error_count} out of {len(dataset_ground)}')
@@ -122,7 +129,7 @@ class RunInformationExtraction:
         precision, recall, f1, llm_error_doi_list = compute_metrics(ground_truth=dataset_ground, extracted=dataset_llm)
 
         with open(path.join(self.experiment_path, 'llm_error_doi_list.json'), 'w') as f:
-            json.dump(llm_error_doi_list, f)
+            json.dump(llm_error_doi_list, f, indent=2)
 
         # Save precision, recall and f1 scores in a text file
         with open(path.join(self.experiment_path, 'metrics.txt'), 'w') as f:
@@ -148,8 +155,14 @@ class RunInformationExtraction:
         # Save all the datasets created in order to examine it later
     
     def process_single_example(self, text: str, seed_prompt: List, mode: str) -> str:
+        logger.debug("Constructing prompt for mode.")
         prompt = self.construct_prompt(text, mode)
+        logger.debug(prompt)
+
+        logger.debug("Performing API inference with the prompt and seed prompt.")
         output = self.api_inference(prompt, seed_prompt)
+
+        logger.debug("Parsing prompt output.")
         output_extracted, usage = self.parse_output(output)
         # Parse the output and create parallel output
         return output_extracted, usage
@@ -294,7 +307,9 @@ class RunInformationExtraction:
 if __name__ == '__main__':
     import dotenv
     if not dotenv.load_dotenv():
-        print("WARN!! .env not loaded")
+        logger.warning("WARN!! .env not loaded")
+
+    openai.api_key = os.getenv('OPENAI_API_KEY')
 
     # args = parser.parse_args()
     args = parse_args(sys.argv[1:])
@@ -303,5 +318,7 @@ if __name__ == '__main__':
         debugpy.listen(5678)
         debugpy.wait_for_client()
         debugpy.breakpoint()
+
+    config.DATA_DIR = args.out_dir
     run_inference = RunInformationExtraction(args=args)
     run_inference.run_inference()

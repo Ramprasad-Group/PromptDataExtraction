@@ -11,11 +11,12 @@ class ComputeEmbeddings:
         property_metadata_file = config.DATA_DIR + '/data/property_metadata.json'
         with open(property_metadata_file, 'r') as f:
             self.property_metadata = json.load(f)
+
         # self.property_metadata = json.load(open('property_metadata.json', 'r'))
-        model_location = config.DATA_DIR + '/models/MaterialsBERT'
+        model_location = 'models/MaterialsBERT'
         self.tokenizer = AutoTokenizer.from_pretrained(model_location)
         self.model = AutoModel.from_pretrained(model_location)
-        
+
     
     def run(self, doi_dict, property_name):
         """Compute embeddings for the given DOI dict"""
@@ -38,7 +39,14 @@ class ComputeEmbeddings:
         nlp = spacy.load("en_core_web_sm")
         spacy_doc = nlp(text)
         relevant_sentences = []
-        property_name_map = {'Tg': 'glass transition temperature', 'bandgap': 'bandgap', 'PCE': 'power conversion efficiency', 'Voc': 'voltage', 'Jsc': 'current', 'FF': 'fill factor'}
+        property_name_map = {
+            'Tg': 'glass transition temperature',
+            'bandgap': 'bandgap',
+            'PCE': 'power conversion efficiency',
+            'Voc': 'voltage',
+            'Jsc': 'current',
+            'FF': 'fill factor'
+        }
         property_name_mapped = property_name_map[property_name]
 
         property_coreferents = self.property_metadata[property_name_mapped]['property_list']

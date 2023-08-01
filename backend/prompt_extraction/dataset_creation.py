@@ -40,7 +40,7 @@ class DatasetCreation:
         self.setup_connection()
     
     def setup_connection(self):
-        self.db = utils.connect_database()
+        self.db = utils.connect_remote_database()
         self.collection = self.db['modular_run_4']
     
     def process_entity_coreferents(self, row):

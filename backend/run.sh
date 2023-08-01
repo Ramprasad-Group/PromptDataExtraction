@@ -5,21 +5,23 @@
 OUT_DIR="RunOut"
 DATASET="Tg"
 SAMPLING="random"
-EXPERIMENTBASE="prompt_5_$SAMPLING"
+EXPERIMENTBASE="test_5_$SAMPLING"
 ERROR_FILE="$OUT_DIR/output/${DATASET}/prompt_5_0_shot/llm_error_doi_list.json"
 echo $EXPERIMENTBASE
 echo $ERROR_FILE
 start=1
-end=2
+end=1
 
 # Iterate over the range of numbers
 for ((count=start; count<=end; count++)); do
 
     echo "Few shot count: ${count}"
-    LOGFILE="$OUT_DIR/log/log_${DATASET}_${EXPERIMENTBASE}_${count}_shot"
+    LOGFILE="$OUT_DIR/log/${DATASET}_${EXPERIMENTBASE}_${count}_shot.log"
     EXPERIMENTNAME="${EXPERIMENTBASE}_${count}_shot"
     echo "Log file location: ${LOGFILE}"
     echo "Name of experiment: ${EXPERIMENTNAME}"
+
+    mkdir -p $OUT_DIR/log $OUT_DIR/output $OUT_DIR/data
 
     python prompt_extraction/run_inference.py \
                 --experiment_name $EXPERIMENTNAME \
@@ -29,8 +31,7 @@ for ((count=start; count<=end; count++)); do
                 --prompt_index 5 \
                 --debug true \
                 --seed_sampling $SAMPLING \
-                --seed_count $count &> $LOGFILE &
-    wait
+                --seed_count $count | tee $LOGFILE
 done
 
 echo "Done"
