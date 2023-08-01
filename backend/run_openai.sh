@@ -3,8 +3,8 @@
 # SAMPLING can take the value random or error_diversity or baseline_diversity
 
 OUT_DIR="Run_Output"
-DATASET="Tg"
-SAMPLING="error_diversity"
+DATASET="bandgap"
+SAMPLING="baseline_diversity"
 EXPERIMENTBASE="abstracts_$SAMPLING"
 ERROR_FILE="$OUT_DIR/output/${DATASET}/llm_error_doi_list.json"
 echo $EXPERIMENTBASE
