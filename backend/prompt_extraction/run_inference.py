@@ -86,7 +86,9 @@ class RunInformationExtraction:
         dataset_llm = defaultdict(list)
         if self.args.seed_count>0:
             logger.info("Creating seed messages using the embeddings.")
-            seed_message, doi_list = self.seed_prompt(dataset=dataset_ground, dataset_embeddings=dataset_ground_embeddings, error_doi_list=llm_error_doi_list)
+            seed_message, doi_list = self.seed_prompt(dataset=dataset_ground,
+                                                      dataset_embeddings=dataset_ground_embeddings,
+                                                      error_doi_list=llm_error_doi_list)
             logger.info(f'Seed DOI list: {doi_list}')
         else:
             logger.info("Not using seed message.")
@@ -197,6 +199,7 @@ class RunInformationExtraction:
         
         if self.args.seed_sampling in ["minimum", "random"]:
             data_dict = self.min_examples(dataset)
+            
         elif self.args.seed_sampling=="error_diversity" and error_doi_list is not None:
             filtered_dataset_embeddings = {key: value for key, value in dataset_embeddings.items() if key in error_doi_list}
             data_dict = self.baseline_diversity(dataset, filtered_dataset_embeddings)
@@ -259,8 +262,7 @@ class RunInformationExtraction:
                 output = openai.ChatCompletion.create(
                                             model="gpt-3.5-turbo",
                                             messages=seed_message,
-                                            temperature=0.01
-                                            )
+                                            temperature=0.01)
                 break
 
             # Retry on specified errors

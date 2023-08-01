@@ -104,7 +104,6 @@ class DatasetCreation:
         
         return text
 
-
     def dataset_statistics(self, output_dataset):
         """Get dataset statistics"""
         logger.info(f'Number of DOI\'s in dataset: {len(output_dataset)}')
