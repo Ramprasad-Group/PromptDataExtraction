@@ -2,3 +2,5 @@ __pycache__
 _conda_env/
 .env 
 pranavs_data/
+backend/models/
+RunOut
