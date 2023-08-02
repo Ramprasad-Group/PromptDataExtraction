@@ -60,7 +60,12 @@ class RunInformationExtraction:
             
             with open(path.join(self.output_path, 'dataset_nlp.json'), 'w') as f:
                 json.dump(dataset_nlp, f, indent=2)
-        
+
+        if self.args.debug:
+            dataset_ground = {k: v for k, v in dataset_ground.items() if k in list(dataset_ground.keys())[:self.args.debug_count]}
+            dataset_nlp = {k: v for k, v in dataset_nlp.items() if k in dataset_ground}
+            logger.info(f'Running in debug mode with {self.args.debug_count} positive and {self.args.debug_count} negative DOI\'s')
+
         if path.exists(path.join(self.output_path, 'dataset_ground_embeddings.pt')) and not self.args.create_embeddings:
             logger.info('Loading embeddings from file')
             dataset_ground_embeddings = torch.load(path.join(self.output_path, 'dataset_ground_embeddings.pt'))
@@ -76,11 +81,6 @@ class RunInformationExtraction:
                    llm_error_doi_list = json.load(fi)
             else:
                 logger.warning(f'DOI list file {self.args.doi_error_list_file} does not exist.')
-
-        if self.args.debug:
-            dataset_ground = {k: v for k, v in dataset_ground.items() if k in list(dataset_ground.keys())[:self.args.debug_count]}
-            dataset_nlp = {k: v for k, v in dataset_nlp.items() if k in dataset_ground}
-            logger.info(f'Running in debug mode with {self.args.debug_count} positive and {self.args.debug_count} negative DOI\'s')
 
         logger.info(f'Number of positive DOI\'s: {len(dataset_ground)}')
         logger.debug("Log level: DEBUG")
