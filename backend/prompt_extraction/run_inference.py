@@ -1,15 +1,16 @@
 """Create dataset and run API inference on the text"""
 import os
 import logging
+from datetime import datetime
 logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s [%(funcName)s at %(filename)s]',
-                    datefmt='%Y-%m-%d', level=logging.DEBUG)
+                    datefmt='%Y-%m-%d %H:%M:%S', level=logging.DEBUG)
 logger = logging.getLogger()
 
 from prompt_extraction.dataset_creation import DatasetCreation
 from prompt_extraction.parse_args import parse_args
 from prompt_extraction.compute_embeddings import ComputeEmbeddings
 from prompt_extraction.diversity_selection import diversity_selection
-from prompt_extraction.utils import compute_metrics
+from prompt_extraction.utils import compute_metrics, Frame
 
 import openai
 import polyai.api
@@ -39,6 +40,7 @@ class RunInformationExtraction:
         self.args = args
         assert args.mode in ['Tg', 'bandgap']
         self.output_path = f'{self.args.out_dir}/output/{self.args.mode}'
+        self.stats = Frame()
         
     def run_inference(self):
         """Run inference on the dataset"""
@@ -111,8 +113,24 @@ class RunInformationExtraction:
                     logger.info(f'Done with {index} documents')
                 if doi not in doi_list:
                     text = dataset_ground[doi][0]['abstract']
-                    output, usage = self.process_single_example(text=text, seed_prompt=seed_message, mode=self.args.mode)
+                    output, usage, prompt = self.process_single_example(text=text, seed_prompt=seed_message, mode=self.args.mode)
                     total_usage.append(usage)
+            
+                    # Add usage stats to data frame
+                    self.stats.add(
+                        date = datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        doi = doi,
+                        property = self.args.mode,
+                        text_type = 'abstract',
+                        api = 'polyai' if self.args.polyai else 'openai',
+                        n_shot = self.args.seed_count,
+                        shot_type = self.args.seed_sampling,
+                        text_len = len(text),
+                        prompt_len = len(prompt),
+                        response_len = len(output),
+                        total_tokens = usage
+                    )
+
                     try:
                         output_dict = json.loads(output)
                         current_output = self.post_process(output_dict)
@@ -124,6 +142,8 @@ class RunInformationExtraction:
 
             with open(path.join(self.experiment_path, 'dataset_llm.json'), 'w') as f:
                 json.dump(dataset_llm, f, indent=2)
+
+            self.stats.df.to_csv(path.join(self.experiment_path, 'usage_stats.csv'))
         
             logger.info(f'Total token usage so far with positive examples: {sum(total_usage)}')
             logger.info(f'Number of JSON decode errors: {json_decode_error_count} out of {len(dataset_ground)}')
@@ -180,9 +200,10 @@ class RunInformationExtraction:
         output = self.api_inference(prompt, seed_prompt)
 
         logger.debug("Parsing prompt output.")
-        output_extracted, usage = self.parse_output(output)
         # Parse the output and create parallel output
-        return output_extracted, usage
+        output_extracted, usage = self.parse_output(output)
+
+        return output_extracted, usage, prompt
     
     def min_examples(self, dataset, min_data_points=1):
         """Find the minimum length prompts for the dataset that have at least 3 data points"""
