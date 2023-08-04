@@ -152,3 +152,36 @@ For each extracted doi and list of items,
 
 Calculate and return precision, recall, f1 and error list.
 ```
+
+### Full Text Extraction
+```sh
+Inherit from the Run Inference class.
+
+Set skip_headers to the list of section names in the full-text.
+Set metadata for the target property,
+    Include ground truth, coreferents, doi list, unit list etc.
+
+Load normalization dataset.
+Load train and test dataset from the normalization data.
+Setup MaterialsBert pipeline for NER predictions.
+
+Setup MongoDB connecton.
+Get the 'polymer_DOI_records_prod' collection from the DB
+    as the input collection.
+Set the output collection.
+
+Put a DB cursor using "poly" and the property name
+    that has full text stored in the DB.
+Create few-shot prompt, calc token count using the property.
+
+For each of the documents in the input collection,
+    skip if the doi exists in the output collection.
+    For each of the paragraph text and section name:
+        Preprocess the text to normalize unicode, hyphens etc.
+        Extract the Tg and Bandgap data using LLM.
+    Calculate stats.
+    Insert the parsed output to the output collection.
+    Put the DB cursor again while skipping the parsed documents.
+
+Log summary stats.
+```
