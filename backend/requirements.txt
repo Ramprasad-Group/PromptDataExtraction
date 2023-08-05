@@ -17,8 +17,13 @@ wandb
 huggingface-hub
 tokenizers
 levenshtein
-# ChemDataExtractor
+charset-normalizer>=3.1.0
+ChemDataExtractor @ git+https://github.com/akhlakm/ChemDataExtractor.git
 pymongo
 unidecode
 openpyxl
 matplotlib
+chardet
+cchardet
+tiktoken
+textacy
