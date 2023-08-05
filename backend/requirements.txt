@@ -8,6 +8,7 @@ lxml
 ninja
 nltk
 openai
+numpy
 pandas
 scikit-learn
 scipy
@@ -20,3 +21,4 @@ levenshtein
 pymongo
 unidecode
 openpyxl
+matplotlib
