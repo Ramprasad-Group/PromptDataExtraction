@@ -8,6 +8,13 @@ from utils import Frame
 
 plt.style.use("matplotlib.mplstyle")
 
+## USAGE Example:
+# python prompt_extraction/plot_json_metrics.py \
+#   Run_Reprod_all/output/bandgap/abstr_error_diversity_prompt5_run* \
+#   -o Run_Reprod_all/output/bandgap/abstr_error_diversity_prompt5_plots \
+#   -r 3
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument('output_dirs', nargs='+',
                     help="List of dirs containting metrics.json files")
