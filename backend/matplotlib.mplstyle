@@ -88,7 +88,7 @@ ytick.minor.right:  True    # draw y axis right minor ticks
 # FONTSIZES 
 # ---------------------------------------------------------------
 
-font.size : 9           # If font.size is 10, then xx-small 5.79,
+font.size : 8           # If font.size is 10, then xx-small 5.79,
                         # x-small 6.94, small 8.33, medium 10.0,
                         # large 12.0, x-large 14.4, xx-large 17.28
                         
