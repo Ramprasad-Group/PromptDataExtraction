@@ -1,5 +1,6 @@
 import logging
-logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s - %(levelname)s - %(message)s [%(funcName)s at %(filename)s]',
+                    datefmt='%Y-%m-%d %H:%M:%S', level=logging.INFO)
 logger = logging.getLogger()
 
 import config
@@ -10,6 +11,8 @@ from prompt_extraction.pre_processing import PreProcessor
 
 from record_extraction import record_extractor
 
+import pdb
+
 import sys
 import debugpy
 import openai
@@ -17,19 +20,10 @@ import openai
 from collections import defaultdict
 
 import json
-
-# from os import path
-
-# import time
-
 import torch
 
 from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
 
-
-# logger.setLevel(logging.INFO)
-
-openai.api_key = config.API_KEY
 
 class FullTextExtraction(RunInformationExtraction):
     def __init__(self, args):
@@ -54,12 +48,12 @@ class FullTextExtraction(RunInformationExtraction):
         self.query = {'$and':[{'abstract': {'$regex': 'poly', '$options': 'i'}},
                              {'full_text': {'$exists': True}}
                              ]}
-        self.metadata = {'Tg':{'ground_truth_data': f'/data/pranav/projects/prompt_extraction/output/Tg/dataset_ground.json',
+        self.metadata = {'Tg':{'ground_truth_data': f'data/glass_transition_temperature/dataset_ground.json',
                                 'coreferents': ['Tg', 'T_{g}', 'T g', 'T_{g})', "T_{g} 's", 'glass transition', 'glass transitions', 'glass transition temperature', 'glass transition temperatures', 'glass transition temperatures', 'T_{g}s', 'glass-transition temperatures'],
                                 'DOI_list': ['10.1002/pola.1179', '10.1002/app.34170'],
                                 'unit_list': ['K', '° C', '°C']
                                 },
-                        'bandgap':{'ground_truth_data': f'/data/pranav/projects/prompt_extraction/output/bandgap/dataset_ground.json',
+                        'bandgap':{'ground_truth_data': f'data/bandgap/dataset_ground.json',
                                    'coreferents': ['bandgap', 'band gap', 'band-gap', 'band-gaps', 'bandgaps', 'band gaps', 'E_{g}', 'optical bandgap', 'optical band gap', 'optical band gaps', 'optical bandgaps', 'bandgap energies', 'optical energy bandgaps', 'optical energy gap', 'energy bandgap', 'optical band-gaps', 'optical-band-gap energies', 'optical band-gap', 'optical band gap energy', 'band gap energies', 'band gap energy', 'electrochemical band gap', 'electrochemical band gaps', 'Eg'],
                                    'DOI_list': ['10.1039/c8nj04453h', '10.1021/cm202247a', '10.1016/j.eurpolymj.2014.07.006'],
                                    'unit_list': ['eV']
@@ -72,22 +66,22 @@ class FullTextExtraction(RunInformationExtraction):
         # Load NER model
         if torch.cuda.is_available():
             logger.info('GPU device found')
-            self.device = 1
+            self.device = 0
         else:
-            self.device = -1
+            self.device = 'cpu'
         
         normalization_dataloader = LoadNormalizationDataset()
         self.train_data, self.test_data = normalization_dataloader.process_normalization_files()
-        model_file = '/data/pranav/projects/polymer_ner/data/polymer_dataset_labeling_6/output/MaterialsBERT/'
+
+        # Load model and tokenizer
+        model_file = 'models/MaterialsBERT'
         self.tokenizer = AutoTokenizer.from_pretrained(model_file, model_max_length=512)
         model = AutoModelForTokenClassification.from_pretrained(model_file)
-        # Load model and tokenizer
         self.ner_pipeline = pipeline(task="ner", model=model, tokenizer=self.tokenizer, aggregation_strategy="simple", device=self.device)
 
         self.pre_processor = PreProcessor()
 
         self.token_cost = 0.002/1000 # Cost per token in dollars
-
         self.generation_constant = 30 # Assume 30 tokens are generated on average per prompt
 
         self.setup_connection()
@@ -105,11 +99,15 @@ class FullTextExtraction(RunInformationExtraction):
     def run_inference(self):
         """Run the full text extraction model on the input text"""
         num_docs = self.collection_input.count_documents(self.query)
+
         # Run a query over all the paragraphs in the text
         logger.info(f'Number of documents returned by query: {num_docs}')
         cursor = self.collection_input.find(self.query, no_cursor_timeout=True).skip(self.args.skip_n)
+
+        # Delete the existing output collection from database.
         if self.args.delete_collection:
             self.db.drop_collection(self.args.collection_output_name)
+
         docs_parsed = self.args.skip_n
         relevant_paras = 0
         seed_prompt_Tg, token_count_Tg = self.seed_construction('Tg')
@@ -130,8 +128,8 @@ class FullTextExtraction(RunInformationExtraction):
                         output['paragraph_records'] = []
                         self.filtration_dict['total_docs']+=1
 
-                        if docs_parsed%10000==0:
-                            logger.info(f'Number of documents parsed: {docs_parsed}')
+                        if docs_parsed % 100==0:
+                            logger.info(f"Number of documents parsed: {docs_parsed}, relevant paras: {relevant_paras}")
 
                         if self.args.debug and relevant_paras>self.args.debug_count:
                             break
@@ -162,7 +160,9 @@ class FullTextExtraction(RunInformationExtraction):
                                 self.filtration_dict['Tg_documents']+=1
 
                             self.filtration_dict['relevant_documents']+=1
-                            self.collection_output.insert_one(output)
+                        
+                            if not self.args.debug:
+                                self.collection_output.insert_one(output)
 
 
                 except Exception as e:
@@ -195,6 +195,7 @@ class FullTextExtraction(RunInformationExtraction):
 
     def process_property(self, mode, para, seed_prompt, token_count, doi, ner_output=None, output_bert={}):
         output_llm = {}
+
         if self.keyword_filter(keyword_list=self.metadata[mode]['coreferents'], para=para):
             self.filtration_dict[f'{mode}_keyword_paragraphs']+=1
             ner_output, ner_filter_output = self.ner_filter(para, unit_list=self.metadata[mode]['unit_list'], ner_output=ner_output)
@@ -208,6 +209,7 @@ class FullTextExtraction(RunInformationExtraction):
 
                 if self.args.use_conventional_pipeline and not output_bert:
                     output_bert = self.process_BERT_pipeline(ner_output, para, doi)
+
                 if self.args.use_llm:
                     output_llm, current_token_count = self.process_single_example(text=para, seed_prompt=seed_prompt, mode=mode)
                     try:
@@ -312,5 +314,9 @@ if __name__ == '__main__':
         debugpy.listen(5678)
         debugpy.wait_for_client()
         debugpy.breakpoint()
+
+    openai.api_key = config.API_KEY
+    config.DATA_DIR = args.out_dir
+
     run_inference = FullTextExtraction(args=args)
     run_inference.run_inference()

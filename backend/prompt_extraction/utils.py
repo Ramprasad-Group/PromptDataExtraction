@@ -153,24 +153,25 @@ def compare_property_value(extracted_property_value, property_value)->bool:
 class LoadNormalizationDataset:
     def __init__(self, curated_normalized_data=None, test_normalized_data=None):
         if curated_normalized_data is None:
-            self.curated_normalized_data = '/home/pranav/projects/materials_ml/data/normalized_polymer_dictionary.json'
+            self.curated_normalized_data = 'data/normalized_polymer_dictionary.json'
         else:
             self.curated_normalized_data = curated_normalized_data
-        if test_normalized_data is None:
-            self.test_normalized_data = '/home/pranav/projects/supervised_clustering/data/test_dataset.json'
-        else:
-            self.test_normalized_data = test_normalized_data
+        # if test_normalized_data is None:
+        #     self.test_normalized_data = '/home/pranav/projects/supervised_clustering/data/test_dataset.json'
+        # else:
+        #     self.test_normalized_data = test_normalized_data
 
     def process_normalization_files(self):
         """Read the json files associated with train and test for normalization and return them"""
         with open(self.curated_normalized_data, 'r') as fi:
             train_data_text = fi.read()
-        with open(self.test_normalized_data, 'r') as fi:
-            test_data_text = fi.read()
         train_data = json.loads(train_data_text)
-        test_data = json.loads(test_data_text)
 
-        return train_data, test_data
+        # with open(self.test_normalized_data, 'r') as fi:
+        #     test_data_text = fi.read()
+        # test_data = json.loads(test_data_text)
+        # return train_data, test_data
+        return train_data, {}
 
 
 def ner_feed(seq_pred, text):
