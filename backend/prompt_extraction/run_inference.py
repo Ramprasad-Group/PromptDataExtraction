@@ -127,6 +127,7 @@ class RunInformationExtraction:
                         shot_type = self.args.seed_sampling,
                         text_len = len(text),
                         prompt_len = len(prompt),
+                        shots_len = sum([len(v['content']) for v in seed_message]),
                         response_len = len(output),
                         total_tokens = usage
                     )
