@@ -1,4 +1,7 @@
 __pycache__
 _conda_env/
-.env 
-data/
+*.yaml
+*.csv
+*.xlsx
+*.json
+

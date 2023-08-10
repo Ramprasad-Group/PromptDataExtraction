@@ -1,6 +1,8 @@
 pandas
 matplotlib
+pyyaml
 python-dotenv
+git+https://github.com/akhlakm/python-logg.git
 
 # -------------- FRONTEND ----------------
 streamlit
