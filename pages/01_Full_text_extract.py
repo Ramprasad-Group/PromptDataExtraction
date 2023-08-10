@@ -13,7 +13,7 @@ from frontend.export import Exporter
 ## -----------------------------------------------------------------------------
 
 # Set webpage title
-st.set_page_config(page_title="Full Text UI")
+st.set_page_config(page_title="Full Text Data Extraction UI")
 
 # Global UI state
 G = st.session_state
