@@ -1,5 +1,0 @@
-python-dotenv
-streamlit
-langchain
-pandas
-matplotlib

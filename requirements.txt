@@ -1,0 +1,9 @@
+pandas
+matplotlib
+python-dotenv
+
+# -------------- FRONTEND ----------------
+streamlit
+langchain
+
+# -------------- BACKEND ----------------
