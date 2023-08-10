@@ -26,9 +26,7 @@ G.debug = True
 ## -----------------------------------------------------------------------------
 def main():
 
-    st.write("# Welcome to Streamlit! 👋")
-
-    st.sidebar.success("Select a demo above.")
+    st.write("# Welcome to PromptDataExtract! 👋")
 
     st.markdown(
         """
