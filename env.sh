@@ -10,8 +10,8 @@ if [[ ! -f _conda_env/bin/pip ]]; then
     conda install -c conda-forge cxx-compiler==1.5.2 # gcc11
     conda install -c conda-forge cudatoolkit cudatoolkit-dev
 
-    pip -v install -r backend/requirements.txt
-    pip -v install -r frontend/requirements.txt
+    pip -v install -r requirements.txt
+    pip -v install -r pranav/requirements.txt
 
     python -m spacy download en_core_web_sm
 fi
@@ -20,5 +20,5 @@ conda activate $(realpath _conda_env)
 export LD_LIBRARY_PATH=$(realpath _conda_env/lib64):$LD_LIBRARY_PATH
 export PYTHONPATH=$(realpath backend/prompt_extraction):$(realpath backend/record_extraction):.
 
-# Use ssh tunnel on client
+# Use ssh tunnel on client to connect to the frontend
 # ssh -4 -L 8501:127.0.0.1:8501 -N -f tyrion2.mse.gatech.edu
