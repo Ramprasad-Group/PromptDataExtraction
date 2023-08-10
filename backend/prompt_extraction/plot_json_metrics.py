@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 from utils import Frame
 
-plt.style.use("matplotlib.mplstyle")
+plt.style.use(os.path.expanduser("~/matplotlib.mplstyle"))
 
 ## USAGE Example:
 # python prompt_extraction/plot_json_metrics.py \
@@ -37,7 +37,7 @@ def plot_single_run(metrics : pd.DataFrame, figsize=(3.25, 2.2)):
     fig, ax = plt.subplots(figsize=figsize)
     ax.plot(x, y_llm, 'rx--', label="LLM")
     ax.plot(x, y_nlp, 'gx--', label="BERT")
-    ax.set(ylabel='F-1 score', xlabel='No. of shots')
+    ax.set(ylabel='F-1 score', xlabel='No. of shots', ylim = (0.5, 1.0))
     if args.title is not None:
         ax.set_title(args.title)
     ax.legend()
@@ -54,7 +54,7 @@ def plot_single_run(metrics : pd.DataFrame, figsize=(3.25, 2.2)):
     fig, ax = plt.subplots(figsize=figsize)
     ax.plot(x, y_llm, 'rx--', label="LLM")
     ax.plot(x, y_nlp, 'gx--', label="BERT")
-    ax.set(ylabel='Precision', xlabel='No. of shots')
+    ax.set(ylabel='Precision', xlabel='No. of shots', ylim = (0.5, 1.0))
     if args.title is not None:
         ax.set_title(args.title)
     ax.legend()
@@ -71,7 +71,7 @@ def plot_single_run(metrics : pd.DataFrame, figsize=(3.25, 2.2)):
     fig, ax = plt.subplots(figsize=figsize)
     ax.plot(x, y_llm, 'rx--', label="LLM")
     ax.plot(x, y_nlp, 'gx--', label="BERT")
-    ax.set(ylabel='Recall', xlabel='No. of shots')
+    ax.set(ylabel='Recall', xlabel='No. of shots', ylim = (0.5, 1.0))
     if args.title is not None:
         ax.set_title(args.title)
     ax.legend()
@@ -96,7 +96,7 @@ def plot_multi_run(metrics : pd.DataFrame, figsize=(3.25, 2.5)):
         x = metrics[mask]['shots']
         ax.plot(x, y_llm, '.-', label="Run %d" %r)
 
-    ax.set(ylabel='F-1 score', xlabel='No. of shots')
+    ax.set(ylabel='F-1 score', xlabel='No. of shots', ylim=(0.5, 1.0))
     if args.title is not None:
         ax.set_title(args.title)
     ax.legend()
@@ -115,7 +115,7 @@ def plot_multi_run(metrics : pd.DataFrame, figsize=(3.25, 2.5)):
         x = metrics[mask]['shots']
         ax.plot(x, y_llm, '.-', label="Run %d" %r)
 
-    ax.set(ylabel='Precision', xlabel='No. of shots')
+    ax.set(ylabel='Precision', xlabel='No. of shots', ylim = (0.5, 1.0))
     if args.title is not None:
         ax.set_title(args.title)
     ax.legend()
@@ -133,7 +133,7 @@ def plot_multi_run(metrics : pd.DataFrame, figsize=(3.25, 2.5)):
         y_llm = metrics[mask]['recall']
         x = metrics[mask]['shots']
         ax.plot(x, y_llm, '.-', label="Run %d" %r)
-    ax.set(ylabel='Recall', xlabel='No. of shots')
+    ax.set(ylabel='Recall', xlabel='No. of shots', ylim = (0.5, 1.0))
     if args.title is not None:
         ax.set_title(args.title)
     ax.legend()
