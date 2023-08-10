@@ -4,7 +4,7 @@
 OUT_DIR="Run_Reprod_all"
 
 # can take value Tg or bandgap
-DATASET="Tg"
+DATASET="bandgap"
 
 # SAMPLING can take the value random or error_diversity or baseline_diversity
 SAMPLING="error_diversity"

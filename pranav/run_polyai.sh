@@ -3,14 +3,14 @@
 # SAMPLING can take the value random or error_diversity or baseline_diversity
 
 OUT_DIR="Run_Output"
-DATASET="bandgap"
+DATASET="Tg"
 SAMPLING="baseline_diversity"
-EXPERIMENTBASE="abstracts_$SAMPLING"
-ERROR_FILE="$OUT_DIR/output/${DATASET}/llm_error_doi_list.json"
+EXPERIMENTBASE="65guanaco_abstracts_$SAMPLING"
+ERROR_FILE="$OUT_DIR/output/${DATASET}/polyai_llm_error_doi_list.json"
 echo $EXPERIMENTBASE
 echo $ERROR_FILE
 
-start=5
+start=2
 end=0
 
 mkdir -p $OUT_DIR/log $OUT_DIR/output $OUT_DIR/data
@@ -30,6 +30,7 @@ for ((count=start; count>=end; count--)); do
                 --doi_error_list_file $ERROR_FILE \
                 --mode $DATASET \
                 --out_dir $OUT_DIR \
+                --polyai true \
                 --prompt_index 5 \
                 --seed_sampling $SAMPLING \
                 --seed_count $count &> $LOGFILE

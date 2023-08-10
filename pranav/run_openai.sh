@@ -4,14 +4,14 @@
 
 OUT_DIR="Run_Output"
 DATASET="Tg"
-SAMPLING="baseline_diversity"
-EXPERIMENTBASE="polyai_abstracts_$SAMPLING"
-ERROR_FILE="$OUT_DIR/output/${DATASET}/polyai_llm_error_doi_list.json"
+SAMPLING="error_diversity"
+EXPERIMENTBASE="abs_${SAMPLING}_prompt0"
+ERROR_FILE="$OUT_DIR/output/${DATASET}/llm_error_doi_list.json"
 echo $EXPERIMENTBASE
 echo $ERROR_FILE
 
-start=3
-end=0
+start=5
+end=1
 
 mkdir -p $OUT_DIR/log $OUT_DIR/output $OUT_DIR/data
 
@@ -30,8 +30,7 @@ for ((count=start; count>=end; count--)); do
                 --doi_error_list_file $ERROR_FILE \
                 --mode $DATASET \
                 --out_dir $OUT_DIR \
-                --polyai true \
-                --prompt_index 5 \
+                --prompt_index 0 \
                 --seed_sampling $SAMPLING \
                 --seed_count $count &> $LOGFILE
 done
