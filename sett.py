@@ -71,12 +71,14 @@ MongoDb = Settings({
 })
 
 PostGres = Settings({
-    'sshtunnel': False,
-    'host': 'localhost',
-    'port': 5454,
-    'dbname': 'test',
-    'username': None,
-    'password': None,
+    'ssh_host': '',
+    'ssh_user': '',
+    'ssh_pass': '',
+    'db_host': 'localhost',
+    'db_port': 5454,
+    'db_name': 'test',
+    'db_user': None,
+    'db_pswd': None,
 })
 
 # Settings for LLM based extraction from abstracts.
