@@ -134,10 +134,12 @@ def upsert_row(tbl, sess, which: dict, payload, name : str, *,
     payload.__dict__.update(which)
 
     if x is None:
-        sa.insert(tbl, sess, test=test)
+        sess.execute(sa.insert(tbl.__class__), serialize(payload))
     else:
         if do_update:
-            sa.update(tbl, sess, payload, test=test)
+            #@todo: test this if works
+            for k, v in serialize(payload):
+                setattr(x, k, v)
         else:
             log.trace(f"{tbl.__tablename__} ok: {name}")
 
