@@ -11,8 +11,8 @@ from langchain.llms import TextGen, OpenAI
 import streamlit as st
 from frontend.base import Container
 
-# Global UI state
-G = st.session_state
+import sett
+
 
 
 class LLMRequester(Container):
@@ -22,10 +22,7 @@ class LLMRequester(Container):
 
         self.polyai = "https://localhost:8001/"
         self.template = "### Human: {prompt}\n### Assistant: "
-
-        if 'llm' not in G:
-            G.llm = 'openai'
-        langchain.debug = G.debug
+        langchain.debug = sett.LanguageModel.langchain_debug
 
 
     @st.cache_resource
@@ -42,8 +39,8 @@ class LLMRequester(Container):
 
     def make_request(self, prompt):
         """ Send an API request to the selected LLM.
-        The API endpoint can be updated via G.llm.
+        The API endpoint can be updated via settings.
         """
-        chain = self._create_chain(G.llm)
+        chain = self._create_chain(sett.LanguageModel.llm)
         response = chain.run(prompt)
         return response

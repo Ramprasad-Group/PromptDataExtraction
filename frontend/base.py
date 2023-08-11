@@ -2,7 +2,8 @@
 import os
 import urllib.parse
 import streamlit as st
-G = st.session_state
+
+import sett
 
 class Container:
     """ Initialize a container/div area in the webpage. """
@@ -10,7 +11,7 @@ class Container:
         self.div : st._DeltaGenerator = st.container()
         self.div.empty()
 
-        if G.debug:
+        if sett.Run.debug:
             with self.div:
                 st.write(f"[{self.__class__.__name__} area]")
 

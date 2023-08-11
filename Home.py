@@ -1,5 +1,4 @@
-import os
-import dotenv
+import sett
 import streamlit as st
 
 ## Configurations
@@ -8,18 +7,14 @@ import streamlit as st
 # Set webpage title
 st.set_page_config(page_title="Data Extraction Web UI")
 
-# Global UI state
-G = st.session_state
+import pylogg as log
 
-# Configurations
-G.llm = 'openai'
-G.debug = True
 
 ## Control flow
 ## -----------------------------------------------------------------------------
 def main():
 
-    st.write("# Welcome to PromptDataExtract! 👋")
+    st.write(f"# Welcome to {sett.WebUI.name}! 👋")
 
     st.markdown(
         """
@@ -41,11 +36,6 @@ def main():
 
 
 if __name__ == "__main__":
-    if not dotenv.load_dotenv():
-        print("Warn!! No .env file found!")
-
-    if not os.getenv("OPENAI_API_KEY"):
-        print("OPENAI_API_KEY not set, please check the .env file.")
-        # exit(1)
+    log.setLevel(log.DEBUG)
 
     main()

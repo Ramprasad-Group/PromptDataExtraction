@@ -8,8 +8,7 @@ import pandas as pd
 import streamlit as st
 from frontend.base import Container, StaticFile
 
-# Global UI state
-G = st.session_state
+import sett
 
 class Exporter(Container):
     def __init__(self) -> None:
