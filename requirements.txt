@@ -11,3 +11,4 @@ langchain
 # -------------- BACKEND ----------------
 psycopg2-binary
 sqlalchemy >= 2.0
+tqdm
