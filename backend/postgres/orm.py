@@ -6,7 +6,7 @@ from sqlalchemy import Text, JSON, ForeignKey, Integer, DateTime, Float, ARRAY, 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
-class APIRequest(ORMBase):
+class APIRequests(ORMBase):
     """
     Persistence of API interaction.
 
@@ -46,13 +46,54 @@ class APIRequest(ORMBase):
             self.date_added = datetime.now()
 
 
+FILEFORMAT = Literal["xml", "html", "pdf", "txt"]
+
+class Papers(ORMBase):
+    __tablename__ = "papers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    doi: Mapped[str] = mapped_column(Text, unique=True)
+    publisher: Mapped[str] = mapped_column(Text)
+    title: Mapped[Optional[str]] = mapped_column(Text)
+    abstract: Mapped[Optional[str]] = mapped_column(Text)
+    format: Mapped[FILEFORMAT]
+    date_added: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.date_added is None:
+            self.date_added = datetime.now()
+
+
+class PaperSections(ORMBase):
+    __tablename__ = "paper_sections"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True,
+                                    autoincrement=True)
+    pid: Mapped[int] = mapped_column(ForeignKey("papers.id", ondelete='CASCADE'),
+                        unique=False, index=True)
+
+    doi: Mapped[str] = mapped_column(Text, index=True)
+    format: Mapped[FILEFORMAT]
+    type: Mapped[str] = mapped_column(Text)
+    name: Mapped[str] = mapped_column(Text)
+    text: Mapped[str] = mapped_column(Text)
+
+    date_added: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.date_added is None:
+            self.date_added = datetime.now()
+
+
 if __name__ == "__main__":
+    import sett
     from backend import postgres
+
+    sett.load_settings()
     postgres.load_settings()
 
-    en = postgres.engine()
-
     # Create all tables if not already created
-    ORMBase.metadata.create_all(en)
-
-    print("Tables Created. Done!")
+    ORMBase.metadata.create_all(postgres.engine())
+    print("Done!")
