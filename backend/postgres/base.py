@@ -48,5 +48,5 @@ class ORMBase(DeclarativeBase):
             name str:       Name or ID of the object, for logging purposes.
             update bool:    Whether to update the record if already exists.
         """
-        return ops.upsert_row(self, session, which, payload,
+        return ops.upsert_row(self, session, which, payload, name,
                              do_update=update, test=test)
