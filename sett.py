@@ -1,4 +1,10 @@
 #!/usr/bin/env python
+""" Yaml based configuration management.
+    Execute this script directly to create the yaml settings file.
+
+    Settings are grouped by sections defined below.
+"""
+
 
 import yaml
 
