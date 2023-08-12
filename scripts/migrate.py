@@ -116,7 +116,7 @@ with coll.find(query, no_cursor_timeout=True) as cursor:
                 db.commit()
                 i = 0
 
-        if not j % 10000:
+        if not j % 1000:
             print("Total para added:", n, "out of:", para)
             print("Document processed:", j, "out of:", num_docs, flush=True)
 
