@@ -4,4 +4,4 @@ _conda_env/
 *.csv
 *.xlsx
 *.json
-
+*.log

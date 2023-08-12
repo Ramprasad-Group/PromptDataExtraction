@@ -43,46 +43,24 @@ cursor = coll.find(query, no_cursor_timeout=True)
 num_docs = coll.count_documents(query)
 print("Docs with full_text:", num_docs)
 
-# print(coll.distinct('publisher'))
 
-def add_section(sec, doi, form, pid):
-    try:
-        stype = sec['type']
-        sname = sec['name']
-        stext = sec['content']
-    except:
-        return False
+def para_generator(node, para_name, para_type):
+    for para in node:
+        if type(para) == dict:
+            yield from para_generator(
+                para['content'], para_name=para['name'],
+                para_type=para.get('type'))
+        elif type(para) == str:
+            yield para, para_name, para_type
+        else:
+            raise ValueError
 
-    sname = sname.lower().rstrip(".:")
 
-    if type(stext) == list and len(stext) > 1:
-        for text in stext:
-            if type(text) == dict:
-                add_section(text, doi, form, pid)
-            if type(text) == str:
-                text = {
-                    'type': stype,
-                    'name': sname,
-                    'content': text,
-                }
-                add_section(text, doi, form, pid)
-        return True
-
-    if type(stext) == list and len(stext) == 1:
-        stext = stext[0]
-
-    if type(stext) == dict:
-        return add_section(stext, doi, form, pid)
-    
-    if type(stext) != str:
-        return False
-
+def add_para(doi, form, pid, stext, sname, stype):
     if len(stext) < 3:
         return False
 
     stype = stype.replace('section', '').strip('_').lower()
-
-    # print(sname, "::", stext)
 
     if PaperSections().get_one(db, {
         'doi': doi, 'type': stype, 'name': sname}):
@@ -102,11 +80,15 @@ def add_section(sec, doi, form, pid):
 
 
 i = 0
+j = 0
 n = 0
+para = 0
+
 with coll.find(query, no_cursor_timeout=True) as cursor:
-    for doc in tqdm(cursor, total=num_docs):
+    # for doc in tqdm(cursor, total=num_docs):
+    for doc in cursor:
+        j += 1
         doi = doc.get('DOI')
-        abstract = doc.get('abstract')
         fulltext = doc.get('full_text')
 
         paper = Papers().get_one(db, {'doi': doi})
@@ -119,19 +101,24 @@ with coll.find(query, no_cursor_timeout=True) as cursor:
         if 'ACS' in pub: form = 'xml'
         elif 'Elsevier' in pub: form = 'xml'
 
-        for sec in fulltext:
-            if type(sec) == dict:
-                if not add_section(sec, doi, form, paper.id):
-                    continue
+        for sec in para_generator(fulltext, 'main', 'body'):
+            stext, sname, stype = sec
+            para += 1
 
-                n += 1
-                i += 1
-                if i >= 10000:
-                    print("Total added:", n)
-                    # exit(0)
-                    db.commit()
-                    i = 0
+            if not add_para(doi, form, paper.id, stext, sname, stype):
+                continue
+
+            n += 1
+            i += 1
+            if i >= 10000:
+                print("Total para added:", n, "out of:", para)
+                print("Document processed:", j, "out of:", num_docs, flush=True)
+                # exit(0)
+                db.commit()
+                i = 0
 
 if i > 0:
     db.commit()
-print("Total added:", n)
+
+print("Total para added:", n, "out of:", para)
+print("Document processed:", j, "out of:", num_docs)
