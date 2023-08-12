@@ -41,7 +41,7 @@ query = {'full_text': {'$exists': True}}
 
 cursor = coll.find(query, no_cursor_timeout=True)
 num_docs = coll.count_documents(query)
-print("Docs with full_text:", num_docs)
+print("Docs with full_text:", num_docs, flush=True)
 
 
 def para_generator(node, para_name, para_type):
@@ -61,6 +61,7 @@ def add_para(doi, form, pid, stext, sname, stype):
         return False
 
     stype = stype.replace('section', '').strip('_').lower()
+    sname = sname.lower().rstrip(".:")
 
     if PaperSections().get_one(db, {
         'doi': doi, 'type': stype, 'name': sname}):
@@ -111,11 +112,14 @@ with coll.find(query, no_cursor_timeout=True) as cursor:
             n += 1
             i += 1
             if i >= 10000:
-                print("Total para added:", n, "out of:", para)
-                print("Document processed:", j, "out of:", num_docs, flush=True)
                 # exit(0)
                 db.commit()
                 i = 0
+
+        if not j % 10000:
+            print("Total para added:", n, "out of:", para)
+            print("Document processed:", j, "out of:", num_docs, flush=True)
+
 
 if i > 0:
     db.commit()
