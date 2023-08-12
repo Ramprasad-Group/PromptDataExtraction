@@ -96,7 +96,6 @@ def insert_row(tbl, sess, *, test=False):
         sess.rollback()
         log.trace("Insert ({}) - rollback", tbl.__tablename__)
     else:
-        sess.commit()
         log.trace("Insert ({})", tbl.__tablename__)
 
 
@@ -112,7 +111,6 @@ def update_row(tbl, sess, newObj, *, test=False):
         sess.rollback()
         log.trace("Update ({}) - rollback", tbl.__tablename__)
     else:
-        sess.commit()
         log.trace("Update ({})", tbl.__tablename__)
 
 
