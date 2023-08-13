@@ -111,14 +111,13 @@ with coll.find(query, no_cursor_timeout=True) as cursor:
 
             n += 1
             i += 1
-            if i >= 10000:
+            if i >= 5000:
                 # exit(0)
                 db.commit()
                 i = 0
 
         if not j % 1000:
-            print("Total para added:", n, "out of:", para)
-            print("Document processed:", j, "out of:", num_docs, flush=True)
+            print(f"docs: {j}/{num_docs}, para added: {n}/{para}", flush=True)
 
 
 if i > 0:
