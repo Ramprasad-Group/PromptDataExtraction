@@ -80,7 +80,6 @@ def add_para(doi, form, pid, stext, sname, stype):
     return True
 
 
-i = 0
 j = 0
 n = 0
 para = 0
@@ -102,6 +101,7 @@ with coll.find(query, no_cursor_timeout=True) as cursor:
         if 'ACS' in pub: form = 'xml'
         elif 'Elsevier' in pub: form = 'xml'
 
+        i = 0
         for sec in para_generator(fulltext, 'main', 'body'):
             stext, sname, stype = sec
             para += 1
@@ -111,17 +111,13 @@ with coll.find(query, no_cursor_timeout=True) as cursor:
 
             n += 1
             i += 1
-            if i >= 5000:
-                # exit(0)
-                db.commit()
-                i = 0
+
+        if i > 0:
+            db.commit()
 
         if not j % 1000:
-            print(f"docs: {j}/{num_docs}, para added: {n}/{para}", flush=True)
+            print(f"docs: {j}/{num_docs} ({100 * j/num_docs : .2f} %), para added: {n}/{para}", flush=True)
 
-
-if i > 0:
-    db.commit()
 
 print("Total para added:", n, "out of:", para)
 print("Document processed:", j, "out of:", num_docs)
