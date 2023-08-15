@@ -57,6 +57,7 @@ Dataset  = Settings({
     'properties_json': 'data/property_metadata.json',
     'llm_properties_xl': 'data/Polymer-Property-List.xlsx',
     'rop_fulltext_xl': 'data/rop_fulltexts.xlsx',
+    'paper_corpus_root_dir': None,
 })
 
 LanguageModel = Settings({
