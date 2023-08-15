@@ -5,9 +5,9 @@ class RecordExtractor:
         self.text = text
         self.tags = tags
 
-    def extract(self, only_polymers=False):
-        # if not self._check_relevance(only_polymers):
-        #     return None
+    def extract(self, only_polymers=False) -> list:
+        if not self._check_relevance(only_polymers):
+            return []
         groups = self._group_consecutive_tags()
         return groups
 
@@ -18,14 +18,17 @@ class RecordExtractor:
             'PROP_VALUE' in [item.label for item in self.tags],
             'PROP_NAME'  in [item.label for item in self.tags],
             any([
-                only_polymers and item.label in ['POLYMER', 'MONOMER', 'POLYMER_FAMILY']
-                for item in self.tags
-            ]),
-            any([
-                not only_polymers
-                and item.label in ['POLYMER', 'MONOMER', 'POLYMER_FAMILY', 'ORGANIC', 'INORGANIC']
-                for item in self.tags
-            ]),
+                any([
+                    only_polymers
+                    and item.label in ['POLYMER', 'MONOMER', 'POLYMER_FAMILY']
+                    for item in self.tags
+                ]),
+                any([
+                    not only_polymers
+                    and item.label in ['POLYMER', 'MONOMER', 'POLYMER_FAMILY', 'ORGANIC', 'INORGANIC']
+                    for item in self.tags
+                ]),
+            ])
         ]
 
         return all(criteria)

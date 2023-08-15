@@ -62,26 +62,17 @@ def main():
             selected_props += res.selected_properties().get_corefs(prop)
         st.write("Looking for properties", selected_props)
 
-        frame = Frame()
         # abstract = paper.abstract
-
-        # for each para, pass to the bert pipeline
+        groups = []
 
         for para in stqdm(text_list):
             st.markdown(f"[{para.type}] **{para.name}**: {para.text}")
             tags = ner.get_tags(para.text)
             record = RecordExtractor(para.text, tags)
-            st.write(tags)
-            st.write(record.extract())
+            groups = record.extract()
+            st.write(groups)
 
-            tags = [tag for tag in tags if tag.label != 'O']
-            for t in tags:
-                frame.add(entity=t.label, text=t.text, section=para.name)
-
-        if frame.df.shape[0] > 0:
-            items_found = frame.df.sort_values('entity')
-            st.dataframe(items_found, use_container_width=True)
-        else:
+        if len(groups) == 0:
             st.warning("No valid named entity found")
 
 
