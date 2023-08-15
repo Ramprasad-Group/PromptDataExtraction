@@ -6,7 +6,8 @@ git+https://github.com/akhlakm/python-logg.git
 
 # -------------- FRONTEND ----------------
 streamlit
-langchain
+# langchain
+stqdm
 
 # -------------- BACKEND ----------------
 psycopg2-binary
