@@ -126,6 +126,7 @@ def load_settings(settings_yaml: str = 'settings.yaml') -> bool:
     WebUI._items.update(_yaml.get('WebUI', {}))
     Dataset._items.update(_yaml.get('Dataset', {}))
     Database._items.update(_yaml.get('Database', {}))
+    NerModel._items.update(_yaml.get('NerModel', {}))
     LanguageModel._items.update(_yaml.get('LanguageModel', {}))
     MongoDb._items.update(_yaml.get('MongoDb', {}))
     PostGres._items.update(_yaml.get('PostGres', {}))
@@ -141,6 +142,7 @@ def save_settings(settings_yaml: str = 'settings.yaml'):
         'WebUI': WebUI._items,
         'Dataset': Dataset._items,
         'Database': Database._items,
+        'NerModel': NerModel._items,
         'LanguageModel': LanguageModel._items,
         'MongoDb': MongoDb._items,
         'PostGres': PostGres._items,
