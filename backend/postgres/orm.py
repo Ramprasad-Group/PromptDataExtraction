@@ -26,8 +26,6 @@ class APIRequests(ORMBase):
 
     __tablename__ = "llm_api_request"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    date_added: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     codeversion: Mapped[str] = mapped_column(VARCHAR(length=15))
     model: Mapped[str] = mapped_column(Text)
     output: Mapped[str] = mapped_column(Text)
@@ -40,34 +38,25 @@ class APIRequests(ORMBase):
     request_tokens: Mapped[int] = mapped_column(Integer, default=0)
     response_tokens: Mapped[int] = mapped_column(Integer, default=0)
 
-    def __init__(self, **kw: Any):
-        super().__init__(**kw)
-        if self.date_added is None:
-            self.date_added = datetime.now()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 class Papers(ORMBase):
     __tablename__ = "papers"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     doi: Mapped[str] = mapped_column(Text, unique=True)
     publisher: Mapped[str] = mapped_column(Text)
     title: Mapped[Optional[str]] = mapped_column(Text)
     abstract: Mapped[Optional[str]] = mapped_column(Text)
     format: Mapped[str] = mapped_column(VARCHAR(length=4))
-    date_added: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if self.date_added is None:
-            self.date_added = datetime.now()
-
 
 class PaperSections(ORMBase):
     __tablename__ = "paper_sections"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True,
-                                    autoincrement=True)
     pid: Mapped[int] = mapped_column(ForeignKey("papers.id", ondelete='CASCADE'),
                         unique=False, index=True)
 
@@ -77,12 +66,47 @@ class PaperSections(ORMBase):
     name: Mapped[str] = mapped_column(Text)
     text: Mapped[str] = mapped_column(Text)
 
-    date_added: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class PaperData(ORMBase):
+    __tablename__ = "paper_data"
+
+    sid: Mapped[int] = mapped_column(
+        ForeignKey("paper_sections.id", ondelete='CASCADE'),
+        unique=False)
+
+    doi: Mapped[str] = mapped_column(Text, index=True)
+    property: Mapped[str] = mapped_column(Text, index=True)
+
+    polymer: Mapped[str] = mapped_column(Text)
+    value : Mapped[float] = mapped_column(Float)
+    unit: Mapped[str] = mapped_column(Text, nullable=True)
+
+    condition: Mapped[Dict] = mapped_column(JSON, default={})
+    smiles: Mapped[str] = mapped_column(Text, nullable=True)
+
+    extraction_method: Mapped[str] = mapped_column(Text)
+    extraction_model: Mapped[str] = mapped_column(Text, nullable=True)
+
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if self.date_added is None:
-            self.date_added = datetime.now()
+
+
+class TableMeta(ORMBase):
+    __tablename__ = "table_meta"
+
+    table : Mapped[str] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text)
+    codeversion: Mapped[str] = mapped_column(Text, nullable=True)
+    tag: Mapped[str] = mapped_column(Text, nullable=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if type(self.table) == ORMBase:
+            self.table == self.table.__tablename__
 
 
 if __name__ == "__main__":
