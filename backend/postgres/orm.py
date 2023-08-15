@@ -103,10 +103,10 @@ class TableMeta(ORMBase):
     codeversion: Mapped[str] = mapped_column(Text, nullable=True)
     tag: Mapped[str] = mapped_column(Text, nullable=True)
 
-    def __init__(self, **kwargs):
+    def __init__(self, table, **kwargs):
         super().__init__(**kwargs)
-        if type(self.table) == ORMBase:
-            self.table == self.table.__tablename__
+        self.table = table.__tablename__
+        print("Table:", self.table)
 
 
 class Polymers(ORMBase):
