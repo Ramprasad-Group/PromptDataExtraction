@@ -11,9 +11,9 @@ class Container:
         self.div : st._DeltaGenerator = st.container()
         self.div.empty()
 
-        if sett.Run.debug:
-            with self.div:
-                st.write(f"[{self.__class__.__name__} area]")
+        # if sett.Run.debug:
+        #     with self.div:
+        #         st.write(f"[{self.__class__.__name__} area]")
 
     def show(self):
         raise NotImplementedError(f"{self.__class__.__name__}.show()")
