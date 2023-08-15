@@ -52,7 +52,7 @@ class RecordExtractor:
         return all(criteria)
 
     def _group_consecutive_tags(self) -> list[types.NerLabelGroup]:
-        """Group all consecutive tags that have the same entity label"""
+        """ Group all consecutive named entities that have the same label. """
         groups = []
         prev_group : types.NerLabelGroup = None
 
