@@ -20,5 +20,12 @@ class PolymerNorm:
                 self.norm = orm.Polymers = orm.Polymers().get_one(
                     db, {'id': self.polymer.norm_id})
 
-    def norm_name(self) -> str:
+    @property
+    def norm_name(self) -> str | None:
         return self.norm.name if self.norm else None
+
+    @property
+    def smiles(self) -> str | None:
+        if self.polymer:
+            return self.polymer.smiles
+        else: return None
