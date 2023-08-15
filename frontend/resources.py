@@ -21,3 +21,9 @@ def materials_bert():
     bert = ner.MaterialsBERT(sett.NerModel.model)
     bert.init_local_model(sett.NerModel.pytorch_device)
     return bert
+
+@st.cache_resource
+def selected_properties():
+    """ Class to handle selected list of properties. """
+    from backend.data.properties import LLMProperties
+    return LLMProperties()

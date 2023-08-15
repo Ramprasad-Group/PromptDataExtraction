@@ -14,13 +14,13 @@ class Settings:
         self.__dict__['_items'] = init_dict
 
     def __getattr__(self, key : str) -> any:
-        return self._items.get(key, None)
+        return self._items[key]
 
     def __setattr__(self, key : str, value):
         self._items[key] = value
 
     def __getitem__(self, key : str) -> any:
-        return self._items.get(key, None)
+        return self._items[key]
 
     def __setitem__(self, key : str, value):
         if type(key) != str:
@@ -55,6 +55,7 @@ Dataset  = Settings({
     'psc_ground_extracted_xl': 'data/polymer_solar_cells/polymer_solar_cell_extracted_data_curated.xlsx',
     'polymer_nen_json': 'data/normalized_polymer_dictionary.json',
     'properties_json': 'data/property_metadata.json',
+    'llm_properties_xl': 'data/Polymer-Property-List.xlsx',
     'rop_fulltext_xl': 'data/rop_fulltexts.xlsx',
 })
 
@@ -86,6 +87,7 @@ PostGres = Settings({
     'ssh_host': '',
     'ssh_user': '',
     'ssh_pass': '',
+    'ssh_port': 21,
     'db_host': 'localhost',
     'db_port': 5454,
     'db_name': 'test',
