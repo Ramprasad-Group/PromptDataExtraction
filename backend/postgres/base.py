@@ -1,4 +1,8 @@
+from datetime import datetime
+from sqlalchemy import Integer, DateTime
 from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import Mapped, mapped_column
+
 from . import ops
 
 class ORMBase(DeclarativeBase):
@@ -7,6 +11,14 @@ class ORMBase(DeclarativeBase):
     Adds functionalities for insert, update, iteration etc.
 
     """
+
+    id: Mapped[int] = mapped_column(
+        Integer, primary_key=True, autoincrement=True)
+    date_added: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    def __init__(self, **kw):
+        if self.date_added is None:
+            self.date_added = datetime.now()
 
     def serialize(self):
         return ops.serialize(self)
