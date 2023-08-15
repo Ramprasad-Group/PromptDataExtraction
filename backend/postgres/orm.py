@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Optional, Dict, Literal
 
 from backend.postgres import ORMBase
-from sqlalchemy import Text, JSON, ForeignKey, Integer, DateTime, Float, ARRAY, VARCHAR
+from sqlalchemy import Text, JSON, ForeignKey, Integer, DateTime, Float, ARRAY, VARCHAR, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -107,6 +107,30 @@ class TableMeta(ORMBase):
         super().__init__(**kwargs)
         if type(self.table) == ORMBase:
             self.table == self.table.__tablename__
+
+
+class Polymers(ORMBase):
+    __tablename__ = "polymers"
+
+    # for all entities
+    name : Mapped[str] = mapped_column(Text, index=True)
+    is_norm : Mapped[bool] = mapped_column(Boolean, default=False)
+    norm_id : Mapped[int] = mapped_column(Integer, nullable=True)
+
+    # for normalized ones
+    is_polymer : Mapped[bool] = mapped_column(Boolean, default=True)
+    norm_name : Mapped[str] = mapped_column(Text, nullable=True)
+    iupac_name : Mapped[str] = mapped_column(Text, nullable=True)
+    smiles : Mapped[str] = mapped_column(Text, nullable=True)
+    is_family_name : Mapped[bool] = mapped_column(Boolean, default=False)
+    is_copolymer : Mapped[bool] = mapped_column(Boolean, default=False)
+    is_blend : Mapped[bool] = mapped_column(Boolean, default=False)
+    is_composite : Mapped[bool] = mapped_column(Boolean, default=False)
+    comments: Mapped[Dict] = mapped_column(JSON, default={})
+    details: Mapped[Dict] = mapped_column(JSON, default={})
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 if __name__ == "__main__":
