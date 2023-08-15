@@ -1,8 +1,9 @@
 import spacy
-from collections import namedtuple
+import pylogg
+
+from backend.types import NerTag
 from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
 
-import pylogg
 logger = pylogg.New('backend')
 
 
@@ -26,13 +27,13 @@ class MaterialsBERT:
         tokens = self.pipeline(text)
         return self._ner_feed(tokens, text)
 
-    def _ner_feed(self, seq_pred, text) -> list[namedtuple]:
+    def _ner_feed(self, seq_pred, text) -> list[NerTag]:
         """ Convert outputs of the NER to a form usable by record extraction
             seq_pred: List of dictionaries
             text: str, text fed to sequence classification model
         """
         doc = self.nlp(text)
-        token_label = namedtuple('token_label', ["text", "label"])
+        token_label = NerTag
         if len(seq_pred) == 0:
             # If no NER could be reconginzed, the prediction list would be empty.
             return [token_label(doc[i].text, 'O') for i in range(len(doc))]
