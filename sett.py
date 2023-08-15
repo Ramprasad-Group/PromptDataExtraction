@@ -65,6 +65,12 @@ LanguageModel = Settings({
     'langchain_debug': True,
 })
 
+NerModel = Settings({
+    'model': 'models/MaterialsBERT',
+    'local': True,
+    'pytorch_device': 0,
+})
+
 MongoDb = Settings({
     'sshtunnel': False,
     'host': 'localhost',
