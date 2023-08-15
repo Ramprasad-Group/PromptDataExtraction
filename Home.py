@@ -36,6 +36,7 @@ def main():
 
 
 if __name__ == "__main__":
-    log.setLevel(log.DEBUG)
+    sett.load_settings()
+    log.setLevel(log.DEBUG if sett.Run.debug else log.INFO)
 
     main()
