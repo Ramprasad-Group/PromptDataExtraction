@@ -46,8 +46,6 @@ class APIRequests(ORMBase):
             self.date_added = datetime.now()
 
 
-FILEFORMAT = Literal["xml", "html", "pdf", "txt"]
-
 class Papers(ORMBase):
     __tablename__ = "papers"
 
@@ -56,7 +54,7 @@ class Papers(ORMBase):
     publisher: Mapped[str] = mapped_column(Text)
     title: Mapped[Optional[str]] = mapped_column(Text)
     abstract: Mapped[Optional[str]] = mapped_column(Text)
-    format: Mapped[FILEFORMAT]
+    format: Mapped[str] = mapped_column(VARCHAR(length=4))
     date_added: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     def __init__(self, **kwargs):
@@ -74,7 +72,7 @@ class PaperSections(ORMBase):
                         unique=False, index=True)
 
     doi: Mapped[str] = mapped_column(Text, index=True)
-    format: Mapped[FILEFORMAT]
+    format: Mapped[str] = mapped_column(VARCHAR(length=4))
     type: Mapped[str] = mapped_column(Text)
     name: Mapped[str] = mapped_column(Text)
     text: Mapped[str] = mapped_column(Text)
