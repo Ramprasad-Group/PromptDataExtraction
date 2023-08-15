@@ -1,5 +1,6 @@
 __pycache__
 _conda_env/
+models/
 *.yaml
 *.csv
 *.xlsx
