@@ -1,4 +1,5 @@
 import pylogg
+import sett
 import streamlit as st
 from stqdm import stqdm
 
@@ -19,6 +20,8 @@ class Sidebar:
         self.doi = None
         self.properties = []
         self.property_df = res.selected_properties().get_list()
+        self.only_polymers = False
+        self.debug = sett.Run.debug
 
     def show(self):
         logger.debug("Properties: {}", self.property_df.Property)
@@ -27,6 +30,10 @@ class Sidebar:
            self.properties = st.multiselect(
                "Properties",
                options=self.property_df.Property)
+           self.only_polymers = st.checkbox(
+               "Polymers Only", value=self.only_polymers)
+           self.debug = st.checkbox(
+               "Debug", value=self.debug)
 
 
 ## Control flow
@@ -68,12 +75,17 @@ def main():
         for para in stqdm(text_list):
             st.markdown(f"[{para.type}] **{para.name}**: {para.text}")
             tags = ner.get_tags(para.text)
-            record = RecordExtractor(para.text, tags)
-            groups = record.extract()
-            st.write(groups)
-
-        if len(groups) == 0:
-            st.warning("No valid named entity found")
+            record = RecordExtractor(para.text, tags, debug=side.debug)
+            groups = record.extract(only_polymers=side.only_polymers)
+            if groups:
+                with st.expander("NER Tags"):
+                    st.write(groups)
+                st.write("Polymers:", record.polymers)
+                st.write("Materials:", record.materials)
+                st.write("Properties:", record.properties)
+                st.write("Abbreviations:", record.abbreviations)
+            else:
+                st.warning("No extractable data found.")
 
 
 if __name__ == '__main__':
