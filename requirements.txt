@@ -14,3 +14,4 @@ psycopg2-binary
 sqlalchemy >= 2.0
 tqdm
 openpyxl
+ChemDataExtractor @ git+https://github.com/akhlakm/ChemDataExtractor.git
