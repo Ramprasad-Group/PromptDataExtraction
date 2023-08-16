@@ -9,9 +9,7 @@ from frontend.upload import Uploader
 from frontend.base import Container
 
 from backend.postgres.orm import Papers, PaperSections
-from backend.utils.frame import Frame
-from backend.data.properties import LLMProperties
-from backend.ner_pipeline import RecordExtractor
+from backend.ner_pipeline import TextDataExtractor
 
 logger = pylogg.New('test')
 G = st.session_state
@@ -83,7 +81,7 @@ class Body(Container):
             for para in stqdm(text_list):
                 st.markdown(f"[{para.type}] **{para.name}**: {para.text}")
                 tags = ner.get_tags(para.text)
-                record = RecordExtractor(para.text, tags, debug=side.debug)
+                record = TextDataExtractor(para.text, tags, debug=side.debug)
                 groups = record.extract(only_polymers=side.only_polymers)
                 if groups:
                     with st.expander("NER Tags"):
