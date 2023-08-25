@@ -188,9 +188,9 @@ def cleanup_parentheses(text : str) -> str:
     return text
 
 
-def find_chemdata_abbr(text : str) -> list:
+def find_chemdata_abbr(text : str) -> list[tuple]:
     """ Find a list of abbreviations defined in a text using ChemDataExtractor.
-        Returns a list of tuples containing abbreviations.
+        Returns a list of tuples containing abbreviations and full forms.
 
         text :
             The text to search for abbreviations.
