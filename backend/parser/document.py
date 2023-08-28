@@ -34,6 +34,9 @@ class DocumentParser(object):
         self.publisher = publisher
         self.docname = filepath.split("/")[-1]
 
+        # Texts
+        self.sections = {}
+
         # Meta
         self.title = ""
         self.date = ""
@@ -116,26 +119,41 @@ class DocumentParser(object):
         raise NotImplementedError()
     
     def clean(self):
+        """ Run some simple text normalization. """
         self.abstract = self.abstract.lstrip('Abstract').lstrip("ABSTRACT")
         self.body = self.body.lstrip('Introduction').lstrip("INTRODUCTION")
     
     def parse_tables(self):
         raise NotImplementedError()
+    
+    def parse_sections(self):
+        raise NotImplementedError()
+
+    def add_section(self, name, tag, body):
+        """ Add a text section. """
+        self.sections[name] = {
+            'name': name, 'tag': tag, 'body': body
+        }
         
-    def parse(self):
+    def parse(self, parse_tables=True, parse_sections=True):
         """
         Parse the loaded document. This is the method that
         controls how a document is parsed.
 
         """
         self.parse_meta()
-        self.parse_tables()
-        self.find_word_count(r'Table (\d+|[IVXLCDM]+)[\.:]*')
 
-        # Find discussion sentences about each table.
-        for tab in self.tables:
-            needle = f"Table {tab.number}"
-            tab.descriptions = self.find_references(needle)
+        if parse_tables:
+            self.parse_tables()
+            self.find_word_count(r'Table (\d+|[IVXLCDM]+)[\.:]*')
+
+            # Find discussion sentences about each table.
+            for tab in self.tables:
+                needle = f"Table {tab.number}"
+                tab.descriptions = self.find_references(needle)
+
+        if parse_sections:
+            self.parse_sections()
 
         self.clean()
 
@@ -241,6 +259,8 @@ class DocumentParser(object):
             pr += "- date not set\n"
         if len(self.journal.strip()) == 0:
             pr += "- journal not set\n"
+        if len(self.sections.keys()) <= 3:
+            pr += "- sections not set/only few set\n"
 
         return pr
 
