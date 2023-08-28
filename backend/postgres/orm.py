@@ -71,6 +71,22 @@ class PaperSections(ORMBase):
         super().__init__(**kwargs)
 
 
+class PaperTexts(ORMBase):
+    __tablename__ = "paper_texts"
+
+    pid: Mapped[int] = mapped_column(ForeignKey("papers.id", ondelete='CASCADE'),
+                        unique=False, index=True)
+
+    doi: Mapped[str] = mapped_column(Text, index=True)
+    doc: Mapped[str] = mapped_column(VARCHAR(length=6))
+    tag: Mapped[str] = mapped_column(Text)
+    name: Mapped[str] = mapped_column(Text)
+    body: Mapped[str] = mapped_column(Text)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
 class PaperData(ORMBase):
     __tablename__ = "paper_data"
 
@@ -135,7 +151,7 @@ class Polymers(ORMBase):
 
 
 
-class PaperTable(ORMBase):
+class PaperTables(ORMBase):
     __tablename__ = "paper_tables"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
