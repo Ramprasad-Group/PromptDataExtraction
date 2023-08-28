@@ -1,4 +1,7 @@
 import re
+from lxml import etree
+from unidecode import unidecode
+
 from backend.types import Property
 
 
@@ -93,3 +96,16 @@ def cleanup_property(prop : Property) -> Property:
     # unit_conversion(prop)
     return prop
 
+
+
+def asciiText(unicode_text):
+    return unidecode(unicode_text)
+
+def normText(text):
+    return text
+
+def innerText(elem):
+    """ Return the innerText of a XML element. Normalize using normText. """
+    value = etree.tostring(elem, method="text", encoding="unicode")
+    value = normText(value)
+    return re.sub(r'\s+', ' ', value).strip()
