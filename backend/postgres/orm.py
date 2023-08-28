@@ -54,6 +54,7 @@ class Papers(ORMBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+
 class PaperSections(ORMBase):
     __tablename__ = "paper_sections"
 
@@ -131,6 +132,32 @@ class Polymers(ORMBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+
+
+class PaperTable(ORMBase):
+    __tablename__ = "paper_tables"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    date_added: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    caption: Mapped[Optional[str]] = mapped_column(Text)
+    url: Mapped[Optional[str]] = mapped_column(Text)
+    downloaded: Mapped[int] = mapped_column(Integer, default=0)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    number: Mapped[Optional[str]] = mapped_column(Text)
+    tbl_header: Mapped[Optional[str]] = mapped_column(Text)
+    tbl_index: Mapped[Optional[str]] = mapped_column(Text)
+    body: Mapped[Optional[str]] = mapped_column(Text)
+    jsonl: Mapped[Optional[str]] = mapped_column(Text)
+    descriptions: Mapped[Optional[ARRAY]] = mapped_column(ARRAY(Text, dimensions=1))
+
+    pid: Mapped[int] = mapped_column(ForeignKey("papers.id", ondelete='CASCADE'),
+                        unique=False, index=True)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.date_added is None:
+            self.date_added = datetime.now()
 
 
 if __name__ == "__main__":
