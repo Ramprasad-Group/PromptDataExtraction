@@ -37,7 +37,7 @@ class Property:
     Attributes:
         value    : The numerical value
         unit     : The unit
-        text     : Text representation
+        text     : The original text of the property value and unit
         error    : Standard error if any
         relation : Any relationship of the value, eg. <, >, ~ etc.
     """
