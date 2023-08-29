@@ -35,6 +35,7 @@ class Settings:
 Run  = Settings({
     'name': 'test',
     'debug': True,
+    'db_update': False,
     'outdir': 'test',
     'logfile': 'test.log',
 })
