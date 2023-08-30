@@ -35,12 +35,14 @@ class Property:
     Property object.
 
     Attributes:
+        name     : The property name
         value    : The numerical value
         unit     : The unit
         text     : The original text of the property value and unit
         error    : Standard error if any
         relation : Any relationship of the value, eg. <, >, ~ etc.
     """
+    name : str
     value : float
     unit : str
     text : str
