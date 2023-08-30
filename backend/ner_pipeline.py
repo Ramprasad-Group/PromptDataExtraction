@@ -59,4 +59,6 @@ class TextDataExtractor:
         rec = records.MaterialAmountExtractor(self.tags)
         rec.run()
 
+        # Combine the parsed materials, properties and values.
+
         return groups
