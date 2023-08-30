@@ -10,6 +10,7 @@ streamlit
 stqdm
 
 # -------------- BACKEND ----------------
+sshtunnel
 psycopg2-binary
 sqlalchemy >= 2.0
 tqdm
