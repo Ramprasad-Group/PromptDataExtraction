@@ -41,6 +41,7 @@ class Frame:
                 col_len = len(self._tabl[key])
 
     def add(self, **kwargs):
+        """ Add row to dataframe. Use named arguments for the column values. """
         self._df = None
         if self._cols is None:
             self._cols = kwargs.keys()
