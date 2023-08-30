@@ -48,3 +48,16 @@ class Property:
     text : str
     error : float
     relation : str
+
+
+@dataclass
+class Record:
+    """
+    A material record that has been extracted from text.
+
+    Attributes:
+        name        : The material name
+        property    : A Property object
+    """
+    material : str
+    property : Property = None
