@@ -89,7 +89,7 @@ PostGres = Settings({
     'ssh_host': '',
     'ssh_user': '',
     'ssh_pass': '',
-    'ssh_port': 21,
+    'ssh_port': 22,
     'db_host': 'localhost',
     'db_port': 5454,
     'db_name': 'test',
