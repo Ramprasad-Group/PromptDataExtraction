@@ -1,9 +1,13 @@
 from backend.nlp import ner
+from backend.nlp import materials
+from backend.nlp import properties
+from backend.nlp import records
 from backend.types import NerLabelGroup
+
 
 class TextDataExtractor:
     """
-    Handle the NER pipeline. Given a text and the list of NER tags,
+    Handle the NER pipeline: given a text and the list of NER tags,
     extract the data from the text using the tags.
 
     """
@@ -18,7 +22,11 @@ class TextDataExtractor:
         self.properties : list[str] = []
         self.abbreviations : list[str] = []
 
+
     def _identify_entities(self, groups : list[NerLabelGroup]):
+        """ Idenfity the polymers, materials, properties and abbreviations
+            mentioned in the text using the NER tags.
+        """
         self.polymers = [g.text for g in groups
                           if g.label in ner.PolymerLabels]
         self.materials = [g.text for g in groups
@@ -40,9 +48,15 @@ class TextDataExtractor:
         self._identify_entities(groups)
 
         # Parse material names.
+        mat = materials.MaterialEntities(self.tags, self.text, self.materials, self.abbreviations)
+        mat.run()
 
         # Parse property names.
+        prop = properties.PropertyExtractor(self.tags, self.text, self.properties, self.abbreviations)
+        prop.run()
 
         # Parse property values (records).
+        rec = records.MaterialAmountExtractor(self.tags)
+        rec.run()
 
         return groups
