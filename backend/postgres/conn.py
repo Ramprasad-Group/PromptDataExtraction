@@ -1,21 +1,16 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
+from sshtunnel import SSHTunnelForwarder
 
 import pylogg
 log = pylogg.New('db')
-
-try:
-    from sshtunnel import SSHTunnelForwarder
-    _remote_access = True
-except ImportError:
-    _remote_access = False
 
 
 def ssh_tunnel(host, port, user, pswd,
                fwd_host, fwd_port) -> SSHTunnelForwarder | None:
     """Create a SSH tunnel to a remove host and port. """
 
-    if _remote_access and len(host) > 0:
+    if len(host) > 0:
         server = SSHTunnelForwarder((host, port),
             ssh_username=user,
             ssh_password=pswd,
