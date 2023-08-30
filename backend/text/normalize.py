@@ -32,7 +32,8 @@ def to_numeric(value : str) -> float:
 
 
 def cleanup_property(prop : Property) -> Property:
-    """ Cleanup the value and unit text of a property.
+    """ Cleanup the value and unit text of a property by normalizing hyphens,
+        scientific notations, stadard deviations etc.
         Return the cleaned Property.
     """
     value = str(prop.value)
@@ -96,6 +97,39 @@ def cleanup_property(prop : Property) -> Property:
     # unit_conversion(prop)
     return prop
 
+
+def cleanup_parentheses(text : str) -> str:
+    """ Normalize and clean up parentheses and brackets by removing
+        spaces and extras.
+
+        text :
+            The text to clean up.
+    """
+    text = text.replace(' )', ')')
+    text = text.replace(' }', '}')
+    text = text.replace(' - ', '-')
+    text = text.replace(' ( ', '(')
+    text = text.replace('{ ', '{')
+    text = text.replace(' _ ', '_')
+    text = text.replace(' , ', ',')
+    text = text.replace(' / ', '/')
+    text = text.replace('( ', '(')
+    text = text.replace("' ", "'")
+    text = text.replace(" '", "'")
+    text = text.replace('" ', '"')
+    text = text.replace(' "', '"')
+    text = text.replace('[ ', '[')
+    text = text.replace(' ]', ']')
+    text = text.replace(' : ', ':')
+    if text.count('}') == text.count('{')-1:
+        text = text+'}'
+    if text.count(')') == text.count('(')-1:
+        # Assumes the missing closing bracket is in the end which is reasonable
+        text = text+')'
+    elif text.count(')') == text.count('(')+1:
+        # Last ) is being removed from the list of tokens which is ok
+        text = text[:-1]
+    return text
 
 
 def asciiText(unicode_text : str):

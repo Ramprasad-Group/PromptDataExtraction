@@ -1,8 +1,13 @@
 import spacy
 import pylogg
-
-from backend.types import NerTag
 from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
+
+from backend.text import normalize
+from backend.types import NerTag, NerLabelGroup
+from chemdataextractor.doc import Paragraph
+
+PolymerLabels = ['POLYMER', 'MONOMER', 'POLYMER_FAMILY']
+ChemicalLabels = ['ORGANIC', 'INORGANIC']
 
 logger = pylogg.New('ner')
 
@@ -75,13 +80,6 @@ class MaterialsBERT:
         return token_labels
 
 
-from backend.types import NerTag, NerLabelGroup
-from chemdataextractor.doc import Paragraph
-
-PolymerLabels = ['POLYMER', 'MONOMER', 'POLYMER_FAMILY']
-ChemicalLabels = ['ORGANIC', 'INORGANIC']
-
-
 def check_relevant_ners(tags : list[NerTag],
                         only_polymers : bool) -> bool:
     """ Return True if all of name, property and values are available
@@ -141,7 +139,7 @@ def group_consecutive_tags(tags : list[NerTag]) -> list[NerLabelGroup]:
             else:
                 text = prev_group.text + group.text
 
-            prev_group.text = cleanup_parentheses(text)
+            prev_group.text = normalize.cleanup_parentheses(text)
         elif prev_group is not None:
             # end of the last group
             groups.append(prev_group)
@@ -154,40 +152,6 @@ def group_consecutive_tags(tags : list[NerTag]) -> list[NerLabelGroup]:
     return groups
 
 
-def cleanup_parentheses(text : str) -> str:
-    """ Normalize and clean up parentheses and brackets by removing
-        spaces and extras.
-
-        text :
-            The text to clean up.
-    """
-    text = text.replace(' )', ')')
-    text = text.replace(' }', '}')
-    text = text.replace(' - ', '-')
-    text = text.replace(' ( ', '(')
-    text = text.replace('{ ', '{')
-    text = text.replace(' _ ', '_')
-    text = text.replace(' , ', ',')
-    text = text.replace(' / ', '/')
-    text = text.replace('( ', '(')
-    text = text.replace("' ", "'")
-    text = text.replace(" '", "'")
-    text = text.replace('" ', '"')
-    text = text.replace(' "', '"')
-    text = text.replace('[ ', '[')
-    text = text.replace(' ]', ']')
-    text = text.replace(' : ', ':')
-    if text.count('}') == text.count('{')-1:
-        text = text+'}'
-    if text.count(')') == text.count('(')-1:
-        # Assumes the missing closing bracket is in the end which is reasonable
-        text = text+')'
-    elif text.count(')') == text.count('(')+1:
-        # Last ) is being removed from the list of tokens which is ok
-        text = text[:-1]
-    return text
-
-
 def find_chemdata_abbr(text : str) -> list[tuple]:
     """ Find a list of abbreviations defined in a text using ChemDataExtractor.
         Returns a list of tuples containing abbreviations and full forms.
@@ -198,6 +162,6 @@ def find_chemdata_abbr(text : str) -> list[tuple]:
     """
     para = Paragraph(text)
     return [
-        (abbr[0][0], cleanup_parentheses(' '.join(abbr[1])))
+        (abbr[0][0], normalize.cleanup_parentheses(' '.join(abbr[1])))
         for abbr in para.abbreviation_definitions
     ]
