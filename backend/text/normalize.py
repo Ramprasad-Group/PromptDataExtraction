@@ -98,14 +98,16 @@ def cleanup_property(prop : Property) -> Property:
 
 
 
-def asciiText(unicode_text):
+def asciiText(unicode_text : str):
+    """ Convert unicode text to ASCII. """
     return unidecode(unicode_text)
 
-def normText(text):
-    return text
+def normText(text : str):
+    """ Normalize a string to remove extra spaces etc. """
+    return re.sub(r'\s+', ' ', text).strip()
 
 def innerText(elem):
     """ Return the innerText of a XML element. Normalize using normText. """
     value = etree.tostring(elem, method="text", encoding="unicode")
     value = normText(value)
-    return re.sub(r'\s+', ' ', value).strip()
+    return value
