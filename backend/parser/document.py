@@ -3,7 +3,7 @@ import json
 from lxml import html, etree
 from datetime import datetime
 
-import tabular
+from . import tabular
 from ..text.normalize import innerText, asciiText
 
 

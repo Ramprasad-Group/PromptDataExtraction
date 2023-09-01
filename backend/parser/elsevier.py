@@ -1,4 +1,4 @@
-from document import XMLDocumentParser
+from .document import XMLDocumentParser
 
 
 class ElsevierParser(XMLDocumentParser):

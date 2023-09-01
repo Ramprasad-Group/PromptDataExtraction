@@ -1,5 +1,5 @@
-from tabular import TableParser
-from document import HTMLDocumentParser
+from .tabular import TableParser
+from .document import HTMLDocumentParser
 
 
 class HindawiParser(HTMLDocumentParser):

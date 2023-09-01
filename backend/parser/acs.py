@@ -1,5 +1,5 @@
 import re
-from document import XMLDocumentParser
+from .document import XMLDocumentParser
 
 
 class ACSParser(XMLDocumentParser):
