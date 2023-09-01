@@ -4,6 +4,7 @@ from lxml import html, etree
 from datetime import datetime
 
 from . import tabular
+from . import paragraph
 from ..text.normalize import innerText, asciiText
 
 
@@ -46,8 +47,9 @@ class DocumentParser(object):
         self.body = ""
         self.wordcount = {}
 
-        # Tables
+        # Parsed items
         self.tables : list[tabular.TableParser] = []
+        self.paragraphs : list[paragraph.ParagraphParser] = []
         self.figures: list = []
         self.tablesfound = 0
 
@@ -126,7 +128,7 @@ class DocumentParser(object):
     def parse_tables(self):
         raise NotImplementedError()
     
-    def parse_sections(self):
+    def parse_paragraphs(self):
         raise NotImplementedError()
 
     def add_section(self, name, tag, body):
@@ -135,7 +137,7 @@ class DocumentParser(object):
             'name': name, 'tag': tag, 'body': body
         }
         
-    def parse(self, parse_tables=True, parse_sections=True):
+    def parse(self, parse_tables=True, parse_paragraphs=True):
         """
         Parse the loaded document. This is the method that
         controls how a document is parsed.
@@ -152,8 +154,8 @@ class DocumentParser(object):
                 needle = f"Table {tab.number}"
                 tab.descriptions = self.find_references(needle)
 
-        if parse_sections:
-            self.parse_sections()
+        if parse_paragraphs:
+            self.parse_paragraphs()
 
         self.clean()
 
