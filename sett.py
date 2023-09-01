@@ -44,6 +44,10 @@ WebUI  = Settings({
     'name': 'PromptDataExtract',
 })
 
+FullTextParse = Settings({
+    'paper_corpus_root_dir': None,
+})
+
 Database  = Settings({
     'type': 'mongodb',
 })
@@ -58,7 +62,6 @@ Dataset  = Settings({
     'properties_json': 'data/property_metadata.json',
     'llm_properties_xl': 'data/Polymer-Property-List.xlsx',
     'rop_fulltext_xl': 'data/rop_fulltexts.xlsx',
-    'paper_corpus_root_dir': None,
 })
 
 LanguageModel = Settings({
@@ -136,6 +139,7 @@ def load_settings(settings_yaml: str = 'settings.yaml') -> bool:
     PostGres._items.update(_yaml.get('PostGres', {}))
     PEAbstract._items.update(_yaml.get('PEAbstract', {}))
     PEFullText._items.update(_yaml.get('PEFullText', {}))
+    FullTextParse._items.update(_yaml.get('FullTextParse', {}))
     return True
 
 
@@ -152,6 +156,7 @@ def save_settings(settings_yaml: str = 'settings.yaml'):
         'PostGres': PostGres._items,
         'PEAbstract': PEAbstract._items,
         'PEFullText': PEFullText._items,
+        'FullTextParse': FullTextParse._items,
     }
 
     with open(settings_yaml, 'w+') as fp:
