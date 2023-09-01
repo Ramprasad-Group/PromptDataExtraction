@@ -3,7 +3,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sshtunnel import SSHTunnelForwarder
 
 import pylogg
-log = pylogg.New('db')
+log = pylogg.New('postgres')
 
 
 def ssh_tunnel(host, port, user, pswd,
