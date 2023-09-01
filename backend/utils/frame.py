@@ -59,3 +59,6 @@ class Frame:
             self._df = pd.DataFrame(self._tabl)
         return self._df
 
+    def save(self, outfile):
+        """ Save the built dataframe as a csv file. """
+        self.df.to_csv(outfile)

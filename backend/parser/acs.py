@@ -24,7 +24,7 @@ class ACSParser(XMLDocumentParser):
             self.date_xpath = '//*[local-name()="pub-date" and @date-type="pub"]'
             self.date = self.xpath_to_string(self.date_xpath)
 
-    def parse(self):
+    def parse_tables(self):
         # Table and figure reference numbers are not in inner texts.
         # Manually parse them from xref tags and add them add inner texts.
 
@@ -54,4 +54,4 @@ class ACSParser(XMLDocumentParser):
         # self._tree.write("test.xml")
 
         # hand over to the parent parser
-        return super().parse()
+        return super().parse_tables()

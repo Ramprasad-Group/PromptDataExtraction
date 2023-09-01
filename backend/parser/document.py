@@ -261,8 +261,8 @@ class DocumentParser(object):
             pr += "- date not set\n"
         if len(self.journal.strip()) == 0:
             pr += "- journal not set\n"
-        if len(self.sections.keys()) <= 3:
-            pr += "- sections not set/only few set\n"
+        if len(self.paragraphs) <= 3:
+            pr += "- paragraphs not set/only few set\n"
 
         return pr
 
@@ -290,6 +290,8 @@ class XMLDocumentParser(DocumentParser):
         self.body_xpath = '//*[local-name()="body"]'
         self.date_xpath = '//*[local-name()="date"]'
         self.journal_xpath = '//*[local-name()="journal"]'
+        self.para_xpath = '//*[local-name()="p"]'
+
 
     def parse_tables(self):
         # Tables from any XML namespace.
@@ -309,6 +311,17 @@ class XMLDocumentParser(DocumentParser):
         self.date = self.xpath_to_string(self.date_xpath)
         self.body = self.xpath_to_string(self.body_xpath)
         self.journal = self.xpath_to_string(self.journal_xpath)
+
+    def parse_paragraphs(self):
+        """ Parse all the paragraphs from an XML document. """
+        selected_elements = self._tree.xpath(self.para_xpath)
+
+        for item in selected_elements:
+            para = paragraph.ParagraphParser()
+            para.parse(item)
+
+            if para.is_valid():
+                self.paragraphs.append(para)
 
 
 class HTMLDocumentParser(DocumentParser):
