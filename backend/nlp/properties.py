@@ -1,6 +1,6 @@
 
 
-class PropertyExtractor(RecordProcessor):
+class PropertyExtractor:
     def __init__(self, grouped_spans=None, text=None, property_mentions=None, abbreviation_pairs=None, print_spans=False, logger=None):
         """
         Calls all the submodules in order to process grouped_spans and return a list of property_value_pairs

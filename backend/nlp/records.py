@@ -1,6 +1,6 @@
 
 
-class MaterialAmountExtractor(RecordProcessor):
+class MaterialAmountExtractor:
     def __init__(self, grouped_spans, logger=None):
         super(MaterialAmountExtractor, self).__init__()
         self.grouped_spans = grouped_spans
