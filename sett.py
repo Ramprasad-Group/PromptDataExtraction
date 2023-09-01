@@ -46,6 +46,8 @@ WebUI  = Settings({
 
 FullTextParse = Settings({
     'paper_corpus_root_dir': None,
+    'debug': True,
+    'loglevel': 8,
     'mongodb_collection': 'polymer_DOI_records_dev',
 })
 

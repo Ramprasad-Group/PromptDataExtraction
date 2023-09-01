@@ -47,6 +47,10 @@ def add_to_mongodb(doi : str, para : ParagraphParser):
 
     # do not add abstract
     abstract = itm.get('abstract', '')
+    if type(abstract) == list and len(abstract) > 0:
+        abstract = abstract[0]
+    else:
+        abstract = ''
     if para.text.strip() == abstract.strip():
         return False
 
@@ -143,7 +147,7 @@ def walk_directory():
     outcsv = 'parse_papers_info.csv'
     directory = sett.FullTextParse.paper_corpus_root_dir
 
-    max_files = 100 if sett.Run.debug else -1
+    max_files = 10 if sett.FullTextParse.debug else -1
 
     log.trace("Walking directory: %s" %directory)
     df = Frame()
@@ -176,6 +180,9 @@ def walk_directory():
                 log.note("Processed maximum {} papers.", n-1)
                 break
 
+    # commit the last batch
+    db.commit()
+
     # save the file list
     df.save(outcsv)
 
@@ -187,11 +194,10 @@ def filename2doi(doi : str):
 
 
 if __name__ == '__main__':
-    log.setLevel(log.DEBUG)
+    log.setLevel(sett.FullTextParse.loglevel)
 
     if len(sys.argv) > 1:
         parse_file(sys.argv[1])
         db.commit()
-
     else:
         walk_directory()
