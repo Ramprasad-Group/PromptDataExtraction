@@ -46,6 +46,7 @@ WebUI  = Settings({
 
 FullTextParse = Settings({
     'paper_corpus_root_dir': None,
+    'mongodb_collection': 'polymer_DOI_records_dev',
 })
 
 Database  = Settings({
@@ -116,7 +117,7 @@ PEFullText = Settings({
     'n_shots': 1,
     'prompt': 5,
     'shot_sampling': 'baseline_diversity',
-    'mongodb_collection': 'polymer_DOI_records_prod',
+    'mongodb_collection': 'polymer_DOI_records_dev',
 })
 
 

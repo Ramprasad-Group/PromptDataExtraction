@@ -11,35 +11,74 @@ import sett
 import pylogg as log
 from tqdm import tqdm
 
-from backend import postgres
 from backend.data import mongodb
 
+from backend import postgres
+from backend.postgres.orm import Papers, PaperSections
+
+from backend.utils.frame import Frame
 from backend.parser import PaperParser
 from backend.parser.document import DocumentParser
 from backend.parser.paragraph import ParagraphParser
-from backend.utils.frame import Frame
-from backend.postgres.orm import Papers, PaperSections
-
 
 sett.load_settings()
 postgres.load_settings()
 db = postgres.connect()
 
-# mongo = mongodb.connect()
-# coll = mongo[sett.PEFullText.mongodb_collection]
+mongo = mongodb.connect()
+collection = mongo[sett.FullTextParse.mongodb_collection]
 
 
-def add_to_mongodb(doi : str, doc : DocumentParser):
-    """ Add the paragraphs of a document to mongodb if they already do not
+def add_to_mongodb(doi : str, para : ParagraphParser):
+    """ Add a paragraph text to mongodb if it already does not
         exist in the database.
     """
-    pass
+    itm = collection.find_one({'DOI': doi})
+    if itm is None:
+        log.error(f"{doi} not found in MongoDB.")
+        return False
+    
+    fulltext = itm.get('full_text')
+    newsection = {
+        "type": 'paragraph',
+        "name": "main",
+        "content": [para.text.strip()]
+    }
+
+    # do not add abstract
+    abstract = itm.get('abstract', '')
+    if para.text.strip() == abstract.strip():
+        return False
+
+    if fulltext is not None:
+        for section in fulltext:
+            if 'content' in section:
+                if para.text.strip() in section['content']:
+                    log.trace(f"Paragraph in MongoDB: {para.text}. Skipped.")
+                    return False
+        fulltext.append(newsection)
+    else:
+        fulltext = [newsection]
+
+    record_id = itm.get('_id')
+    collection.update_one({"_id": record_id}, {
+            "$set": {
+                "full_text": fulltext
+            }
+        }
+    )
+
+    log.trace(f"Add to MongoDB: {para.text}")
+    return True
 
 
 def add_to_postgres(doi : str, doctype : str, para : ParagraphParser):
+    """ Add a paragraph text to postgres if it already does not
+        exist in the database.
+    """
     paragraph = PaperSections().get_one(db, {'doi': doi, 'text': para.text})
     if paragraph is not None:
-        log.trace(f"{doi}: In PostGres: {para.text}. Skipped.")
+        log.trace(f"Paragraph in PostGres: {para.text}. Skipped.")
         return False
     
     # get the foreign key
@@ -56,47 +95,45 @@ def add_to_postgres(doi : str, doctype : str, para : ParagraphParser):
     paragraph.text = para.text
     paragraph.type = 'body'
     paragraph.insert(db)
-    db.commit()
+
+    log.trace(f"Added to PostGres: {para.text}")
+
     return True
 
 
-def parse_file(filepath, root = "") -> DocumentParser | None:
+def parse_file(filepath, root = "") -> DocumentParser | None:    
+    # Keep count of added items for statistics
+    pg =  0
+    mn = 0
+
     filename = os.path.basename(filepath)
     formatted_name = filepath.replace(root, "")
 
     doi = filename2doi(filename)
-    print('DOI:', doi, filename)
-
-    # if not sett.Run.db_update:
-    #     # If update is not requested,
-    #     # check if the paper already exists in db and skip.
-    #     paper = PaperTexts().get_one(db, {'doi': doi})
-    #     if paper is not None:
-    #         log.trace("In DB: %s. Skipped." %filename)
-    #         return None
-
-    ftype = 'xml' if filename.endswith('xml') else 'html'
     publisher = filepath.split("/")[-2]
 
     doc = PaperParser(publisher, filepath)
     if doc is None:
         log.warn(f"Ignore: {formatted_name} (Parser not found)")
-        return None
+        return None, pg, mn
 
     try:
         doc.parse(parse_tables=False)
         log.trace("Parsed document: {}", formatted_name)
     except Exception as err:
         log.error("Failed to parse: {} ({})", formatted_name, err)
-        return None
+        return None, pg, mn
 
     # Print the paragraphs
     for para in doc.paragraphs:
-        print("\t", "-" * 50)
-        print("\t", para.text)
-        add_to_postgres(doi, doc.doctype, para)
+        # print("\t", "-" * 50)
+        # print("\t", para.text)
+        if add_to_postgres(doi, doc.doctype, para):
+            pg += 1
+        if add_to_mongodb(doi, para):
+            mn += 1
 
-    return doc
+    return doc, pg, mn
 
 
 def walk_directory():
@@ -118,22 +155,23 @@ def walk_directory():
 
         for filename in files:
             abs_path = os.path.join(root, filename)
-            doc = parse_file(abs_path, directory)
+            doc, pg, mn = parse_file(abs_path, directory)
 
             if doc is None:
                 continue
 
             df.add(filename=filename, filepath=doc.docpath, ftype=doc.doctype,
-                    publisher=doc.publisher, npara=len(doc.paragraphs))
-
-            #@Todo: save to db
+                    publisher=doc.publisher, npara=len(doc.paragraphs),
+                    postgres_added=pg, mongodb_added=mn)
 
             # Not more than max_files per directory
             # Use -1 for no limit.
             n += 1
 
             if (n-1) % 50 == 0:
+                db.commit()
                 log.info("Processed {} papers.", n-1)
+
             if max_files > 0 and n > max_files:
                 log.note("Processed maximum {} papers.", n-1)
                 break
@@ -149,7 +187,11 @@ def filename2doi(doi : str):
 
 
 if __name__ == '__main__':
+    log.setLevel(log.DEBUG)
+
     if len(sys.argv) > 1:
         parse_file(sys.argv[1])
+        db.commit()
+
     else:
         walk_directory()
