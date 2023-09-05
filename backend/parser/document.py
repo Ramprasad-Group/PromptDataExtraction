@@ -363,6 +363,7 @@ class HTMLDocumentParser(DocumentParser):
         self.body_xpath = '//div[contains(@class, "fulltext")]'
         self.date_xpath = '//div[contains(@class, "date")]'
         self.journal_xpath = '//div[contains(@class, "journal")]'
+        self.para_xpath = '//p'
 
     def _full_table_links(self, tree) -> list:
         # Return a list of a elements
@@ -394,7 +395,6 @@ class HTMLDocumentParser(DocumentParser):
 
     def parse_paragraphs(self):
         """ Parse all the paragraphs from an XML document. """
-        self.para_xpath = '//p'
         selected_elements = self._tree.xpath(self.para_xpath)
 
         for item in selected_elements:
