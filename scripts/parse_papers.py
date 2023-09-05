@@ -200,6 +200,7 @@ if __name__ == '__main__':
     log.setLevel(sett.FullTextParse.loglevel)
     log.setFile(open("parse_papers.log", "w+"))
     log.setFileTimes(show=True)
+    log.setConsoleTimes(show=True)
 
     if len(sys.argv) > 1:
         parse_file(sys.argv[1])
