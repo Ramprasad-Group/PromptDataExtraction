@@ -373,3 +373,15 @@ class HTMLDocumentParser(DocumentParser):
         self.date = self.xpath_to_string(self.date_xpath)
         self.body = self.xpath_to_string(self.body_xpath)
         self.journal = self.xpath_to_string(self.journal_xpath)
+
+
+    def parse_paragraphs(self):
+        """ Parse all the paragraphs from an XML document. """
+        selected_elements = self._tree.xpath(self.para_xpath)
+
+        for item in selected_elements:
+            para = paragraph.ParagraphParser()
+            para.parse(item)
+
+            if para.is_valid():
+                self.paragraphs.append(para)
