@@ -32,10 +32,6 @@ class RSCParser(HTMLDocumentParser):
             self.date = self.xpath_to_string(self.date_xpath)
             self.abstract = self.xpath_to_string(self.abstract_xpath)
 
-    def parse_paragraphs(self):
-        self.para_xpath = '//p'
-        return super().parse_paragraphs()
-
 
 class _rscTableParser(TableParser):
     def __init__(self) -> None:

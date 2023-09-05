@@ -31,10 +31,6 @@ class HindawiParser(HTMLDocumentParser):
         
         return a_elements
     
-    def parse(self):
-        super(HTMLDocumentParser, self).parse()
-        self.remove_duplicate_tables()
-
     def parse_meta(self):
         super().parse_meta()
 

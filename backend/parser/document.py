@@ -154,6 +154,8 @@ class DocumentParser(object):
                 needle = f"Table {tab.number}"
                 tab.descriptions = self.find_references(needle)
 
+            self.remove_duplicate_tables()
+
         if parse_paragraphs:
             self.parse_paragraphs()
             self.remove_duplicate_paragraphs()
