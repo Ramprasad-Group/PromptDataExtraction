@@ -156,6 +156,7 @@ class DocumentParser(object):
 
         if parse_paragraphs:
             self.parse_paragraphs()
+            self.remove_duplicate_paragraphs()
 
         self.clean()
 
@@ -173,6 +174,20 @@ class DocumentParser(object):
                 tables.append(tabl)
                 captions.append(tabl.caption)
         self.tables = tables
+
+    def remove_duplicate_paragraphs(self):
+        """
+        Loop over the detected paragraphs, and remove duplicates.
+        Check for duplicates using text.
+        """
+        paras = []
+        texts = []
+        for para in self.paragraphs:
+            if para.text not in texts:
+                paras.append(para)
+                texts.append(para.text)
+
+        self.paragraphs = paras
 
     def find_word_count(self, word):
         """ Count the number of times a word occurs in the document. """

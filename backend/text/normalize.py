@@ -138,7 +138,173 @@ def asciiText(unicode_text : str):
 
 def normText(text : str):
     """ Normalize a string to remove extra spaces etc. """
-    return re.sub(r'\s+', ' ', text).strip()
+    ntext = ""
+    i = 0
+    while i < len(text):
+        c = text[i]
+        i += 1
+
+        if c == 'â':
+            ntext += "-"
+        elif c == 'Â':
+            ntext += ""
+        elif c == '\x80':
+            ntext += ""
+        elif c == '\x85':
+            ntext += ""
+        elif c == '\x86':
+            ntext += "\\x86"
+        elif c == '\x88':
+            ntext += ""
+        elif c == '\x89':
+            ntext += "\\x89"
+        elif c == '\x90':
+            ntext += ""
+        elif c == '\x92':
+            ntext += ""
+        elif c == '\x93':
+            ntext += ""
+        elif c == '\x94':
+            ntext += "\\x94"
+        elif c == '\x97':
+            ntext += "\\x97"
+        elif c == '\x98':
+            ntext += ""
+        elif c == '\x99':
+            ntext += ""
+        elif c == '\x8d':
+            ntext += "\\x8d"
+        elif c == '\x9c':
+            ntext += "\\x9c"
+        elif c == '\x9d':
+            ntext += "\\x9d"
+        elif c == '\x96':
+            ntext += "\\x96"
+        elif c == '\x8b':
+            ntext += "\\x8b"
+        elif c == '\xa0':
+            ntext += " "
+        elif c == '©':
+            ntext += "(c)"
+        elif c == '¼':
+            ntext += "1/4"
+        elif c == 'Ã':
+            ntext += ""
+        elif c == '®':
+            ntext += "(R)"
+        elif c == '¶':
+            ntext += "\n"
+        elif c == 'Ä':
+            ntext += ""
+        elif c == '²':
+            ntext += "^{2}"
+        elif c == 'µ':
+            ntext += "\\mu"
+        elif c == '′':
+            ntext += "'"
+        elif c == '“':
+            ntext += '"'
+        elif c == '‐':
+            ntext += "-"
+        elif c == '–':
+            ntext += "-"
+        elif c == '°':
+            ntext += "°"
+        elif c == '±':
+            ntext += "+/-"
+        elif c == '−':
+            ntext += "-"
+        elif c == '\uf8ff':
+            ntext += "-"
+        elif c == '¤':
+            ntext += ""
+        elif c == '≈':
+            ntext += "~"
+        elif c == 'α':
+            ntext += "\\alpha"
+        elif c == '’':
+            ntext += "'"
+        elif c == 'Î' and text[i] == '¼':
+            ntext += "\\mu "
+            i += 1
+        elif c == 'Ï' and text[i] == 'â':
+            ntext += "pi-"
+            i += 1
+        elif c == 'Î' and text[i] == '±':
+            ntext += "\\alpha"
+            i += 1
+        elif c == 'Ï' and text[i] == 'â':
+            ntext += "pi-"
+            i += 1
+        elif c == 'Ï' and text[i] == 'â':
+            ntext += "pi-"
+            i += 1
+        elif c == 'Ï' and text[i] == 'â':
+            ntext += "pi-"
+            i += 1
+        elif c == 'Ï' and text[i] == 'â':
+            ntext += "pi-"
+            i += 1
+        elif c == '×':
+            ntext += "x"
+        elif c == '\uf8fe':
+            ntext += "="
+        elif c == '\u2005':
+            ntext += " "
+        elif c == 'β':
+            ntext += "\\beta"
+        elif c == 'ζ':
+            ntext += "\\zeta"
+        elif c == 'ï' and text[i] =='£' and text[i+1] == '½':
+            ntext += "---"
+            i += 2
+        elif c == 'ö':
+            ntext += "o"
+        elif c == 'ü':
+            ntext += "o"
+        elif c == 'ö':
+            ntext += "o"
+        elif c == 'ö':
+            ntext += "o"
+        elif c == 'ö':
+            ntext += "o"
+        elif c == 'ö':
+            ntext += "o"
+        elif c == 'ö':
+            ntext += "o"
+        elif c == 'ö':
+            ntext += "o"
+        elif c == 'ö':
+            ntext += "o"
+        elif c == 'ö':
+            ntext += "o"
+        elif c == 'ö':
+            ntext += "o"
+        else:
+            try:
+                c = c.encode('utf-8').decode('utf-8')
+                ntext += c
+            except:
+                # If additional special characters are found,
+                # add them to the above elif cases.
+                print(text[i-50:i+50])
+                raise ValueError("Character:", ntext[-20:], c)
+            
+    # Remove multiple spaces.
+    ntext = re.sub(r'\s+', ' ', ntext).strip()
+
+    # Cleanup some extra spaces.
+    ntext = ntext.replace("- ", "-")
+    ntext = ntext.replace(" ^", "^")
+    ntext = ntext.replace(" _", "_")
+    ntext = ntext.replace("}=", "} =")
+    ntext = ntext.replace(" , ", ", ")
+    ntext = ntext.replace("^{[}", "[")
+    ntext = ntext.replace("^{]}", "]")
+    ntext = ntext.replace("-\\x89", "")
+
+    return ntext
+
 
 def innerText(elem):
     """ Return the innerText of a XML element. Normalize using normText. """
