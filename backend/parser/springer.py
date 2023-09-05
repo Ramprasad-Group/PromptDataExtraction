@@ -65,6 +65,11 @@ class SpringerParser(HTMLDocumentParser):
             self.body_xpath = '//div[@id="body"]'
             self.body = self.xpath_to_string(self.body_xpath)
 
+    def parse_paragraphs(self):
+        self.para_xpath = '//p'
+        return super().parse_paragraphs()
+
+
 class _springerTableParser(TableParser):
     def __init__(self) -> None:
         super().__init__()
