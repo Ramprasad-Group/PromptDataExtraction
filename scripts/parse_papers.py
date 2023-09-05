@@ -9,7 +9,6 @@ import os
 import sys
 import sett
 import pylogg as log
-from tqdm import tqdm
 
 from backend.data import mongodb
 
@@ -128,14 +127,16 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
         log.error("Failed to parse: {} ({})", formatted_name, err)
         return None, pg, mn
 
-    # Print the paragraphs
     for para in doc.paragraphs:
-        # print("\t", "-" * 50)
-        # print("\t", para.text)
+        if sett.FullTextParse.debug:
+            print("\t", "-" * 50)
+            print("\t", para.text, flush=True)
         if add_to_postgres(doi, doc.doctype, para):
             pg += 1
         if add_to_mongodb(doi, para):
             mn += 1
+
+    db.commit()
 
     return doc, pg, mn
 
@@ -147,14 +148,16 @@ def walk_directory():
     outcsv = 'parse_papers_info.csv'
     directory = sett.FullTextParse.paper_corpus_root_dir
 
-    max_files = 10 if sett.FullTextParse.debug else -1
+    max_files = 2 if sett.FullTextParse.debug else -1
 
-    log.trace("Walking directory: %s" %directory)
+    log.info("Walking directory: %s" %directory)
     df = Frame()
 
     # Recursively crawl the corpus ...
     for root, subdirs, files in os.walk(directory):
         n = 1
+        total_pg = 0
+        total_mn = 0
         log.trace("Entering: %s" %root.replace(directory, "./"))
 
         for filename in files:
@@ -171,17 +174,17 @@ def walk_directory():
             # Not more than max_files per directory
             # Use -1 for no limit.
             n += 1
+            total_pg += pg
+            total_mn += mn
 
             if (n-1) % 50 == 0:
-                db.commit()
-                log.info("Processed {} papers.", n-1)
+                log.info("Processed {} papers. Added {} paragraphs to Postgres."
+                         " Added {} paragraphs to MongoDB",
+                         n-1, total_pg, total_mn)
 
             if max_files > 0 and n > max_files:
                 log.note("Processed maximum {} papers.", n-1)
                 break
-
-    # commit the last batch
-    db.commit()
 
     # save the file list
     df.save(outcsv)
@@ -195,9 +198,10 @@ def filename2doi(doi : str):
 
 if __name__ == '__main__':
     log.setLevel(sett.FullTextParse.loglevel)
+    log.setFile(open("parse_papers.log", "w+"))
+    log.setFileTimes(show=True)
 
     if len(sys.argv) > 1:
         parse_file(sys.argv[1])
-        db.commit()
     else:
         walk_directory()
