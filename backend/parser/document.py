@@ -392,6 +392,7 @@ class HTMLDocumentParser(DocumentParser):
 
     def parse_paragraphs(self):
         """ Parse all the paragraphs from an XML document. """
+        self.para_xpath = '//p'
         selected_elements = self._tree.xpath(self.para_xpath)
 
         for item in selected_elements:
