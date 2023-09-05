@@ -31,6 +31,5 @@ class ParagraphParser(object):
         html = etree.tostring(self.body, encoding="unicode", method='xml')
         fp.write(html)
         fp.write("\n")
-        fp.write(self.caption)
         fp.close()
         print("Save OK: ", outfile)
