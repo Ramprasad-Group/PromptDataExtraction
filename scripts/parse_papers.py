@@ -34,9 +34,6 @@ def add_to_mongodb(doi : str, publisher : str, doctype : str,
         exist in the database.
     """
 
-    if not sett.FullTextParse.add2mongo:
-        return False
-
     itm = collection.find_one({'DOI': doi})
     if itm is None:
         log.error(f"{doi} not found in MongoDB.")
@@ -82,30 +79,21 @@ def add_to_mongodb(doi : str, publisher : str, doctype : str,
     return True
 
 
-def add_to_postgres(doi : str, publisher : str, doctype : str,
+def add_to_postgres(paper : Papers, publisher : str, doctype : str,
                     para : ParagraphParser):
     """ Add a paragraph text to postgres if it already does not
         exist in the database.
     """
 
-    if not sett.FullTextParse.add2postgres:
-        return False
-
-    paragraph = PaperTexts().get_one(db, {'doi': doi, 'text': para.text})
+    paragraph = PaperTexts().get_one(db, {'doi': paper.doi, 'text': para.text})
     if paragraph is not None:
         log.trace(f"Paragraph in PostGres: {para.text}. Skipped.")
         return False
     
-    # get the foreign key
-    paper = Papers().get_one(db, {'doi': doi})
-    if paper is None:
-        log.error(f"{doi} not found in postgres.")
-        return False
-
     paragraph = PaperTexts()
     paragraph.pid = paper.id
     paragraph.pub = publisher
-    paragraph.doi = doi
+    paragraph.doi = paper.doi
     paragraph.doctype = doctype
     paragraph.section = None
     paragraph.tag = None
@@ -141,17 +129,28 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
         log.error("Failed to parse: {} ({})", formatted_name, err)
         return None, pg, mn
 
-    for para in doc.paragraphs:
-        if sett.FullTextParse.debug:
+    if sett.FullTextParse.debug:
+        for para in doc.paragraphs:
             print("\t", "-" * 50)
             print("\t", para.text, flush=True)
 
-        if add_to_postgres(doi, publisher, doc.doctype, para):
-            pg += 1
-        if add_to_mongodb(doi, publisher, doc.doctype, para):
-            mn += 1
+    if sett.FullTextParse.add2mongo:
+        for para in doc.paragraphs:
+            if add_to_mongodb(doi, publisher, doc.doctype, para):
+                mn += 1
 
-    db.commit()
+    if sett.FullTextParse.add2postgres:
+        # get the foreign key
+        paper = Papers().get_one(db, {'doi': doi})
+
+        for para in doc.paragraphs:
+            if paper is None:
+                log.warn(f"{doi} not found in postgres.")
+                break
+            elif add_to_postgres(paper, publisher, doc.doctype, para):
+                pg += 1
+
+        db.commit()
 
     return doc, pg, mn
 
