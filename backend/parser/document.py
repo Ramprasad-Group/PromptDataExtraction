@@ -129,7 +129,16 @@ class DocumentParser(object):
         raise NotImplementedError()
     
     def parse_paragraphs(self):
-        raise NotImplementedError()
+        """ Parse all the paragraphs from an XML document. """
+        for para_xpath in self.para_xpaths:
+            selected_elements = self._tree.xpath(para_xpath)
+
+            for item in selected_elements:
+                para = paragraph.ParagraphParser()
+                para.parse(item)
+
+                if para.is_valid():
+                    self.paragraphs.append(para)
 
     def add_section(self, name, tag, body):
         """ Add a text section. """
@@ -307,7 +316,7 @@ class XMLDocumentParser(DocumentParser):
         self.body_xpath = '//*[local-name()="body"]'
         self.date_xpath = '//*[local-name()="date"]'
         self.journal_xpath = '//*[local-name()="journal"]'
-        self.para_xpath = '//*[local-name()="p"]'
+        self.para_xpaths = ['//*[local-name()="p"]']
 
 
     def parse_tables(self):
@@ -328,17 +337,6 @@ class XMLDocumentParser(DocumentParser):
         self.date = self.xpath_to_string(self.date_xpath)
         self.body = self.xpath_to_string(self.body_xpath)
         self.journal = self.xpath_to_string(self.journal_xpath)
-
-    def parse_paragraphs(self):
-        """ Parse all the paragraphs from an XML document. """
-        selected_elements = self._tree.xpath(self.para_xpath)
-
-        for item in selected_elements:
-            para = paragraph.ParagraphParser()
-            para.parse(item)
-
-            if para.is_valid():
-                self.paragraphs.append(para)
 
 
 class HTMLDocumentParser(DocumentParser):
@@ -363,7 +361,7 @@ class HTMLDocumentParser(DocumentParser):
         self.body_xpath = '//div[contains(@class, "fulltext")]'
         self.date_xpath = '//div[contains(@class, "date")]'
         self.journal_xpath = '//div[contains(@class, "journal")]'
-        self.para_xpath = '//p'
+        self.para_xpaths = ['//p']
 
     def _full_table_links(self, tree) -> list:
         # Return a list of a elements
@@ -392,14 +390,3 @@ class HTMLDocumentParser(DocumentParser):
         self.body = self.xpath_to_string(self.body_xpath)
         self.journal = self.xpath_to_string(self.journal_xpath)
 
-
-    def parse_paragraphs(self):
-        """ Parse all the paragraphs from an XML document. """
-        selected_elements = self._tree.xpath(self.para_xpath)
-
-        for item in selected_elements:
-            para = paragraph.ParagraphParser()
-            para.parse(item)
-
-            if para.is_valid():
-                self.paragraphs.append(para)

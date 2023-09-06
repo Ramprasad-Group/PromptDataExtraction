@@ -57,5 +57,5 @@ class ACSParser(XMLDocumentParser):
         return super().parse_tables()
 
     def parse_paragraphs(self):
-        self.para_xpath = '//*[local-name()="p"]'
+        self.para_xpaths=['//*[local-name()="p"]']
         return super().parse_paragraphs()
