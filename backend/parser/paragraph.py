@@ -10,36 +10,65 @@ class ParagraphParser(object):
         self.text = None
         self.body = None
 
-    def _innerText(self, element):
-        text = " "
+    def _is_reference(self, text : str) -> bool:
+        """ Return True if a text looks like a bibliographic reference. """
+        if "http" and "doi" in text:
+            return True
+        
+        if ". et al." in text:
+            return True
 
-        if element.text is not None:
+        # If there are a lot of dots and commas, return true.
+        dots = text.count(".")
+        commas = text.count(",")
+        punctuations = dots + commas
+        if punctuations / len(text) > 0.1:
+            return True
+        
+        return False
+    
+    def _clean_text(self, text : str) -> str:
+        """ Clean up a text string, return empty if its a reference."""
+        if text is None:
+            return ""
+        if not self._is_reference(text):
+            text = normalize.normText(text)
+        else:
+            text = ""
+        return text
+
+    def _innerText(self, element):
+        """ Recursively loop through the child elements to get the complete
+        inner text and handle special tags such as sup, sub etc.
+        """
+        text = " "
+        tail = " "
+        cleanedtext = self._clean_text(element.text)
+        cleanedtail = self._clean_text(element.tail)
+
+        if cleanedtext:
             if element.tag == 'sup':
-                text += "^{" + normalize.normText(element.text) + "} "
+                text += "^{" + cleanedtext + "} "
             elif element.tag == 'sub':
-                text += "_{" + normalize.normText(element.text) + "} "
+                text += "_{" + cleanedtext + "} "
             else:
-                text += normalize.normText(element.text)
+                text += cleanedtext + " "
 
         childtexts = []
         for child in element:
             childtexts.append(self._innerText(child))
 
-        if element.tail is not None:
-            tailtext = normalize.normText(element.tail)
-        else:
-            tailtext = " "
+        if cleanedtail:
+            tail = cleanedtail
 
-        fulltext = text + " ".join(childtexts) + tailtext
-        return fulltext
+        fulltext = text + " ".join(childtexts) + tail
+        return normalize.normText(fulltext)
 
     def parse(self, paragraph_element):
         """ Parse the inner text of a paragraph element. """
 
         self.body = paragraph_element
-
         self.text = self._innerText(paragraph_element)
-        self.text = normalize.normText(self.text)
 
         # print("InnerText:", self.text)
         # self.save("test.html")
