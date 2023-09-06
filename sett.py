@@ -50,6 +50,8 @@ FullTextParse = Settings({
     'debug': True,
     'debugCount': 10,
     'loglevel': 8,
+    'add2postgres': True,
+    'add2mongo': True,
     'mongodb_collection': 'polymer_DOI_records_dev',
 })
 

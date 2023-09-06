@@ -13,7 +13,7 @@ import pylogg as log
 from backend.data import mongodb
 
 from backend import postgres
-from backend.postgres.orm import Papers, PaperSections
+from backend.postgres.orm import Papers, PaperTexts
 
 from backend.utils.frame import Frame
 from backend.parser import PaperParser
@@ -28,10 +28,15 @@ mongo = mongodb.connect()
 collection = mongo[sett.FullTextParse.mongodb_collection]
 
 
-def add_to_mongodb(doi : str, para : ParagraphParser):
+def add_to_mongodb(doi : str, publisher : str, doctype : str,
+                   para : ParagraphParser):
     """ Add a paragraph text to mongodb if it already does not
         exist in the database.
     """
+
+    if not sett.FullTextParse.add2mongo:
+        return False
+
     itm = collection.find_one({'DOI': doi})
     if itm is None:
         log.error(f"{doi} not found in MongoDB.")
@@ -40,6 +45,8 @@ def add_to_mongodb(doi : str, para : ParagraphParser):
     fulltext = itm.get('full_text')
     newsection = {
         "type": 'paragraph',
+        "pub": publisher,
+        "format": doctype,
         "name": "main",
         "content": [para.text.strip()]
     }
@@ -75,11 +82,16 @@ def add_to_mongodb(doi : str, para : ParagraphParser):
     return True
 
 
-def add_to_postgres(doi : str, doctype : str, para : ParagraphParser):
+def add_to_postgres(doi : str, publisher : str, doctype : str,
+                    para : ParagraphParser):
     """ Add a paragraph text to postgres if it already does not
         exist in the database.
     """
-    paragraph = PaperSections().get_one(db, {'doi': doi, 'text': para.text})
+
+    if not sett.FullTextParse.add2postgres:
+        return False
+
+    paragraph = PaperTexts().get_one(db, {'doi': doi, 'text': para.text})
     if paragraph is not None:
         log.trace(f"Paragraph in PostGres: {para.text}. Skipped.")
         return False
@@ -90,13 +102,14 @@ def add_to_postgres(doi : str, doctype : str, para : ParagraphParser):
         log.error(f"{doi} not found in postgres.")
         return False
 
-    paragraph = PaperSections()
+    paragraph = PaperTexts()
     paragraph.pid = paper.id
+    paragraph.pub = publisher
     paragraph.doi = doi
-    paragraph.name = 'main'
-    paragraph.format = doctype
+    paragraph.doctype = doctype
+    paragraph.section = None
+    paragraph.tag = None
     paragraph.text = para.text
-    paragraph.type = 'body'
     paragraph.insert(db)
 
     log.trace(f"Added to PostGres: {para.text}")
@@ -132,11 +145,11 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
         if sett.FullTextParse.debug:
             print("\t", "-" * 50)
             print("\t", para.text, flush=True)
-        else:
-            if add_to_postgres(doi, doc.doctype, para):
-                pg += 1
-            if add_to_mongodb(doi, para):
-                mn += 1
+
+        if add_to_postgres(doi, publisher, doc.doctype, para):
+            pg += 1
+        if add_to_mongodb(doi, publisher, doc.doctype, para):
+            mn += 1
 
     db.commit()
 
@@ -150,8 +163,9 @@ def walk_directory():
     outcsv = sett.FullTextParse.runName + "/parse_papers_info.csv"
     directory = sett.FullTextParse.paper_corpus_root_dir
 
-    # How many file to parse
-    max_files = sett.FullTextParse.debugCount if sett.FullTextParse.debug else -1
+    # How many files to parse
+    max_files = sett.FullTextParse.debugCount \
+        if sett.FullTextParse.debug else -1
 
     log.info("Walking directory: %s" %directory)
     df = Frame()
@@ -187,6 +201,8 @@ def walk_directory():
 
             if max_files > 0 and n > max_files:
                 log.note("Processed maximum {} papers.", n-1)
+                log.info("Added {} paragraphs to Postgres, "
+                         "{} paragraphs to MongoDB", total_pg, total_mn)
                 break
 
     # save the file list
@@ -199,14 +215,50 @@ def filename2doi(doi : str):
     return doi
 
 
+def log_run_info():
+    """
+        Log run information for reference purposes.
+        Returns a log Timer.
+    """
+    t1 = log.note("FullTextParse Run: {}", sett.FullTextParse.runName)
+    log.info("CWD: {}", os.getcwd())
+
+    if sett.FullTextParse.debug:
+        log.note("Debug run. Will parse maximum {} files.",
+                 sett.FullTextParse.debugCount)
+    else:
+        log.note("Production run. Will parse all files in {}",
+                 sett.FullTextParse.paper_corpus_root_dir)
+
+    log.info("Using loglevel = {}", sett.FullTextParse.loglevel)
+
+    if not sett.FullTextParse.add2mongo:
+        log.warn("Will not be adding to mongodb.")
+    else:
+        log.note("Will be adding to mongo collection: {}",
+                 sett.FullTextParse.mongodb_collection)
+
+    if not sett.FullTextParse.add2postgres:
+        log.warn("Will not be adding to postgres.")
+    else:
+        log.note("Will be adding to postgres table: paper_texts")
+
+    return t1
+
+
 if __name__ == '__main__':
+    
     os.makedirs(sett.FullTextParse.runName, exist_ok=True)
     log.setFile(open(sett.FullTextParse.runName+"/parse_papers.log", "w+"))
     log.setLevel(sett.FullTextParse.loglevel)
     log.setFileTimes(show=True)
     log.setConsoleTimes(show=True)
 
+    t1 = log_run_info()
+
     if len(sys.argv) > 1:
         parse_file(sys.argv[1])
     else:
         walk_directory()
+
+    t1.done("All Done.")
