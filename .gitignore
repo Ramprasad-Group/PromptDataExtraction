@@ -2,6 +2,8 @@ __pycache__
 _conda_env/
 models/
 data/
+runs/
+*.out
 *.yaml
 *.csv
 *.xlsx

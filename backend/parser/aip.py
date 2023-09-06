@@ -20,9 +20,8 @@ class AIPParser(HTMLDocumentParser):
         a_elements = []
         return a_elements
     
-    def parse(self):
-        super(HTMLDocumentParser, self).parse()
-        self.remove_duplicate_tables()
+    def parse_meta(self):
+        super().parse_meta()
 
         # Check abstract is ok
         if len(self.abstract) <= 12:
@@ -39,6 +38,10 @@ class AIPParser(HTMLDocumentParser):
             self.date = self.xpath_to_string(self.date_xpath)
 
         self.clean()
+
+    def parse_paragraphs(self):
+        self.para_xpaths = ['//div[@class="NLM_paragraph"]']
+        return super().parse_paragraphs()
 
 
 class _aipTableParser(TableParser):
