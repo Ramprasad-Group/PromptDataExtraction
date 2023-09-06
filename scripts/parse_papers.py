@@ -202,7 +202,7 @@ def walk_directory():
             if max_files > 0 and n > max_files:
                 log.note("Processed maximum {} papers.", n-1)
                 log.info("Added {} paragraphs to Postgres, "
-                         "{} paragraphs to MongoDB", total_pg, total_mn)
+                         "{} paragraphs to MongoDB.", total_pg, total_mn)
                 break
 
     # save the file list
@@ -222,6 +222,7 @@ def log_run_info():
     """
     t1 = log.note("FullTextParse Run: {}", sett.FullTextParse.runName)
     log.info("CWD: {}", os.getcwd())
+    log.info("Host: {}", os.uname())
 
     if sett.FullTextParse.debug:
         log.note("Debug run. Will parse maximum {} files.",
