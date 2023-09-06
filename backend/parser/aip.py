@@ -39,6 +39,10 @@ class AIPParser(HTMLDocumentParser):
 
         self.clean()
 
+    def parse_paragraphs(self):
+        self.para_xpath = '//div[@class="NLM_paragraph"]'
+        return super().parse_paragraphs()
+
 
 class _aipTableParser(TableParser):
     def __init__(self) -> None:
