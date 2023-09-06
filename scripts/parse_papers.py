@@ -122,7 +122,8 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
 
     try:
         doc.parse(parse_tables=False)
-        log.trace("Parsed document: {}", formatted_name)
+        log.trace("Parsed document: {}", filepath)
+        log.trace("Found {} paragraphs", len(doc.paragraphs))
     except Exception as err:
         log.error("Failed to parse: {} ({})", formatted_name, err)
         return None, pg, mn
@@ -131,10 +132,11 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
         if sett.FullTextParse.debug:
             print("\t", "-" * 50)
             print("\t", para.text, flush=True)
-        if add_to_postgres(doi, doc.doctype, para):
-            pg += 1
-        if add_to_mongodb(doi, para):
-            mn += 1
+        else:
+            if add_to_postgres(doi, doc.doctype, para):
+                pg += 1
+            if add_to_mongodb(doi, para):
+                mn += 1
 
     db.commit()
 
@@ -145,10 +147,11 @@ def walk_directory():
     """ Recursively walk a directory containing literature files.
         Create a CSV list by parsing meta information.
     """
-    outcsv = 'parse_papers_info.csv'
+    outcsv = sett.FullTextParse.runName + "/parse_papers_info.csv"
     directory = sett.FullTextParse.paper_corpus_root_dir
 
-    max_files = 2 if sett.FullTextParse.debug else -1
+    # How many file to parse
+    max_files = sett.FullTextParse.debugCount if sett.FullTextParse.debug else -1
 
     log.info("Walking directory: %s" %directory)
     df = Frame()
@@ -158,7 +161,7 @@ def walk_directory():
         n = 1
         total_pg = 0
         total_mn = 0
-        log.trace("Entering: %s" %root.replace(directory, "./"))
+        log.trace("Entering: %s" %root)
 
         for filename in files:
             abs_path = os.path.join(root, filename)
@@ -197,8 +200,9 @@ def filename2doi(doi : str):
 
 
 if __name__ == '__main__':
+    os.makedirs(sett.FullTextParse.runName, exist_ok=True)
+    log.setFile(open(sett.FullTextParse.runName+"/parse_papers.log", "w+"))
     log.setLevel(sett.FullTextParse.loglevel)
-    log.setFile(open("parse_papers.log", "w+"))
     log.setFileTimes(show=True)
     log.setConsoleTimes(show=True)
 
