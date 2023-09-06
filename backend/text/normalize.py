@@ -153,11 +153,11 @@ def normText(text : str):
         elif c == '\x85':
             ntext += ""
         elif c == '\x86':
-            ntext += "\\x86"
+            ntext += ""
         elif c == '\x88':
             ntext += ""
         elif c == '\x89':
-            ntext += "\\x89"
+            ntext += ""
         elif c == '\x90':
             ntext += ""
         elif c == '\x92':
@@ -165,23 +165,23 @@ def normText(text : str):
         elif c == '\x93':
             ntext += ""
         elif c == '\x94':
-            ntext += "\\x94"
+            ntext += ""
         elif c == '\x97':
-            ntext += "\\x97"
+            ntext += ""
         elif c == '\x98':
             ntext += ""
         elif c == '\x99':
             ntext += ""
         elif c == '\x8d':
-            ntext += "\\x8d"
+            ntext += ""
         elif c == '\x9c':
-            ntext += "\\x9c"
+            ntext += ""
         elif c == '\x9d':
-            ntext += "\\x9d"
+            ntext += ""
         elif c == '\x96':
-            ntext += "\\x96"
+            ntext += ""
         elif c == '\x8b':
-            ntext += "\\x8b"
+            ntext += ""
         elif c == '\xa0':
             ntext += " "
         elif c == '©':
