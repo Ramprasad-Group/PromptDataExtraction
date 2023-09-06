@@ -294,6 +294,8 @@ def normText(text : str):
     ntext = re.sub(r'\s+', ' ', ntext).strip()
 
     # Cleanup some extra spaces.
+    ntext = ntext.replace("( ", "(")
+    ntext = ntext.replace(" )", ")")
     ntext = ntext.replace("- ", "-")
     ntext = ntext.replace(" ^", "^")
     ntext = ntext.replace(" _", "_")
