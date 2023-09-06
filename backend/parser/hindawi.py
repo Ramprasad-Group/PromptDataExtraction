@@ -55,6 +55,10 @@ class HindawiParser(HTMLDocumentParser):
         if self.date.strip() == "":
             self.date_xpath = '(//div[@class="xml-content"])[1]/preceding-sibling::p[2]'
             self.date = self.xpath_to_string(self.date_xpath)
+    
+    def parse_paragraphs(self):
+        self.para_xpath = '//*[local-name()="p"]'
+        return super().parse_paragraphs()
 
 
 class _hindawiTableParser(TableParser):
