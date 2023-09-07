@@ -70,6 +70,24 @@ class PaperSections(ORMBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+class FilteredPapers(ORMBase):
+    """
+    List of DOIs for each filter.
+
+    Attributes:
+        doi:            Formatted doi.
+        filter_name:    Filter name.
+        filter_desc:    Filter description/comment.
+    """
+
+    __tablename__ = "filtered_papers"
+
+    doi: Mapped[str] = mapped_column(Text, index=True)
+    filter_name: Mapped[str] = mapped_column(Text)
+    filter_desc: Mapped[str] = mapped_column(Text)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 class PaperTexts(ORMBase):
     """
