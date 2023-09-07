@@ -75,12 +75,15 @@ def dataset():
 
 
 def test_pipeline(bert, dataset):
-    for doi, text in dataset:
+    for i, (doi, text) in enumerate(dataset):
         text = normalize.normText(text)
         tags = bert.get_tags(text)
         extractor = ner_pipeline.TextDataExtractor(text, tags)
         mat = extractor.extract(debug=True)
         mat._detect_polymer_type()
-        print(doi, mat.abbreviation_pairs)
+        mat._coreference_material_entities()
+
+        if i >= 10:
+            break
 
     # breakpoint()
