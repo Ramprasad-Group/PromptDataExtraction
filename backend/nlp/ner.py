@@ -108,8 +108,8 @@ def group_consecutive_tags(tags : list[NerTag]) -> list[NerLabelGroup]:
             else:
                 text = prev_group.text + group.text
 
-            prev_group.text = normalize.cleanup_parentheses(text)
-            prev_group.text = normalize.normText(prev_group.text)
+            prev_group.text = normalize.normText(text)
+
         elif prev_group is not None:
             # end of the last group
             groups.append(prev_group)

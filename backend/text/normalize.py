@@ -98,29 +98,12 @@ def cleanup_property(prop : Property) -> Property:
     return prop
 
 
-def cleanup_parentheses(text : str) -> str:
-    """ Normalize and clean up parentheses and brackets by removing
-        spaces and extras.
+def normalize_parentheses(text : str) -> str:
+    """ Normalize and clean up parentheses and brackets by completing pairs.
 
         text :
             The text to clean up.
     """
-    text = text.replace(' )', ')')
-    text = text.replace(' }', '}')
-    text = text.replace(' - ', '-')
-    text = text.replace(' ( ', '(')
-    text = text.replace('{ ', '{')
-    text = text.replace(' _ ', '_')
-    text = text.replace(' , ', ',')
-    text = text.replace(' / ', '/')
-    text = text.replace('( ', '(')
-    text = text.replace("' ", "'")
-    text = text.replace(" '", "'")
-    text = text.replace('" ', '"')
-    text = text.replace(' "', '"')
-    text = text.replace('[ ', '[')
-    text = text.replace(' ]', ']')
-    text = text.replace(' : ', ':')
     if text.count('}') == text.count('{')-1:
         text = text+'}'
     if text.count(')') == text.count('(')-1:
@@ -288,12 +271,16 @@ def normText(text : str):
                 # If additional special characters are found,
                 # add them to the above elif cases.
                 print(text[i-50:i+50])
-                raise ValueError("Character:", ntext[-20:], c)
+                raise ValueError("Unknown Character:", ntext[-20:], c)
             
-    # Remove multiple spaces.
+    # Add space before (
+    ntext = ntext.replace("(", " (")
+
+    # Remove multiple consecutive spaces.
     ntext = re.sub(r'\s+', ' ', ntext).strip()
 
     # Cleanup some extra spaces.
+    ntext = ntext.replace(" isa ", " is a ")
     ntext = ntext.replace("( ", "(")
     ntext = ntext.replace(" )", ")")
     ntext = ntext.replace("- ", "-")
