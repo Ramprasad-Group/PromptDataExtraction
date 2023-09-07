@@ -1,3 +1,9 @@
+"""
+Test the NER pipeline.
+USAGE: pytest tests/test_pipeline.py -s
+
+"""
+
 import os
 import json
 import pytest
@@ -11,12 +17,14 @@ pytestmark = pytest.mark.filterwarnings("ignore")
 
 @pytest.fixture
 def bert():
+    """ Load the MaterialsBERT model and return the model handle. """
     bertModel = ner.MaterialsBERT(sett.NerModel.model)
     bertModel.init_local_model(device=0)
     return bertModel
 
 @pytest.fixture
 def dataset():
+    """ Return a list of (doi, text) tuples from Tg ground dataset. """
     datajson = os.path.join(os.path.dirname(__file__), "tg_ground_data.json")
     with open(datajson) as fp:
         data = json.load(fp)
