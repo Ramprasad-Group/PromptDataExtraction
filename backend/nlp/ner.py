@@ -104,7 +104,7 @@ def group_consecutive_tags(tags : list[NerTag]) -> list[NerLabelGroup]:
             # continuation of the same named entity
             prev_group.end = group.end
             if len(group.text) > 1:
-                text = " ".join([prev_group.text, group.text])
+                text = "".join([prev_group.text, group.text])
             else:
                 text = prev_group.text + group.text
 
