@@ -136,12 +136,19 @@ def asciiText(unicode_text : str):
     """ Convert unicode text to ASCII. """
     return unidecode(unicode_text)
 
+def text_char(text : str, position : int = 1) -> str:
+    try:
+        return text[position]
+    except IndexError:
+        return ''
+
 def normText(text : str):
     """ Normalize a string to remove extra spaces etc. """
     ntext = ""
     i = 0
     while i < len(text):
-        c = text[i]
+        # current char
+        c  = text[i]
         i += 1
 
         if c == 'â':
@@ -224,25 +231,25 @@ def normText(text : str):
             ntext += "\\alpha"
         elif c == '’':
             ntext += "'"
-        elif c == 'Î' and text[i] == '¼':
+        elif c == 'Î' and text_char(text, i) == '¼':
             ntext += "\\mu "
             i += 1
-        elif c == 'Ï' and text[i] == 'â':
+        elif c == 'Ï' and text_char(text, i) == 'â':
             ntext += "pi-"
             i += 1
-        elif c == 'Î' and text[i] == '±':
+        elif c == 'Î' and text_char(text, i) == '±':
             ntext += "\\alpha"
             i += 1
-        elif c == 'Ï' and text[i] == 'â':
+        elif c == 'Ï' and text_char(text, i) == 'â':
             ntext += "pi-"
             i += 1
-        elif c == 'Ï' and text[i] == 'â':
+        elif c == 'Ï' and text_char(text, i) == 'â':
             ntext += "pi-"
             i += 1
-        elif c == 'Ï' and text[i] == 'â':
+        elif c == 'Ï' and text_char(text, i) == 'â':
             ntext += "pi-"
             i += 1
-        elif c == 'Ï' and text[i] == 'â':
+        elif c == 'Ï' and text_char(text, i) == 'â':
             ntext += "pi-"
             i += 1
         elif c == '×':
@@ -255,9 +262,10 @@ def normText(text : str):
             ntext += "\\beta"
         elif c == 'ζ':
             ntext += "\\zeta"
-        elif c == 'ï' and text[i] =='£' and text[i+1] == '½':
-            ntext += "---"
-            i += 2
+        elif c == 'ï' and text_char(text, i) =='£' \
+            and text_char(text, i+1) == '½':
+                ntext += "---"
+                i += 2
         elif c == 'ö':
             ntext += "o"
         elif c == 'ü':
