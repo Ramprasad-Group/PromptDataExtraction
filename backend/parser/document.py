@@ -194,7 +194,8 @@ class DocumentParser(object):
         paras = []
         texts = []
         for para in self.paragraphs:
-            if para.text not in texts:
+            part_of_texts = [para.text in t for t in texts]
+            if para.text not in texts and not any(part_of_texts):
                 paras.append(para)
                 texts.append(para.text)
 

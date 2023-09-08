@@ -30,7 +30,7 @@ class Operation:
         """ Get all the elements from current table using a criteria ."""
         return all_rows(self.table, session, criteria)
 
-    def iter(self, session, column : str, size=1000) -> DeclarativeBase:
+    def iter(self, session, column : str = 'id', size=1000):
         """
         Iterate over all rows of the table based on a column.
         Optionally specify the batch size.
@@ -144,26 +144,56 @@ def upsert_row(tbl, sess, which: dict, payload, name : str, *,
     return first_row(tbl, sess, which)
 
 
-def _column_windows(session, column, size):
-    q = session.query(column, sa.func.row_number().over(
-                    order_by=column).label('rownum')).from_self(column)
-    if size > 1:
-        q = q.filter(sa.text("rownum %% %d=1" % size))
+def windowed_query(session, stmt, column, windowsize) -> [sa.Result[any]]:
+    """Given a Session and Select() object, organize and execute the statement
+    such that it is invoked for ordered chunks of the total result.   yield
+    out individual sa.Result objects for each chunk.
 
-    intervals = [id for id, in q]
-    while intervals:
-        start = intervals.pop(0)
-        if intervals:
-            yield sa.and_(column >= start, column < intervals[0])
-        else:
-            yield column >= start
+    """
+
+    # add the column we will window / sort on to the statement
+    stmt = stmt.add_columns(column).order_by(column)
+    last_id = None
+
+    while True:
+        subq = stmt
+
+        # filter the statement on the previous "last id" we got, if any
+        if last_id is not None:
+            subq = subq.filter(column > last_id)
+
+        # execute the query
+        result: sa.Result = session.execute(subq.limit(windowsize))
+
+        # turn the sa.Result into a FrozenResult that we can peek at the data
+        # first, then spin off new sa.Result objects
+        frozen_result = result.freeze()
+
+        # get the raw data
+        chunk = frozen_result().all()
+
+        if not chunk:
+            break
+
+        # count how many columns we have and also get the "last id" fetched
+        result_width = len(chunk[0])
+        last_id = chunk[-1][-1]
+
+        # get a new, unconsumed sa.Result back from the FrozenResult
+        yield_result: sa.Result = frozen_result()
+
+        # split off the last column (sa.Result could use a slice method here)
+        yield_result = yield_result.columns(*list(range(0, result_width - 1)))
+
+        # yield it out
+        yield from yield_result.scalars()
 
 
-def iter_rows(tbl, sess, column : str, size=1000) -> DeclarativeBase:
+def iter_rows(tbl, sess, column : str = 'id', size=1000) -> [DeclarativeBase]:
     """"Break a Query into windows of size on a given column."""
+    stmt = sa.select(tbl.__class__)
     column = getattr(tbl.__class__, column)
-    for wc in _column_windows(sess, column, size):
-        for row in sess.query(
-                tbl.__class__).filter(wc).order_by(column):
-            yield row
+
+    for result in windowed_query(sess, stmt, column, size):
+        yield result
 
