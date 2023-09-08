@@ -30,5 +30,5 @@ class ElsevierParser(XMLDocumentParser):
 
 
     def parse_paragraphs(self):
-        self.para_xpath = '//*[local-name()="para"]'
+        self.para_xpaths = ['//*[local-name()="para"]']
         return super().parse_paragraphs()

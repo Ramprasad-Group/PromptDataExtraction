@@ -44,7 +44,7 @@ class InformaParser(HTMLDocumentParser):
             self.date = self.xpath_to_string(self.date_xpath)
     
     def parse_paragraphs(self):
-        self.para_xpath = '//*[local-name()="p"]'
+        self.para_xpaths = ['//*[local-name()="p"]']
         return super().parse_paragraphs()
 
 
