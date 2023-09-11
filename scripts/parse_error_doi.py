@@ -85,7 +85,6 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
     pg =  0
 
     filename = os.path.basename(filepath)
-    print(filename)
     formatted_name = filepath.replace(root, "")
 
     doi = filename2doi(filename)
@@ -269,7 +268,7 @@ def log_run_info():
 if __name__ == '__main__':
     
     os.makedirs(sett.FullTextParse.runName, exist_ok=True)
-    log.setFile(open(sett.FullTextParse.runName+"/parse_papers_hindawi.log", "w+"))
+    log.setFile(open(sett.FullTextParse.runName+"/parse_papers_wiley.log", "w+"))
     log.setLevel(sett.FullTextParse.loglevel)
     log.setFileTimes(show=True)
     log.setConsoleTimes(show=True)
@@ -279,7 +278,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         parse_file(sys.argv[1])
     else:
-        walk_publisher_files(parse_pub= 'hindawi')
+        walk_publisher_files(parse_pub= 'wiley')
 
     t1.done("All Done.")
 
