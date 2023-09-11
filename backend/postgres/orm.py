@@ -50,6 +50,7 @@ class Papers(ORMBase):
     title: Mapped[Optional[str]] = mapped_column(Text)
     abstract: Mapped[Optional[str]] = mapped_column(Text)
     format: Mapped[str] = mapped_column(VARCHAR(length=4))
+    directory: Mapped[str] = mapped_column(Text)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
