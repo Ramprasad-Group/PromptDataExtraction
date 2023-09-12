@@ -35,7 +35,7 @@ class ORMBase(DeclarativeBase):
         """ Get all the elements from current table using a criteria ."""
         return ops.all_rows(self, session, criteria)
 
-    def iter(self, session, column : str, size=1000) -> 'ORMBase':
+    def iter(self, session, column : str = 'id', size=1000):
         """ 
         Iterate over all rows of current table. Optionally specify
         the batch size.

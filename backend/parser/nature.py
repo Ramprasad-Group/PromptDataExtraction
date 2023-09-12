@@ -27,6 +27,10 @@ class NatureParser(HTMLDocumentParser):
         a_elements = tree.xpath('//a[contains(@href, "/tables/")]')
         return a_elements
 
+    def parse_paragraphs(self):
+        self.para_xpaths = ['//p']
+        return super().parse_paragraphs()
+
 
 class _natureTableParser(TableParser):
     def __init__(self) -> None:

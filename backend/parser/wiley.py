@@ -26,6 +26,10 @@ class WileyParser(HTMLDocumentParser):
             self.abstract_xpath = '//section[@class="article-section article-section__abstract"]//p'
             self.abstract = self.xpath_to_string(self.abstract_xpath)
 
+    def parse_paragraphs(self):
+        self.para_xpaths = ['//p']
+        return super().parse_paragraphs()
+
 
 class _wileyTableParser(TableParser):
     """ Wiley adds one extra table which contains SI info. """

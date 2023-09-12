@@ -31,6 +31,10 @@ class RSCParser(HTMLDocumentParser):
             self.abstract_xpath = '//div[@class="abstract"]'
             self.date = self.xpath_to_string(self.date_xpath)
             self.abstract = self.xpath_to_string(self.abstract_xpath)
+    
+    def parse_paragraphs(self):
+        self.para_xpaths = ['//p', '//span']
+        return super().parse_paragraphs()
 
 
 class _rscTableParser(TableParser):

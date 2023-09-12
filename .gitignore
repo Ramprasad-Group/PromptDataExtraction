@@ -10,3 +10,4 @@ runs/
 *.json
 *.log
 .env
+*.json

@@ -64,6 +64,10 @@ class SpringerParser(HTMLDocumentParser):
         if self.body.strip() == "":
             self.body_xpath = '//div[@id="body"]'
             self.body = self.xpath_to_string(self.body_xpath)
+    
+    def parse_paragraphs(self):
+        self.para_xpaths = ['']
+        return super().parse_paragraphs()
 
 
 class _springerTableParser(TableParser):

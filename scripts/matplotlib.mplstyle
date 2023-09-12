@@ -1,0 +1,337 @@
+# Matplotlib style for publication quality plots.
+# ---------------------------------------------------------------
+# Use this file as `plt.style.use("~/matplotlib.mplstyle")`
+# Install the required fonts: TeX Gyre Heros, Fira Math, Cascadia Mono
+# ---------------------------------------------------------------
+# For colors you can,
+#     - Use double-quoted hex string, such as "#ff00ff".
+#     - Or scalar grayscale intensity, such as 0.75.
+# For strings, double quotes are optional.
+# For lists, do not include braces.
+
+# COLORS
+# ---------------------------------------------------------------
+
+# Simple colors
+# axes.prop_cycle : cycler(color='bkrcgmyk')
+
+# Blue Black Red Green Purple Cyan Magenta Yellow
+axes.prop_cycle : cycler('color', ["#2060cc", "#333", "#e93030", "#20aa20", "8a5aca", "00ddee", "m", "e4a635"])
+
+text.color: black
+axes.facecolor:     white   # axes background color
+axes.edgecolor:     black   # axes edge color
+xtick.color:        black   # color of the ticks
+xtick.labelcolor:   inherit # color of the tick labels or inherit from xtick.color
+
+ytick.color:        black   # color of the ticks
+ytick.labelcolor:   inherit # color of the tick labels or inherit from ytick.color
+
+grid.color : k
+grid.alpha : 0.3
+
+axes.labelcolor:    black
+axes.titlecolor:    auto    # auto falls back to text.color as default value
+
+figure.facecolor:   white   # background color
+figure.edgecolor:   white   # figure edge color
+
+savefig.facecolor:  auto    # background color
+savefig.edgecolor:  auto    # figure edge color
+savefig.transparent:    False
+
+# XY-AXES
+# ---------------------------------------------------------------
+xtick.direction : out
+ytick.direction : out
+
+xtick.major.size : 3.0
+ytick.major.size : 3.0
+
+xtick.minor.size : 1.4
+ytick.minor.size : 1.4
+
+xtick.minor.visible : True
+ytick.minor.visible : True
+
+
+# MAIN X-Y TICKS AND LINES
+# ---------------------------------------------------------------
+xtick.bottom:        True
+axes.spines.bottom:  True
+xtick.labelbottom:   True
+xtick.major.bottom:  True
+xtick.minor.bottom:  True
+
+ytick.left:          True
+#axes.spines.left:   True
+ytick.labelleft:     True
+ytick.major.left:    True
+ytick.minor.left:    True
+
+
+# TOP & RIGHT X-Y TICKS AND LINES
+# ---------------------------------------------------------------
+xtick.top :         False
+axes.spines.top:    False
+xtick.labeltop:     False   # draw label on the top
+xtick.major.top:    True    # draw x axis top major ticks
+xtick.minor.top:    True    # draw x axis top minor ticks
+
+ytick.right :       False
+axes.spines.right:  False
+ytick.labelright:   False   # draw tick labels on the right side
+ytick.major.right:  True    # draw y axis right major ticks
+ytick.minor.right:  True    # draw y axis right minor ticks
+
+
+# FONTSIZES 
+# ---------------------------------------------------------------
+
+font.size : 8           # If font.size is 10, then xx-small 5.79,
+                        # x-small 6.94, small 8.33, medium 10.0,
+                        # large 12.0, x-large 14.4, xx-large 17.28
+                        
+xtick.labelsize :   small
+ytick.labelsize :   small
+
+legend.fontsize :       medium
+axes.titlesize :        medium
+axes.labelsize :        medium    # Possible bug always uses font.size for this.
+
+legend.title_fontsize : large
+figure.titlesize:       large     # size of the figure title (``Figure.suptitle()``)
+#figure.labelsize:      large     # size of the figure label (``Figure.sup[x|y]label()``)
+
+axes.titleweight:       normal    # weight of ax.title
+axes.labelweight:       normal    # weight of the x and y labels
+figure.titleweight:     normal    # weight of the figure title
+
+#figure.labelweight: normal    # weight of the figure label
+
+
+# LINEWIDTHS
+# ---------------------------------------------------------------
+lines.linewidth : 1.0
+axes.linewidth : 0.6
+grid.linewidth : 0.4
+
+xtick.major.width : 1.0
+ytick.major.width : 1.0
+
+xtick.minor.width : 0.8
+ytick.minor.width : 0.8
+
+
+# FONT FAMILIES
+# ---------------------------------------------------------------
+# Add fonts to matplotlib cache.
+# import matplotlib
+# from pathlib import Path
+# for path in Path("../../../common/fonts/").rglob('*.ttf'):
+#    matplotlib.font_manager.fontManager.addfont(str(path))
+
+font.sans-serif: TeX Gyre Heros, Helvetica, DejaVu Sans
+font.cursive: CMU Sans Serif, DejaVu Sans
+font.serif: CMU Serif, serif, DejaVu Sans
+font.monospace: Cascadia Mono, Fira Mono, Courier, Monaco, DejaVu Sans
+font.fantasy: Lora, DejaVu Sans
+
+font.family: sans-serif         # Set the font to use from any of 
+                                # sans-serif, serif, monospace, cursive, fantasy
+
+text.usetex : False
+axes.formatter.use_mathtext: True   # use mathtext for scientific notation.
+
+
+# MATHTEXT
+# Mathtext will be used when $math$ is specified.
+# ---------------------------------------------------------------
+mathtext.fontset: custom   # custom is defined by the mathtext.bf, .cal, .it, ...
+mathtext.rm:  Fira Math:regular
+mathtext.bf:  Fira Math:medium
+mathtext.it:  Fira Math:regular:italic
+mathtext.fallback: cm
+mathtext.default: tt
+mathtext.sf:  Fira Math, DejaVu Sans
+mathtext.tt:  monospace, DejaVu Sans
+mathtext.cal: cursive, DejaVu Sans
+
+#text.parse_math: True   # Use mathtext if there is an even number of unescaped
+                        # dollar signs.
+
+
+# LEGEND
+# ---------------------------------------------------------------
+legend.frameon : False
+legend.fancybox:      False     # rounded box or rectangle
+legend.shadow:        False
+legend.numpoints:     1        # the number of marker points in the legend line
+legend.scatterpoints: 1        # number of scatter points
+legend.markerscale:   1.2      # the relative size of legend markers vs. original
+
+
+# LEGEND SPACINGS
+# ---------------------------------------------------------------
+# Dimensions as fraction of font size:
+#legend.borderpad:     0.4  # border whitespace
+#legend.labelspacing:  0.5  # the vertical space between the legend entries
+#legend.handlelength:  2.0  # the length of the legend lines
+#legend.handleheight:  0.7  # the height of the legend handle
+#legend.handletextpad: 0.8  # the space between the legend line and legend text
+#legend.borderaxespad: 0.5  # the border between the axes and legend edge
+#legend.columnspacing: 2.0  # column separation
+
+
+# GRID LINES
+# ---------------------------------------------------------------
+axes.grid : False
+grid.linestyle : --
+axes.grid.axis:     both    # which axis the grid should apply to
+axes.grid.which:    major   # grid lines at {major, minor, both} ticks
+
+# TICK FORMAT AND SCIENTIFIC NOTATIONS
+# ---------------------------------------------------------------
+axes.unicode_minus: True
+axes.formatter.limits: -5, 6    # use scientific notation if log10
+                                # of the axis range is smaller than the
+                                # first or larger than the second
+axes.formatter.min_exponent: 0  # minimum exponent to format in scientific notation
+
+axes.formatter.useoffset: True  # If True, the tick label formatter
+                                 # will default to labeling ticks relative
+                                 # to an offset when the data range is
+                                 # small compared to the minimum absolute
+                                 # value of the data.
+
+axes.formatter.offset_threshold: 4  # When useoffset is True, the offset
+                                     # will be used when it can remove
+                                     # at least this number of significant
+                                     # digits from tick labels.
+
+
+# PLOT PROPERTIES
+# ---------------------------------------------------------------
+axes.axisbelow:     line    # line/True/False
+axes.titlelocation:     center     # ax.title: {left, right, center}
+xaxis.labellocation:    center     # xlabel: {left, right, center}
+yaxis.labellocation:    center     # ylabel: {bottom, top, center}
+
+xtick.alignment:        center             # alignment of xticks
+ytick.alignment:        center_baseline    # alignment of yticks
+
+# PLOT SPACINGS
+# ---------------------------------------------------------------
+figure.autolayout:   False   # Auto apply tight_layout, subplots_adjust()
+                             # will not work if turned on!!
+
+xtick.major.pad:    1.5     # distance to major tick label in points
+xtick.minor.pad:    1.5     # distance to the minor tick label in points
+ytick.major.pad:    1.5     # distance to major tick label in points
+ytick.minor.pad:    1.5     # distance to the minor tick label in points
+
+#axes.titley:        None    # position title (axes relative units).  None implies auto
+#axes.titlepad:      6.0     # pad between axes and title in points
+#axes.labelpad:      4.0     # space between label and axis
+
+axes.xmargin:   .02
+axes.ymargin:   .02
+axes.zmargin:   .02
+#axes.autolimit_mode: data  # If "data", use axes.xmargin and axes.ymargin as is.
+                            # If "round_numbers", after application of margins, axis
+                            # limits are further expanded to the nearest "round" number.
+
+# SUBPLOTS PROPERTIES
+# ---------------------------------------------------------------
+figure.subplot.wspace: 0.15  # expressed as a fraction of the average axis width
+figure.subplot.hspace: 0.1  # expressed as a fraction of the average axis width
+
+figure.constrained_layout.hspace: 0.02     # Space between subplot groups. Float representing
+figure.constrained_layout.wspace: 0.02     # a fraction of the subplot widths being separated.
+
+# FIGURE PROPERTIES
+# ---------------------------------------------------------------
+figure.dpi: 120
+figure.figsize : 3.25, 2.2  # Set default size of the figure 
+                            # PRL figsize / Elsevier figsize, Nature is somewhere in between
+                            # single column width -  86 mm (3.386in) /  90 mm (3.543in)
+                            # double column width - 172 mm (6.772in) / 180 mm (7.087in)
+
+figure.frameon:         True      # enable figure frame
+
+# EXPORT PROPERTIES
+# ---------------------------------------------------------------
+savefig.dpi:        600
+savefig.format:     png      # default format {png, ps, pdf, svg}
+savefig.bbox:       tight    # {tight, standard}
+savefig.pad_inches: 0.05   # padding to be used, when bbox is set to 'tight'
+svg.fonttype: path          # How to handle SVG fonts:
+                            #     path: Embed characters as paths -- supported
+                            #           by most SVG renderers
+                            #     None: Assume fonts are installed on the
+                            #           machine where the SVG will be viewed.
+svg.image_inline: True      # Write raster image data directly into the SVG file
+
+# PLOT TYPE SPECIFIC PROPERTIES
+# ---------------------------------------------------------------
+errorbar.capsize: 100       # length of end cap on error bars in pixels
+hist.bins: 10               # The default number of histogram bins or 'auto'.
+scatter.marker: o           # The default marker type for scatter plots.
+scatter.edgecolors: face    # The default edge colors for scatter plots.
+
+polaraxes.grid: True        # display grid on polar axes
+axes3d.grid:    True        # display grid on 3D axes
+
+#axes3d.xaxis.panecolor:    (0.95, 0.95, 0.95, 0.5)      # background pane on 3D axes
+#axes3d.yaxis.panecolor:    (0.90, 0.90, 0.90, 0.5)      # background pane on 3D axes
+#axes3d.zaxis.panecolor:    (0.925, 0.925, 0.925, 0.5)   # background pane on 3D axes
+
+
+###############################################################################
+#                            END OF STYLE DEFINITION
+#                below items are defaults defined in the matplotlibrc
+###############################################################################
+
+#boxplot.notch:       False
+#boxplot.vertical:    True
+#boxplot.whiskers:    1.5
+#boxplot.bootstrap:   None
+#boxplot.patchartist: False
+#boxplot.showmeans:   False
+#boxplot.showcaps:    True
+#boxplot.showbox:     True
+#boxplot.showfliers:  True
+#boxplot.meanline:    False
+
+#boxplot.flierprops.color:           black
+#boxplot.flierprops.marker:          o
+#boxplot.flierprops.markerfacecolor: none
+#boxplot.flierprops.markeredgecolor: black
+#boxplot.flierprops.markeredgewidth: 1.0
+#boxplot.flierprops.markersize:      6
+#boxplot.flierprops.linestyle:       none
+#boxplot.flierprops.linewidth:       1.0
+
+boxplot.boxprops.color:     "#333"
+boxplot.boxprops.linewidth: 0.6
+boxplot.boxprops.linestyle: -
+
+#boxplot.whiskerprops.color:     black
+#boxplot.whiskerprops.linewidth: 1.0
+#boxplot.whiskerprops.linestyle: -
+
+#boxplot.capprops.color:     black
+#boxplot.capprops.linewidth: 1.0
+#boxplot.capprops.linestyle: -
+
+#boxplot.medianprops.color:     C1
+#boxplot.medianprops.linewidth: 1.0
+#boxplot.medianprops.linestyle: -
+
+#boxplot.meanprops.color:           C2
+#boxplot.meanprops.marker:          ^
+#boxplot.meanprops.markerfacecolor: C2
+#boxplot.meanprops.markeredgecolor: C2
+#boxplot.meanprops.markersize:       6
+#boxplot.meanprops.linestyle:       --
+#boxplot.meanprops.linewidth:       1.0
