@@ -1,6 +1,8 @@
+# Logic for extracting material amounts
+from base_classes import MaterialAmount, EntityList, RecordProcessor
 
 
-class MaterialAmountExtractor:
+class MaterialAmountExtractor(RecordProcessor):
     def __init__(self, grouped_spans, logger=None):
         super(MaterialAmountExtractor, self).__init__()
         self.grouped_spans = grouped_spans

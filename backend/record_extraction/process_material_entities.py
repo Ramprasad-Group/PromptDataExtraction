@@ -1,33 +1,13 @@
-"""
-Module to parse and extract material/polymer name and type related data.
-Type, coreferents, abbreviations are processed and stored to the Material
-objects.
-
-"""
-
+"""Process all material entities identified in text"""
+from base_classes import RecordProcessor, MaterialMention, EntityList
 from itertools import combinations
 import Levenshtein
 
-from backend.nlp import ner
-from backend.types import NerLabelGroup, Material, Polymer, Property
+import re
 
 
-SOLVENTS = ['NMP', 'DMAc', 'toluene', 'DMF', 'N-methyl-2-pyrrolidone',
-            'dimethylformamide', 'dimethyl formamide', 'dimethylacetamide',
-            'dimethyl acetamide', 'm-xylene']
-
-MATERIAL_CATEGORIES = ['composite', 'additive', 'plasticiz', 'quaterni',
-                       'crosslink', 'cross-link', 'graft', 'doping', 'doped',
-                       'dopant', 'hydrogel', 'oligomer', 'star', 'filler', 'initia', 'catalys', 'inhib', 'oxidiz', 'solven', 'ligan']
-COPOLY_INDICATORS = ['g-', 'g‐','co‐', 'co-','(co)', 'copoly','b-','b‐', 'star-', '-stat-','stat‐', 'block', 'ipn-', '-ran']
-
-
-class MaterialEntities:
-    """
-    Extract material names using combined NER tags, text, materials, abbreviations etc.
-
-    """
-    def __init__(self, grouped_spans, text, material_mentions, abbreviation_pairs, normalization_dataset=None, logger=None):
+class ProcessMaterialEntities(RecordProcessor):
+    def __init__(self, grouped_spans, text, material_mentions, abbreviation_pairs, normalization_dataset, logger=None):
         """
         Calls all the submodules in order process material_mentions and return a processed version of it
         parameters
@@ -44,28 +24,25 @@ class MaterialEntities:
         material_mentions: List[dict]
             Contains all material mentions in text with some metadata added to it
         """
-
+        super(ProcessMaterialEntities, self).__init__()
         self.grouped_spans = grouped_spans
         self.text = text
         self.material_mentions = material_mentions
         self.abbreviation_pairs = abbreviation_pairs
         self.normalization_dataset = normalization_dataset
         self.logger = logger
-
+        self.solvents = ['NMP', 'DMAc', 'toluene', 'DMF', 'N-methyl-2-pyrrolidone', 'dimethylformamide', 'dimethyl formamide', 'dimethylacetamide', 'dimethyl acetamide', 'm-xylene']
+        self.material_categories = ['composite', 'additive', 'plasticiz', 'quaterni', 'crosslink', 'cross-link', 'graft', 'doping', 'doped', 'dopant', 'hydrogel', 'oligomer', 'star', 'filler', 'initia', 'catalys', 'inhib', 'oxidiz', 'solven', 'ligan']
+        self.copolymer_indicator = ['g-', 'g‐','co‐', 'co-','(co)', 'copoly','b-','b‐', 'star-', '-stat-','stat‐', 'block', 'ipn-', '-ran']
 
     def coreference_material_entities(self):
-        """
-        Add abbreviations to material coreferents. Remove the entries that has
-        already been added to a list.
-        """
-
+        """Combine entities by abbreviation or by case"""
         # Normalize material entities found close together. Remove the latter and add as a coreferent
-        # Normalize if abbreviations found together
 
+        # Normalize if abbreviations found together
         delete_index = set()
         
         for abbr in self.abbreviation_pairs:
-            # each abbr pair is a tuple of (abbreviation, full form)
             for material_entity1, material_entity2 in combinations(self.material_mentions.entity_list, 2):
                 material_index_1 = self.material_mentions.entity_list.index(material_entity1)
                 material_index_2 = self.material_mentions.entity_list.index(material_entity2)
@@ -75,11 +52,10 @@ class MaterialEntities:
                 elif material_entity1.entity_name==abbr[1] and material_entity2.entity_name==abbr[0]:
                     material_entity1.coreferents.append(abbr[0])
                     delete_index.add(material_index_2)
-
         # Normalize if polymer entity found adjacent to another
+
         # Keep the lower case version and add coreferents
         self.material_mentions.delete_entries(delete_index)
-
         delete_index = set()
 
         for material_entity1, material_entity2 in combinations(self.material_mentions.entity_list, 2):
@@ -91,11 +67,9 @@ class MaterialEntities:
                 (len(material_entity1.entity_name)>1 and material_entity1.entity_name[0].lower()+material_entity1.entity_name[1:] == material_entity2.entity_name):
                 material_entity2.coreferents.extend(material_entity1.coreferents)
                 delete_index.add(self.material_mentions.entity_list.index(material_entity1))
-         
+        
         self.material_mentions.delete_entries(delete_index)
-
         delete_index = set()
-
         for material_entity1, material_entity2 in combinations(self.material_mentions.entity_list, 2):
             material_index_1 = self.material_mentions.entity_list.index(material_entity1)
             material_index_2 = self.material_mentions.entity_list.index(material_entity2)
@@ -127,7 +101,6 @@ class MaterialEntities:
                     if i<span_length and self.grouped_spans[i].text in ['/', ':', 'into']:
                         i+=self.coreference_proximity-p
                         break
-
                     # We assume the an abbreviation follows the material entity and typically has a bounded length or if not that the previous token was a bracket
                     # The second condition might be needed if the abbreviation refers to some long copolymer
                     if i<span_length and self.grouped_spans[i].label == current_label and (len(self.grouped_spans[i].text)<=self.avg_abbr_length or self.grouped_spans[i-1].text=='('):
@@ -146,18 +119,16 @@ class MaterialEntities:
                                 break
                         else:
                             if added_in_loop: delete_index.remove(k)
-                i -= self.coreference_proximity
-            i += 1 # Do a look ahead and then skip a token and then move forward
-
+                i-=self.coreference_proximity
+            i+=1 # Do a look ahead and then skip a token and then move forward
+            
         # Delete here if using case normalization as Levenshtein normalization can be equivalent to case normalization
 
         self.material_mentions.delete_entries(delete_index)
-
         delete_index = set()
-
         # Normalize based on Levenshtein distance, compare based on length of number of coreferents
         for material_entity1, material_entity2 in combinations(self.material_mentions.entity_list, 2):
-            if material_entity2.material_class != material_entity1.material_class:
+            if material_entity2.material_class!=material_entity1.material_class:
                 continue
             if len(material_entity1.coreferents) >= len(material_entity2.coreferents):
                 mat_to_compare = material_entity1
@@ -166,9 +137,7 @@ class MaterialEntities:
                 mat_to_compare = material_entity1
                 mat_other = material_entity2
             for coreferent1 in mat_to_compare.coreferents:
-                if Levenshtein.distance(coreferent1, mat_other.entity_name) <= 1\
-                    and not self.coreference_exception(coreferent1, mat_other.entity_name):
-                    # Exceptions for cases where similarly written materials get normalized
+                if Levenshtein.distance(coreferent1, mat_other.entity_name)<=1 and not self.coreference_exception(coreferent1, mat_other.entity_name): # Exceptions for cases where similarly written materials get normalized
                     mat_to_compare.coreferents.extend(material_entity2.coreferents)
                     delete_index.add(self.material_mentions.entity_list.index(material_entity2))
                     break
@@ -196,34 +165,32 @@ class MaterialEntities:
         # Check for materials which have singleton roles like crosslinkers and grafts
         # covered_tokens = []
         for i, span in enumerate(sentence):
-            if any([category in span.text for category in MATERIAL_CATEGORIES]):
-                j=0
-                while i+j<len(sentence) or i-j>=0:
-                    if i+j<len(sentence) and sentence[i+j].label in ['ORGANIC', 'INORGANIC', 'POLYMER']:
-                        for material_entity in self.material_mentions.entity_list:
-                            if sentence[i+j].text in material_entity.coreferents:
-                                material_entity.role = span.text
-                        break
-                    elif i-j>=0 and sentence[i-j].label in ['ORGANIC', 'INORGANIC', 'POLYMER']:
-                        for material_entity in self.material_mentions.entity_list:
-                            if sentence[i-j].text in material_entity.coreferents:
-                                material_entity.role = span.text
-                        break
-                    j+=1
+                if any([category in span.text for category in self.material_categories]):
+                    j=0
+                    while i+j<len(sentence) or i-j>=0:
+                        if i+j<len(sentence) and sentence[i+j].label in ['ORGANIC', 'INORGANIC', 'POLYMER']:
+                            for material_entity in self.material_mentions.entity_list:
+                                if sentence[i+j].text in material_entity.coreferents:
+                                    material_entity.role = span.text
+                            break
+                        elif i-j>=0 and sentence[i-j].label in ['ORGANIC', 'INORGANIC', 'POLYMER']:
+                            for material_entity in self.material_mentions.entity_list:
+                                if sentence[i-j].text in material_entity.coreferents:
+                                    material_entity.role = span.text
+                            break
+                        j+=1
 
-    def _detect_polymer_type(self):
+    def detect_polymer_type(self):
         """Based on cues in the polymer name, detect the type of the polymer"""
-        for material in self.material_mentions:
-            if type(material) == Polymer:
-                name = material.name
-                if 'star' in name:
-                    material.is_starpolymer = True
-                elif any([word in name for word in COPOLY_INDICATORS]) \
-                    or name.count('poly') > 1 \
-                    or ( '-' in name and name.upper() == name):
-                    material.is_copolymer = True
+        for material_entity in self.material_mentions.entity_list:
+            if material_entity.material_class == 'POLYMER':
+                material_name = material_entity.entity_name
+                if 'star' in material_name:
+                    material_entity.polymer_type='star_polymer'
+                elif any([subword in material_name for subword in self.copolymer_indicator]) or material_name.count('poly')>1 or ('-' in material_name and material_name.upper()==material_name):
+                    material_entity.polymer_type='copolymer'
                 else:
-                    material.is_homopolymer = True
+                    material_entity.polymer_type='homopolymer'
 
     def normalize_record(self):
         """After material record is extracted, normalize the name of the obtained polymers"""
@@ -278,7 +245,7 @@ class MaterialEntities:
                 copolymer_dict.material_class = 'copolymer'
                 delete_index = set()
                 j=i+1
-                while j < len(sentence):
+                while j<len(sentence):
                     if sentence[j].label in ['POLYMER', 'ORGANIC']:
                         for k, material_entity in enumerate(self.material_mentions.entity_list):
                             if sentence[j].text in material_entity.coreferents and k not in delete_index:
@@ -304,8 +271,8 @@ class MaterialEntities:
             elif material_entity.material_class == 'POLYMER_FAMILY':
                 self.polymer_family.entity_list.append(material_entity)
             # Remove solvent entries
-            if any([solvent in material_entity.coreferents for solvent in SOLVENTS]):
-                # SOLVENTS.append(material_entity)
+            if any([solvent in material_entity.coreferents for solvent in self.solvents]):
+                # self.solvents.append(material_entity)
                 delete_index.add(k)
         
         # Delete monomers and solvents
@@ -313,21 +280,12 @@ class MaterialEntities:
 
     def run(self):
         """Returns material_mentions after final processing"""
-        self._detect_polymer_type()
+        self.detect_polymer_type()
         self.coreference_material_entities()
-
-        ner.process_sentence(self.grouped_spans, self.detect_material_role)
-
+        self.process_sentence(self.grouped_spans, self.detect_material_role)
         # Normalize polymer named entities before they get clubbed
         # Get normalization_dataset from outside
         self.normalize_record()
-
-        ner.process_sentence(
-            self.grouped_spans, self.detect_copolymer_constituents,
-            sentence_limit=2)
-
-        ner.process_sentence(
-            self.grouped_spans, self.detect_blend_constituents,
-            sentence_limit=2)
-
+        self.process_sentence(self.grouped_spans, self.detect_copolymer_constituents, sentence_limit=2)
+        self.process_sentence(self.grouped_spans, self.detect_blend_constituents, sentence_limit=2)
         self.final_material_processing()
