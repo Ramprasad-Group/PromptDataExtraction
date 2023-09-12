@@ -21,7 +21,7 @@ class Papers(ORMBase):
 
         abstract:   Abstract of the paper.
 
-        format:     One of xml, html. (planned: pdf, txt etc.)
+        doctype:     One of xml, html. (planned: pdf, txt etc.)
 
         directory:  Directory name in corpus where the file can be found.
 
@@ -32,7 +32,7 @@ class Papers(ORMBase):
     publisher: Mapped[str] = mapped_column(Text)
     title: Mapped[Optional[str]] = mapped_column(Text)
     abstract: Mapped[Optional[str]] = mapped_column(Text)
-    format: Mapped[str] = mapped_column(VARCHAR(length=4))
+    doctype: Mapped[str] = mapped_column(VARCHAR(length=6))
     directory: Mapped[str] = mapped_column(Text)
 
     def __init__(self, **kwargs):
@@ -72,8 +72,6 @@ class PaperTexts(ORMBase):
 
         pid:        ID ForeignKey from the papers table.
 
-        directory:  Directory containing the file in corpus (not publisher).
-
         doi:        Formatted doi string.
 
         doctype:    html or xml (extension of the original file).
@@ -85,6 +83,9 @@ class PaperTexts(ORMBase):
                     (Example: p, span etc.)
 
         text:       Actual text content of the paragraph.
+
+        directory:  Directory containing the file in corpus (not publisher).
+
     """
 
     __tablename__ = "paper_texts"
@@ -264,6 +265,9 @@ class APIRequests(ORMBase):
         response:   Brief response string.
         
         status:     Success, fail, too long etc. (string)
+       
+        para_id:    Foreign key referencing the source paragraph used to make
+                    the api request.
 
         details:    Additional details about the interaction, eg. number of
                     shots, comments etc. (dict)
@@ -291,6 +295,11 @@ class APIRequests(ORMBase):
     response: Mapped[str] = mapped_column(Text)
     status: Mapped[Optional[str]] = mapped_column(Text)
     details: Mapped[Dict] = mapped_column(JSON)
+
+    para_id: Mapped[int] = mapped_column(
+            ForeignKey("paper_texts.id", ondelete='CASCADE'),
+            unique=False, index=True)
+
     request_obj: Mapped[Dict] = mapped_column(JSON)
     response_obj: Mapped[Dict] = mapped_column(JSON)
     request_tokens: Mapped[int] = mapped_column(Integer, default=-1)
