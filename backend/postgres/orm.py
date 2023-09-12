@@ -1,8 +1,8 @@
 from datetime import datetime
-from typing import Any, Optional, Dict, Literal
+from typing import Any, Optional, Dict, Literal, List
 
 from backend.postgres import ORMBase
-from sqlalchemy import Text, JSON, ForeignKey, Integer, DateTime, Float, ARRAY, VARCHAR, Boolean
+from sqlalchemy import Text, JSON, ForeignKey, Integer, DateTime, Float, ARRAY, VARCHAR, Boolean, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -61,6 +61,7 @@ class FilteredPapers(ORMBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
 
 
 class PaperTexts(ORMBase):
@@ -130,6 +131,154 @@ class FilteredTexts(ORMBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+
+
+class ExtractedMaterials(ORMBase):
+    """
+    Table to store the material entities extracted from MaterialsBERT.
+
+    Attributes:
+        para_id:    Foreign key referencing the source paragraph checked against the filter.
+        entity_name:
+        materials_class
+        polymer_type
+        normalized_material_name
+        coreferents
+        components
+        additional_info
+    """
+
+    __tablename__ = "extracted_materials"
+
+    para_id: Mapped[int] = mapped_column(
+        ForeignKey("paper_texts.id", ondelete='CASCADE'),
+        unique=False, index=True)
+    
+    entity_name: Mapped[str] = mapped_column(Text)
+    material_class: Mapped[str] = mapped_column(Text)
+    polymer_type: Mapped[str] = mapped_column(Text)
+    normalized_material_name: Mapped[str] = mapped_column(Text)
+    coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
+    components: Mapped[List[str]] = mapped_column(ARRAY(String))
+    additional_info: Mapped[Dict] = mapped_column(JSON, nullable=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class ExtractedAmount(ORMBase):
+    '''
+    Table to store the material amount corresponding to an entity if available
+
+    Attributes:
+        material_id: Foreign key referencing to material entity
+        material_amount
+    '''
+
+    __tablename__ = "materials_amount"
+
+    material_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("extracted_materials.id"), nullable=False
+    )
+    material_amount: Mapped[str] = mapped_column(Text)
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+
+
+
+ExtractionMethod = Literal['materials-bert', 'gpt-3.5-turbo']
+
+
+class ExtractedProperties(ORMBase):
+    '''
+    Table to store the properties extracted from MaterialsBERT
+
+    Attributes:
+        material_id: Foreign key referencing to material entity
+        entity_name: name of property
+        value: str containing property value and units
+        coreferents: list 
+        numeric_value: numeric part of reported value, average if range 
+        numeric_error: error reported for value
+        value_average: boolean representing if reported property value is numeric or a range
+        value_descriptor: condition given for reported value (ex: "less than" 8 eV)
+        unit: property unit
+        conditions: temperature_condition, frequency_condition
+        extraction_method: name of extraction model. Must be 'materials-bert' or 'gpt-3.5-turbo'.
+
+    '''
+    
+    __tablename__ = "extracted_properties"
+
+    material_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("extracted_materials.id"), nullable= False
+    )
+    entity_name: Mapped[str] = mapped_column(Text)
+    value: Mapped[str] = mapped_column(Text)
+    coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
+    numeric_value: Mapped[float] = mapped_column(Float)
+    numeric_error: Mapped[float] = mapped_column(Float, nullable=True)
+    value_average: Mapped[bool] = mapped_column(Boolean, default=None, nullable= True)
+    value_descriptor: Mapped[str] = mapped_column(Text)
+    unit: Mapped[str]= mapped_column(Text)
+    conditions: Mapped[Dict] = mapped_column(JSON, nullable=True)
+    extraction_method: Mapped[ExtractionMethod]
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+PropertyScale = Literal['log', 'normal']
+
+class PropertyMetadata(ORMBase):
+    '''
+    Table to store the metadata
+
+    Attributes:
+        name: name of property
+        other_names: list of property names that can be reported in literature
+        units: list of different units that can be seen in literature
+        scale: Must be 'log' or 'normal'
+        short_name: 
+        lower_limit: lower limit of range of values that can be seen
+        upper_limit: upper limit of range of values that can be seen
+    '''
+
+    __tablename__ = "property_metadata"
+
+    name: Mapped[str] = mapped_column(Text)
+    other_names: Mapped[List[str]] = mapped_column(ARRAY(String))
+    units: Mapped[List[str]] = mapped_column(ARRAY(String))
+    scale: Mapped[PropertyScale]
+    short_name: Mapped[str]= mapped_column(Text)
+    lower_limit: Mapped[Float]= mapped_column(Float)
+    upper_limit: Mapped[Float]= mapped_column(Float)
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+
+
+
+ParagraphFilters = Literal['property_tg', 'property_td', 'property_tm', 'property_thermal_conductivity', 'NER']
+
+class FilteredParagraphs:
+    '''
+    Table to track the paragraphs passing a particular filter
+
+    Attributes:
+        para_id: Foreign key referencing to the paragraph from paper_texts
+        filter_name: must be 
+    '''
+    para_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("paper_texts.id"), nullable= False
+    )
+    filter_name = Mapped[ParagraphFilters]
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+
 
 
 class PaperData(ORMBase):
