@@ -1,4 +1,4 @@
-from document import XMLDocumentParser
+from .document import XMLDocumentParser
 
 
 class ElsevierParser(XMLDocumentParser):
@@ -27,4 +27,8 @@ class ElsevierParser(XMLDocumentParser):
         if self.date.strip() == "":
             self.date_xpath = '//*[local-name()="cover-date-start"]'
             self.date = self.xpath_to_string(self.date_xpath)
-        
+
+
+    def parse_paragraphs(self):
+        self.para_xpath = '//*[local-name()="para"]'
+        return super().parse_paragraphs()

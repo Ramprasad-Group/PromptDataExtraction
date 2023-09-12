@@ -1,5 +1,5 @@
-from tabular import TableParser
-from document import HTMLDocumentParser
+from .tabular import TableParser
+from .document import HTMLDocumentParser
 
 
 class InformaParser(HTMLDocumentParser):
@@ -42,6 +42,10 @@ class InformaParser(HTMLDocumentParser):
         if self.date.strip() == "":
             self.date_xpath = '//div[starts-with(text(), "Published")]'
             self.date = self.xpath_to_string(self.date_xpath)
+    
+    def parse_paragraphs(self):
+        self.para_xpath = '//*[local-name()="p"]'
+        return super().parse_paragraphs()
 
 
 class _informaTableParser(TableParser):

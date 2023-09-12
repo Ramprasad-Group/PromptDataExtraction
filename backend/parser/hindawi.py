@@ -1,5 +1,5 @@
-from tabular import TableParser
-from document import HTMLDocumentParser
+from .tabular import TableParser
+from .document import HTMLDocumentParser
 
 
 class HindawiParser(HTMLDocumentParser):
@@ -31,10 +31,6 @@ class HindawiParser(HTMLDocumentParser):
         
         return a_elements
     
-    def parse(self):
-        super(HTMLDocumentParser, self).parse()
-        self.remove_duplicate_tables()
-
     def parse_meta(self):
         super().parse_meta()
 
@@ -55,6 +51,10 @@ class HindawiParser(HTMLDocumentParser):
         if self.date.strip() == "":
             self.date_xpath = '(//div[@class="xml-content"])[1]/preceding-sibling::p[2]'
             self.date = self.xpath_to_string(self.date_xpath)
+    
+    def parse_paragraphs(self):
+        self.para_xpath = '//*[local-name()="p"]'
+        return super().parse_paragraphs()
 
 
 class _hindawiTableParser(TableParser):

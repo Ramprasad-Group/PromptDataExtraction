@@ -1,4 +1,5 @@
 import sett
+import pytest
 import pylogg
 
 sett.load_settings()

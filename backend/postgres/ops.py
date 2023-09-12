@@ -2,7 +2,7 @@ import sqlalchemy as sa
 from sqlalchemy.orm import DeclarativeBase
 
 import pylogg
-log = pylogg.New('db')
+log = pylogg.New('postgres')
 
 
 class Operation:

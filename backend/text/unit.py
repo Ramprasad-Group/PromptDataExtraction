@@ -4,6 +4,8 @@ Module for unit normalization.
 """
 from backend.types import Property
 
+# List of properties to convert to percentage.
+convert_fraction_to_pct = []
 
 def normalize_unit(prop : Property) -> Property:
     """ Normalize the unit and value of a Property.
@@ -193,7 +195,7 @@ def normalize_unit(prop : Property) -> Property:
             prop.value *= 100
             prop.property_numeric_error *= 100
             prop.unit = 'μW m^{-1} K^{-2}'
-        elif prop.unit == '' and prop.value<=1.0 and prop.value>=0.0 and prop.entity_name in self.convert_fraction_to_percentage:
+        elif prop.unit == '' and prop.value<=1.0 and prop.value>=0.0 and prop.name in convert_fraction_to_pct:
             prop.value *= 100
             prop.unit = '%'
         

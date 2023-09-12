@@ -1,8 +1,14 @@
 import spacy
 import pylogg
-
-from backend.types import NerTag
 from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
+
+from backend.text import normalize
+from backend.types import NerTag, NerLabelGroup
+from chemdataextractor.doc import Paragraph
+
+ChemicalLabels = ['ORGANIC', 'INORGANIC']
+PolymerLabels = ['POLYMER', 'MONOMER', 'POLYMER_FAMILY']
+PropertyLabels = ['PROP_NAME', 'PROP_VALUE', 'MATERIAL_AMOUNT']
 
 logger = pylogg.New('ner')
 
@@ -75,45 +81,6 @@ class MaterialsBERT:
         return token_labels
 
 
-from backend.types import NerTag, NerLabelGroup
-from chemdataextractor.doc import Paragraph
-
-PolymerLabels = ['POLYMER', 'MONOMER', 'POLYMER_FAMILY']
-ChemicalLabels = ['ORGANIC', 'INORGANIC']
-
-
-def check_relevant_ners(tags : list[NerTag],
-                        only_polymers : bool) -> bool:
-    """ Return True if all of name, property and values are available
-        in the predicted NER tags.
-        
-        tags :
-            List of NerTags extracted using MaterialsBERT.
-
-        only_polymers : 
-            Return true only if polymer tags are found, else return true
-            if organic or inorganic tags are also found.
-    """
-    criteria = [
-        'PROP_VALUE' in [item.label for item in tags],
-        'PROP_NAME'  in [item.label for item in tags],
-        any([
-            any([
-                only_polymers
-                and item.label in PolymerLabels
-                for item in tags
-            ]),
-            any([
-                not only_polymers
-                and item.label in PolymerLabels + ChemicalLabels
-                for item in tags
-            ]),
-        ])
-    ]
-
-    return all(criteria)
-
-
 def group_consecutive_tags(tags : list[NerTag]) -> list[NerLabelGroup]:
     """ Group all consecutive NER tags that have the same label.
         
@@ -141,7 +108,8 @@ def group_consecutive_tags(tags : list[NerTag]) -> list[NerLabelGroup]:
             else:
                 text = prev_group.text + group.text
 
-            prev_group.text = cleanup_parentheses(text)
+            prev_group.text = normalize.normText(text)
+
         elif prev_group is not None:
             # end of the last group
             groups.append(prev_group)
@@ -154,50 +122,82 @@ def group_consecutive_tags(tags : list[NerTag]) -> list[NerLabelGroup]:
     return groups
 
 
-def cleanup_parentheses(text : str) -> str:
-    """ Normalize and clean up parentheses and brackets by removing
-        spaces and extras.
-
-        text :
-            The text to clean up.
-    """
-    text = text.replace(' )', ')')
-    text = text.replace(' }', '}')
-    text = text.replace(' - ', '-')
-    text = text.replace(' ( ', '(')
-    text = text.replace('{ ', '{')
-    text = text.replace(' _ ', '_')
-    text = text.replace(' , ', ',')
-    text = text.replace(' / ', '/')
-    text = text.replace('( ', '(')
-    text = text.replace("' ", "'")
-    text = text.replace(" '", "'")
-    text = text.replace('" ', '"')
-    text = text.replace(' "', '"')
-    text = text.replace('[ ', '[')
-    text = text.replace(' ]', ']')
-    text = text.replace(' : ', ':')
-    if text.count('}') == text.count('{')-1:
-        text = text+'}'
-    if text.count(')') == text.count('(')-1:
-        # Assumes the missing closing bracket is in the end which is reasonable
-        text = text+')'
-    elif text.count(')') == text.count('(')+1:
-        # Last ) is being removed from the list of tokens which is ok
-        text = text[:-1]
-    return text
-
-
 def find_chemdata_abbr(text : str) -> list[tuple]:
     """ Find a list of abbreviations defined in a text using ChemDataExtractor.
         Returns a list of tuples containing abbreviations and full forms.
 
         text :
             The text to search for abbreviations.
-
     """
     para = Paragraph(text)
     return [
-        (abbr[0][0], cleanup_parentheses(' '.join(abbr[1])))
+        (abbr[0][0], normalize.cleanup_parentheses(' '.join(abbr[1])))
         for abbr in para.abbreviation_definitions
     ]
+
+
+def process_sentence(grouped_spans : list[NerLabelGroup],
+                     callback : callable, sentence_limit : int = None):
+    """
+    Extract indidividual sentences and their labels from a list
+    of NerLabelGroup.
+    Each individual sentences and labels are passed to the callback.
+    An optional limit can be specified to process only that many
+    sentences. Sentences are identified using the dot (.) character.
+    """
+
+    # if no consecutive group is defined in the list, return
+    if not grouped_spans:
+        return
+    
+    len_span = len(grouped_spans)
+    i = 0
+    sentence_num = 0
+
+    # for each consecutive groups in the list
+    while i < len_span:
+        # get the text
+        current_token = grouped_spans[i].text
+        current_sentence = []
+        labels = [] # Labels stored separately in order to do a quick scan of the sentence while processing it
+
+        # a token can be .
+        while (current_token != '.') and i < len_span:
+            # Assuming that . at the end of a token can only be a tokenization error
+            # The above solution is one simple way of fixing this, the other way is to test a deeper tokenization model
+            # We could also impose the additional constraint that the second condition only happen for recognized entity types 
+            # since that is where there is likely to be parsing failure
+
+            # get the text
+            current_token = grouped_spans[i].text
+
+            # add the text as current sentence
+            current_sentence.append(grouped_spans[i])
+
+            # add the corresponding label
+            labels.append(grouped_spans[i].label) # Might remove
+
+            # next group
+            i += 1
+
+            if not current_token:
+                print(f'Blank current_token found = {current_token}')
+
+            # if the last character is a period, break
+            # Assumes that a . at the end of a token must belong to a period.
+            # It could also belong to an abbreviation that we cannot disambiguate through this.
+            if current_token[-1]=='.':
+                break
+            # if i < len_span: current_token = grouped_spans[i].text
+
+        # Process the sentence to extract propery value pairs
+        callback(current_sentence, labels)
+
+        # This condition takes care of cases when consecutive periods occur in a sentence
+        if current_token == '.' and i < len_span and grouped_spans[i].text == '.':
+            i += 1
+
+        if sentence_limit and sentence_num > sentence_limit:
+            break
+
+        sentence_num += 1

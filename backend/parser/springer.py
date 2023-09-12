@@ -1,5 +1,5 @@
-from tabular import TableParser
-from document import HTMLDocumentParser
+from .tabular import TableParser
+from .document import HTMLDocumentParser
 
 
 class SpringerParser(HTMLDocumentParser):
@@ -64,6 +64,7 @@ class SpringerParser(HTMLDocumentParser):
         if self.body.strip() == "":
             self.body_xpath = '//div[@id="body"]'
             self.body = self.xpath_to_string(self.body_xpath)
+
 
 class _springerTableParser(TableParser):
     def __init__(self) -> None:

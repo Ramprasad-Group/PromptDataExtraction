@@ -44,6 +44,17 @@ WebUI  = Settings({
     'name': 'PromptDataExtract',
 })
 
+FullTextParse = Settings({
+    'paper_corpus_root_dir': None,
+    'runName': 'parse_papers',
+    'debug': True,
+    'debugCount': 10,
+    'loglevel': 8,
+    'add2postgres': True,
+    'add2mongo': True,
+    'mongodb_collection': 'polymer_DOI_records_dev',
+})
+
 Database  = Settings({
     'type': 'mongodb',
 })
@@ -58,7 +69,6 @@ Dataset  = Settings({
     'properties_json': 'data/property_metadata.json',
     'llm_properties_xl': 'data/Polymer-Property-List.xlsx',
     'rop_fulltext_xl': 'data/rop_fulltexts.xlsx',
-    'paper_corpus_root_dir': None,
 })
 
 LanguageModel = Settings({
@@ -89,7 +99,7 @@ PostGres = Settings({
     'ssh_host': '',
     'ssh_user': '',
     'ssh_pass': '',
-    'ssh_port': 21,
+    'ssh_port': 22,
     'db_host': 'localhost',
     'db_port': 5454,
     'db_name': 'test',
@@ -113,7 +123,7 @@ PEFullText = Settings({
     'n_shots': 1,
     'prompt': 5,
     'shot_sampling': 'baseline_diversity',
-    'mongodb_collection': 'polymer_DOI_records_prod',
+    'mongodb_collection': 'polymer_DOI_records_dev',
 })
 
 
@@ -136,6 +146,7 @@ def load_settings(settings_yaml: str = 'settings.yaml') -> bool:
     PostGres._items.update(_yaml.get('PostGres', {}))
     PEAbstract._items.update(_yaml.get('PEAbstract', {}))
     PEFullText._items.update(_yaml.get('PEFullText', {}))
+    FullTextParse._items.update(_yaml.get('FullTextParse', {}))
     return True
 
 
@@ -152,6 +163,7 @@ def save_settings(settings_yaml: str = 'settings.yaml'):
         'PostGres': PostGres._items,
         'PEAbstract': PEAbstract._items,
         'PEFullText': PEFullText._items,
+        'FullTextParse': FullTextParse._items,
     }
 
     with open(settings_yaml, 'w+') as fp:

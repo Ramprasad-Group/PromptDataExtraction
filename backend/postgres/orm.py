@@ -72,16 +72,30 @@ class PaperSections(ORMBase):
 
 
 class PaperTexts(ORMBase):
+    """
+    Newly parsed paper full texts, not migrated from Mongodb.
+
+    Attributes:
+        pid:    ID ForeignKey from the papers table.
+        pub:    Name of the publisher (folder in corpus).
+        doi:    Formatted doi.
+        doctype: HTML or XML (extension of the original file).
+        section: Optional section name if parsed from the paper.
+        tag:     Optional ag/selector used to parse the text.
+        text:    Actual text content.
+    """
+
     __tablename__ = "paper_texts"
 
     pid: Mapped[int] = mapped_column(ForeignKey("papers.id", ondelete='CASCADE'),
                         unique=False, index=True)
 
+    pub: Mapped[str] = mapped_column(Text)
     doi: Mapped[str] = mapped_column(Text, index=True)
-    doc: Mapped[str] = mapped_column(VARCHAR(length=6))
-    tag: Mapped[str] = mapped_column(Text)
-    name: Mapped[str] = mapped_column(Text)
-    body: Mapped[str] = mapped_column(Text)
+    doctype: Mapped[str] = mapped_column(VARCHAR(length=6))
+    section: Mapped[str] = mapped_column(Text, nullable=True)
+    tag: Mapped[str] = mapped_column(Text, nullable=True)
+    text: Mapped[str] = mapped_column(Text)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

@@ -41,6 +41,7 @@ class Frame:
                 col_len = len(self._tabl[key])
 
     def add(self, **kwargs):
+        """ Add row to dataframe. Use named arguments for the column values. """
         self._df = None
         if self._cols is None:
             self._cols = kwargs.keys()
@@ -58,3 +59,6 @@ class Frame:
             self._df = pd.DataFrame(self._tabl)
         return self._df
 
+    def save(self, outfile):
+        """ Save the built dataframe as a csv file. """
+        self.df.to_csv(outfile)

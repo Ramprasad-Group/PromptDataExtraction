@@ -3,7 +3,8 @@ import json
 from lxml import html, etree
 from datetime import datetime
 
-import tabular
+from . import tabular
+from . import paragraph
 from ..text.normalize import innerText, asciiText
 
 
@@ -46,8 +47,9 @@ class DocumentParser(object):
         self.body = ""
         self.wordcount = {}
 
-        # Tables
+        # Parsed items
         self.tables : list[tabular.TableParser] = []
+        self.paragraphs : list[paragraph.ParagraphParser] = []
         self.figures: list = []
         self.tablesfound = 0
 
@@ -126,8 +128,17 @@ class DocumentParser(object):
     def parse_tables(self):
         raise NotImplementedError()
     
-    def parse_sections(self):
-        raise NotImplementedError()
+    def parse_paragraphs(self):
+        """ Parse all the paragraphs from an XML document. """
+        for para_xpath in self.para_xpaths:
+            selected_elements = self._tree.xpath(para_xpath)
+
+            for item in selected_elements:
+                para = paragraph.ParagraphParser()
+                para.parse(item)
+
+                if para.is_valid():
+                    self.paragraphs.append(para)
 
     def add_section(self, name, tag, body):
         """ Add a text section. """
@@ -135,7 +146,7 @@ class DocumentParser(object):
             'name': name, 'tag': tag, 'body': body
         }
         
-    def parse(self, parse_tables=True, parse_sections=True):
+    def parse(self, parse_tables=True, parse_paragraphs=True):
         """
         Parse the loaded document. This is the method that
         controls how a document is parsed.
@@ -152,8 +163,11 @@ class DocumentParser(object):
                 needle = f"Table {tab.number}"
                 tab.descriptions = self.find_references(needle)
 
-        if parse_sections:
-            self.parse_sections()
+            self.remove_duplicate_tables()
+
+        if parse_paragraphs:
+            self.parse_paragraphs()
+            self.remove_duplicate_paragraphs()
 
         self.clean()
 
@@ -171,6 +185,21 @@ class DocumentParser(object):
                 tables.append(tabl)
                 captions.append(tabl.caption)
         self.tables = tables
+
+    def remove_duplicate_paragraphs(self):
+        """
+        Loop over the detected paragraphs, and remove duplicates.
+        Check for duplicates using text.
+        """
+        paras = []
+        texts = []
+        for para in self.paragraphs:
+            part_of_texts = [para.text in t for t in texts]
+            if para.text not in texts and not any(part_of_texts):
+                paras.append(para)
+                texts.append(para.text)
+
+        self.paragraphs = paras
 
     def find_word_count(self, word):
         """ Count the number of times a word occurs in the document. """
@@ -259,8 +288,8 @@ class DocumentParser(object):
             pr += "- date not set\n"
         if len(self.journal.strip()) == 0:
             pr += "- journal not set\n"
-        if len(self.sections.keys()) <= 3:
-            pr += "- sections not set/only few set\n"
+        if len(self.paragraphs) <= 3:
+            pr += "- paragraphs not set/only few set\n"
 
         return pr
 
@@ -288,6 +317,8 @@ class XMLDocumentParser(DocumentParser):
         self.body_xpath = '//*[local-name()="body"]'
         self.date_xpath = '//*[local-name()="date"]'
         self.journal_xpath = '//*[local-name()="journal"]'
+        self.para_xpaths = ['//*[local-name()="p"]']
+
 
     def parse_tables(self):
         # Tables from any XML namespace.
@@ -331,6 +362,7 @@ class HTMLDocumentParser(DocumentParser):
         self.body_xpath = '//div[contains(@class, "fulltext")]'
         self.date_xpath = '//div[contains(@class, "date")]'
         self.journal_xpath = '//div[contains(@class, "journal")]'
+        self.para_xpaths = ['//p']
 
     def _full_table_links(self, tree) -> list:
         # Return a list of a elements
@@ -358,3 +390,4 @@ class HTMLDocumentParser(DocumentParser):
         self.date = self.xpath_to_string(self.date_xpath)
         self.body = self.xpath_to_string(self.body_xpath)
         self.journal = self.xpath_to_string(self.journal_xpath)
+
