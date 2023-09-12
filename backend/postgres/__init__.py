@@ -12,7 +12,7 @@ SES = None
 
 class ssh:
     host = ''
-    port = 21
+    port = 22
     user = ''
     pswd = ''
 

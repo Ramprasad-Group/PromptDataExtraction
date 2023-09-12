@@ -7,3 +7,4 @@ data/
 *.xlsx
 *.json
 *.log
+.env
