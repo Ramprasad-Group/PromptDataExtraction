@@ -103,6 +103,33 @@ class PaperTexts(ORMBase):
         super().__init__(**kwargs)
 
 
+class FilteredTexts(ORMBase):
+    """
+    PostGres table to store the id of the rows in `paper_texts` that passed
+    a named filter, for example the NER or Tg filter.
+
+    Attributes:
+        para_id:    Foreign key referencing the source paragraph checked against
+                    the filter.
+
+        filter_name:    Filter name.
+
+        filter_desc:    Filter description/comment, how the filtering was done.
+
+    """
+
+    __tablename__ = "filtered_texts"
+
+    para_id: Mapped[int] = mapped_column(
+        ForeignKey("paper_texts.id", ondelete='CASCADE'), unique=False)
+    
+    filter_name: Mapped[str] = mapped_column(Text)
+    filter_desc: Mapped[str] = mapped_column(Text)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
 class PaperData(ORMBase):
     """
     PostGres table to store data extracted from a paragraph using
@@ -140,7 +167,7 @@ class PaperData(ORMBase):
     __tablename__ = "paper_data"
 
     para_id: Mapped[int] = mapped_column(
-        ForeignKey("paper_sections.id", ondelete='CASCADE'), unique=False)
+        ForeignKey("paper_texts.id", ondelete='CASCADE'), unique=False)
 
     doi: Mapped[str] = mapped_column(Text, index=True)
     property: Mapped[str] = mapped_column(Text, index=True)
@@ -157,7 +184,6 @@ class PaperData(ORMBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
 
 
 class Polymers(ORMBase):
@@ -269,7 +295,6 @@ class APIRequests(ORMBase):
         super().__init__(**kwargs)
 
 
-
 class PaperSections(ORMBase):
     """
     [Deprecated: superseded by the paper_texts table.]
@@ -304,20 +329,6 @@ class PaperSections(ORMBase):
         super().__init__(**kwargs)
 
 
-class TableMeta(ORMBase):
-    __tablename__ = "table_meta"
-
-    table : Mapped[str] = mapped_column(Text)
-    description: Mapped[str] = mapped_column(Text)
-    codeversion: Mapped[str] = mapped_column(Text, nullable=True)
-    tag: Mapped[str] = mapped_column(Text, nullable=True)
-
-    def __init__(self, table, **kwargs):
-        super().__init__(**kwargs)
-        self.table = table.__tablename__
-        print("Table:", self.table)
-
-
 class PaperTables(ORMBase):
     __tablename__ = "paper_tables"
 
@@ -341,6 +352,20 @@ class PaperTables(ORMBase):
         super().__init__(**kwargs)
         if self.date_added is None:
             self.date_added = datetime.now()
+
+
+class TableMeta(ORMBase):
+    __tablename__ = "table_meta"
+
+    table : Mapped[str] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text)
+    codeversion: Mapped[str] = mapped_column(Text, nullable=True)
+    tag: Mapped[str] = mapped_column(Text, nullable=True)
+
+    def __init__(self, table, **kwargs):
+        super().__init__(**kwargs)
+        self.table = table.__tablename__
+        print("Table:", self.table)
 
 
 if __name__ == "__main__":
