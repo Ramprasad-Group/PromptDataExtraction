@@ -1,5 +1,5 @@
 """Process all material entities identified in text"""
-from base_classes import RecordProcessor, MaterialMention, EntityList
+from .base_classes import RecordProcessor, MaterialMention, EntityList
 from itertools import combinations
 import Levenshtein
 

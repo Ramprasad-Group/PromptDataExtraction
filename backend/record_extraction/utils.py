@@ -112,3 +112,9 @@ class LoadNormalizationDataset:
         train_data = json.loads(train_data_text)
 
         return train_data
+
+def load_property_metadata(json_file : str):
+    # Metadata file that contains relevant information about each property
+    # such as units and coreferents
+    with open(json_file, 'r', encoding='utf-8') as fi:
+        return json.load(fi)

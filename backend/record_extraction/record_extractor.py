@@ -1,30 +1,41 @@
-import property_extraction, process_material_entities, material_amount_extraction, pre_processing, utils
 import time
 from chemdataextractor.doc import Paragraph
 
-class RelationExtraction:
-    def __init__(self, text, spans, normalization_dataset, polymer_filter=True, logger=None, verbose=False):
-        """
-        Calls all the submodules in order and returns the output from processing a single document
-        Parameters
-        ---------------
-        text: string
-            Plain text of document pre-processed and normalized by melda
-        spans: List[NamedTuple]
-            List each entry of which is a Namedtuple containing the token and its label
-        verbose: boolean
-            Return the token spans of property_name and property_value if True
-        
-        Needs normalization dataset as input and passed to ProcessMaterialEntities
+from . import (
+    property_extraction, process_material_entities, material_amount_extraction,
+    pre_processing, utils
+)
 
-        Returns
-        ---------------
-        output: dict
-            Contains parsed version of all material property records for given document
-        """
+class RelationExtraction:
+    """
+    Calls all the submodules in order and returns the output from processing a
+    single document.
+    
+    Parameters
+    ---------------
+    text: string
+        Plain text of document pre-processed and normalized by melda
+    spans: List[NamedTuple]
+        List each entry of which is a Namedtuple containing the token and its label
+    verbose: boolean
+        Return the token spans of property_name and property_value if True
+    
+    Needs normalization dataset as input and passed to ProcessMaterialEntities
+
+    Returns
+    ---------------
+    output: dict
+        Contains parsed version of all material property records for given document
+    """
+
+    def __init__(self, text : str, spans : list,
+                 normalization_dataset : dict, property_metadata : dict,
+                 polymer_filter=True, logger=None, verbose=False):
+
         self.text = text
         self.spans = spans
         self.normalization_dataset = normalization_dataset
+        self.property_metadata = property_metadata
         self.polymer_filter = polymer_filter
         self.logger = logger
         self.verbose = verbose
@@ -91,7 +102,11 @@ class RelationExtraction:
             self.material_entity_processor.run()
             timer['material_entities']=time.time()-begin
             begin = time.time()
-            self.prop_processor = property_extraction.PropertyExtractor(self.grouped_spans, self.text, property_mentions, abbreviation_pairs, logger=self.logger)
+            self.prop_processor = property_extraction.PropertyExtractor(
+                self.property_metadata,
+                self.grouped_spans, self.text, property_mentions,
+                abbreviation_pairs, logger=self.logger)
+
             self.prop_processor.run()
             timer['property_values']=time.time()-begin
             begin = time.time()
@@ -110,5 +125,11 @@ class RelationExtraction:
 
 
 def find_abbreviations(text):
+    """ Find a list of abbreviations using CDE. """
     p = Paragraph(text)
-    return [(tuple_entity[0][0], utils.token_post_processing(' '.join(tuple_entity[1]))) for tuple_entity in p.abbreviation_definitions]
+    return [
+        (
+            tuple_entity[0][0],
+            utils.token_post_processing(' '.join(tuple_entity[1]))
+        ) for tuple_entity in p.abbreviation_definitions
+    ]

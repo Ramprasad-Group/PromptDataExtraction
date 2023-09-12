@@ -1,5 +1,5 @@
 # Logic for extracting material amounts
-from base_classes import MaterialAmount, EntityList, RecordProcessor
+from .base_classes import MaterialAmount, EntityList, RecordProcessor
 
 
 class MaterialAmountExtractor(RecordProcessor):

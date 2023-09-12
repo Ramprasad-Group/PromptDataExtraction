@@ -1,8 +1,8 @@
 """Contains pre processing code to merge input tokens and parse material mentions while parsing the text"""
 
-import utils
-from base_classes import MaterialMention, RecordProcessor, EntityList, PropertyMention, GROUPED_SPAN_COLUMNS
 from collections import namedtuple
+from .base_classes import MaterialMention, RecordProcessor, EntityList, PropertyMention, GROUPED_SPAN_COLUMNS
+from . import utils
 
 class GroupTokens(RecordProcessor):
     def __init__(self, spans, logger=None):

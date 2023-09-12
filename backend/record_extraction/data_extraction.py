@@ -1,9 +1,9 @@
 from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
 
-import record_extractor
-import utils as record_extractor_utils
-from utils import LoadNormalizationDataset
-from base_classes import GROUPED_SPAN_COLUMNS
+from . import record_extractor
+from . import utils as record_extractor_utils
+from .utils import LoadNormalizationDataset
+from .base_classes import GROUPED_SPAN_COLUMNS
 
 import torch
 import traceback
