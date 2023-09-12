@@ -1,6 +1,12 @@
+""" Extract property value pairs and post process them to obtain a single property record """
+from record_extraction.base_classes import EntityList, PropertyValuePair, RecordProcessor
+from collections import Counter, deque
+import itertools
+import re
+import json
 
 
-class PropertyExtractor:
+class PropertyExtractor(RecordProcessor):
     def __init__(self, grouped_spans=None, text=None, property_mentions=None, abbreviation_pairs=None, print_spans=False, logger=None):
         """
         Calls all the submodules in order to process grouped_spans and return a list of property_value_pairs
@@ -27,7 +33,7 @@ class PropertyExtractor:
         self.property_value_descriptor_list = ['<', '>', '~', '=', 'and', '≈', 'to', '-']
         self.property_mentions = property_mentions
         self.property_value_pairs = EntityList()
-        property_metadata_file = '' # Metadata file that contains relevant information about each property such as units and coreferents
+        property_metadata_file = './data/property_metadata.json' # Metadata file that contains relevant information about each property such as units and coreferents
         with open(property_metadata_file, 'r', encoding='utf-8') as fi:
             self.prop_records_metadata = json.load(fi)
         self.convert_fraction_to_percentage = [value['property_list'] for key, value in self.prop_records_metadata.items() if value['unit_list'][0]=='%']
@@ -467,8 +473,6 @@ class PropertyExtractor:
             elif property_entity.property_unit == '' and property_entity.property_numeric_value<=1.0 and property_entity.property_numeric_value>=0.0 and property_entity.entity_name in self.convert_fraction_to_percentage:
                 property_entity.property_numeric_value *= 100
                 property_entity.property_unit = '%'
-            
-            
             
 
     def run(self):
