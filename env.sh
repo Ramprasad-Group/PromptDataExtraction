@@ -13,6 +13,8 @@ if [[ ! -f _conda_env/bin/pip ]]; then
     pip -v install -r requirements.txt
     pip -v install -r pranav/requirements.txt
 
+    cde data download
+
     python -m spacy download en_core_web_sm
 fi
 
