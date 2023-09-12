@@ -72,7 +72,7 @@ class PaperTexts(ORMBase):
 
         pid:        ID ForeignKey from the papers table.
 
-        pub:        Name of the publisher (folder in corpus).
+        directory:  Directory containing the file in corpus (not publisher).
 
         doi:        Formatted doi string.
 
@@ -92,12 +92,12 @@ class PaperTexts(ORMBase):
     pid: Mapped[int] = mapped_column(ForeignKey("papers.id", ondelete='CASCADE'),
                         unique=False, index=True)
 
-    pub: Mapped[str] = mapped_column(Text)
     doi: Mapped[str] = mapped_column(Text, index=True)
     doctype: Mapped[str] = mapped_column(VARCHAR(length=6))
     section: Mapped[str] = mapped_column(Text, nullable=True)
     tag: Mapped[str] = mapped_column(Text, nullable=True)
     text: Mapped[str] = mapped_column(Text)
+    directory: Mapped[str] = mapped_column(Text)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
