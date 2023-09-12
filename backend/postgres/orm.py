@@ -121,9 +121,10 @@ class FilteredTexts(ORMBase):
     __tablename__ = "filtered_texts"
 
     para_id: Mapped[int] = mapped_column(
-        ForeignKey("paper_texts.id", ondelete='CASCADE'), unique=False)
+        ForeignKey("paper_texts.id", ondelete='CASCADE'),
+        unique=False, index=True)
     
-    filter_name: Mapped[str] = mapped_column(Text)
+    filter_name: Mapped[str] = mapped_column(Text, index=True)
     filter_desc: Mapped[str] = mapped_column(Text)
 
     def __init__(self, **kwargs):
@@ -167,7 +168,8 @@ class PaperData(ORMBase):
     __tablename__ = "paper_data"
 
     para_id: Mapped[int] = mapped_column(
-        ForeignKey("paper_texts.id", ondelete='CASCADE'), unique=False)
+        ForeignKey("paper_texts.id", ondelete='CASCADE'),
+        unique=False, index=True)
 
     doi: Mapped[str] = mapped_column(Text, index=True)
     property: Mapped[str] = mapped_column(Text, index=True)
@@ -253,43 +255,46 @@ class APIRequests(ORMBase):
 
     Attributes:
 
-        codeversion: version of the current code implementation in date format
+        api:        Type of the API endpoint, eg. openai, polyai (string).
 
-        model: model used to query ex. gpt-3.5-turbo (string)
+        model:      Model used to query eg. gpt-3.5-turbo (string).
 
-        output: the actual output of the model.
+        request:    Brief request string.
 
-        notes: a description of what was being tested/performed
+        response:   Brief response string.
+        
+        status:     Success, fail, too long etc. (string)
 
-        request: the request object sent to the api endpoint (json)
+        details:    Additional details about the interaction, eg. number of
+                    shots, comments etc. (dict)
 
-        shots: the number of shots (> 0 if few shots learning)
+        request_obj:
+                    The full request object sent to the api endpoint (dict)
 
-        status: success, fail, too long etc. (string)
+        response_obj:
+                    The full response object received from the
+                    api endpoint. (dict)
 
-        response: model response
+        request_tokens:
+                    Cost or the number of tokens used for request / cost. (int)
 
-        about: what things we inquired about (ex. paper id, table id etc.) (json)
-
-        request_tokens: number of tokens used for request
-
-        response_tokens: number of tokens used for response
+        response_tokens:
+                    Cost or the number of tokens used for response / cost. (int)
 
     """
 
-    __tablename__ = "llm_api_request"
+    __tablename__ = "api_requests"
 
-    codeversion: Mapped[str] = mapped_column(VARCHAR(length=15))
     model: Mapped[str] = mapped_column(Text)
-    output: Mapped[str] = mapped_column(Text)
+    api: Mapped[str] = mapped_column(Text)
+    request: Mapped[str] = mapped_column(Text)
+    response: Mapped[str] = mapped_column(Text)
     status: Mapped[Optional[str]] = mapped_column(Text)
-    notes: Mapped[Optional[str]] = mapped_column(Text)
-    request: Mapped[Dict] = mapped_column(JSON)
-    shots: Mapped[int] = mapped_column(Integer, default=0)
-    response: Mapped[Dict] = mapped_column(JSON)
-    about: Mapped[Dict] = mapped_column(JSON)
-    request_tokens: Mapped[int] = mapped_column(Integer, default=0)
-    response_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    details: Mapped[Dict] = mapped_column(JSON)
+    request_obj: Mapped[Dict] = mapped_column(JSON)
+    response_obj: Mapped[Dict] = mapped_column(JSON)
+    request_tokens: Mapped[int] = mapped_column(Integer, default=-1)
+    response_tokens: Mapped[int] = mapped_column(Integer, default=-1)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -297,7 +302,7 @@ class APIRequests(ORMBase):
 
 class PaperSections(ORMBase):
     """
-    [Deprecated: superseded by the paper_texts table.]
+    [Deprecated: superseded by the `paper_texts` table.]
     PostGres table containing paragraph texts migrated from Mongodb parsed
     by Pranav. Some paragraphs were not migrated correctly due to inconsistent
     formats of the mongodb data.
