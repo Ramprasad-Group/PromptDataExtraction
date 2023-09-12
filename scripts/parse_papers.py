@@ -10,8 +10,6 @@ import sys
 import sett
 import pylogg as log
 
-from backend.data import mongodb
-
 from backend import postgres
 from backend.postgres.orm import Papers, PaperTexts
 
@@ -23,60 +21,6 @@ from backend.parser.paragraph import ParagraphParser
 sett.load_settings()
 postgres.load_settings()
 db = postgres.connect()
-
-mongo = mongodb.connect()
-collection = mongo[sett.FullTextParse.mongodb_collection]
-
-
-def add_to_mongodb(doi : str, publisher : str, doctype : str,
-                   para : ParagraphParser):
-    """ Add a paragraph text to mongodb if it already does not
-        exist in the database.
-    """
-
-    itm = collection.find_one({'DOI': doi})
-    if itm is None:
-        log.error(f"{doi} not found in MongoDB.")
-        return False
-    
-    fulltext = itm.get('full_text')
-    newsection = {
-        "type": 'paragraph',
-        "pub": publisher,
-        "format": doctype,
-        "name": "main",
-        "content": [para.text.strip()]
-    }
-
-    # do not add abstract
-    abstract = itm.get('abstract', '')
-    if type(abstract) == list and len(abstract) > 0:
-        abstract = abstract[0]
-    else:
-        abstract = ''
-    if para.text.strip() == abstract.strip():
-        return False
-
-    if fulltext is not None:
-        for section in fulltext:
-            if 'content' in section:
-                if para.text.strip() in section['content']:
-                    log.trace(f"Paragraph in MongoDB: {para.text}. Skipped.")
-                    return False
-        fulltext.append(newsection)
-    else:
-        fulltext = [newsection]
-
-    record_id = itm.get('_id')
-    collection.update_one({"_id": record_id}, {
-            "$set": {
-                "full_text": fulltext
-            }
-        }
-    )
-
-    log.trace(f"Add to MongoDB: {para.text}")
-    return True
 
 
 def add_to_postgres(paper : Papers, publisher : str, doctype : str,
@@ -133,11 +77,6 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
         for para in doc.paragraphs:
             print("\t", "-" * 50)
             print("\t", para.text, flush=True)
-
-    if sett.FullTextParse.add2mongo:
-        for para in doc.paragraphs:
-            if add_to_mongodb(doi, publisher, doc.doctype, para):
-                mn += 1
 
     if sett.FullTextParse.add2postgres:
         # get the foreign key
