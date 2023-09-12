@@ -6,43 +6,26 @@ from sqlalchemy import Text, JSON, ForeignKey, Integer, DateTime, Float, ARRAY, 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
-class APIRequests(ORMBase):
+class Papers(ORMBase):
     """
-    Persistence of API interaction.
+    PostGres table containing summary information about a paper including
+    DOI, directory, title, abstract etc.
+    Additional summary columns can be included later if needed.
 
     Attributes:
-        codeversion: version of the current code implementation in date format
-        model: model used to query ex. gpt-3.5-turbo (string)
-        output: the actual output of the model
-        notes: a description of what was being tested/performed
-        request: the request object sent to the api endpoint (json)
-        shots: the number of shots (> 0 if few shots learning)
-        status: success, fail, too long etc. (string)
-        response: model response
-        about: what things we inquired about (ex. paper id, table id etc.) (json)
-        request_tokens: number of tokens used for request
-        response_tokens: number of tokens used for response
+        doi:        DOI string of the paper.
+
+        publisher:  Full name of the publisher, see also `directory`.
+
+        title:      Title of the paper..
+
+        abstract:   Abstract of the paper.
+
+        format:     One of xml, html. (planned: pdf, txt etc.)
+
+        directory:  Directory name in corpus where the file can be found.
+
     """
-
-    __tablename__ = "llm_api_request"
-
-    codeversion: Mapped[str] = mapped_column(VARCHAR(length=15))
-    model: Mapped[str] = mapped_column(Text)
-    output: Mapped[str] = mapped_column(Text)
-    status: Mapped[Optional[str]] = mapped_column(Text)
-    notes: Mapped[Optional[str]] = mapped_column(Text)
-    request: Mapped[Dict] = mapped_column(JSON)
-    shots: Mapped[int] = mapped_column(Integer, default=0)
-    response: Mapped[Dict] = mapped_column(JSON)
-    about: Mapped[Dict] = mapped_column(JSON)
-    request_tokens: Mapped[int] = mapped_column(Integer, default=0)
-    response_tokens: Mapped[int] = mapped_column(Integer, default=0)
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class Papers(ORMBase):
     __tablename__ = "papers"
 
     doi: Mapped[str] = mapped_column(Text, unique=True)
@@ -56,29 +39,18 @@ class Papers(ORMBase):
         super().__init__(**kwargs)
 
 
-class PaperSections(ORMBase):
-    __tablename__ = "paper_sections"
-
-    pid: Mapped[int] = mapped_column(ForeignKey("papers.id", ondelete='CASCADE'),
-                        unique=False, index=True)
-
-    doi: Mapped[str] = mapped_column(Text, index=True)
-    format: Mapped[str] = mapped_column(VARCHAR(length=4))
-    type: Mapped[str] = mapped_column(Text)
-    name: Mapped[str] = mapped_column(Text)
-    text: Mapped[str] = mapped_column(Text)
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
 class FilteredPapers(ORMBase):
     """
-    List of DOIs for each filter.
+    PostGres table to store the list of DOIs that passed a named filter,
+    for example the polymer filter.
 
     Attributes:
-        doi:            Formatted doi.
+        doi:            Formatted doi string that passed the filter.
+
         filter_name:    Filter name.
-        filter_desc:    Filter description/comment.
+
+        filter_desc:    Filter description/comment, how the filtering was done.
+
     """
 
     __tablename__ = "filtered_papers"
@@ -90,18 +62,29 @@ class FilteredPapers(ORMBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+
 class PaperTexts(ORMBase):
     """
-    Newly parsed paper full texts, not migrated from Mongodb.
+    PostGres table containing newly parsed paper full texts paragraphs
+    (not migrated from Mongodb) using the `backend.parser` module.
 
     Attributes:
-        pid:    ID ForeignKey from the papers table.
-        pub:    Name of the publisher (folder in corpus).
-        doi:    Formatted doi.
-        doctype: HTML or XML (extension of the original file).
-        section: Optional section name if parsed from the paper.
-        tag:     Optional ag/selector used to parse the text.
-        text:    Actual text content.
+
+        pid:        ID ForeignKey from the papers table.
+
+        pub:        Name of the publisher (folder in corpus).
+
+        doi:        Formatted doi string.
+
+        doctype:    html or xml (extension of the original file).
+
+        section:    [Optional] Section name if parsed from the paper.
+                    (Example: abstract, introduction etc.)
+
+        tag:        [Optional] Tag/selector used to parse the text.
+                    (Example: p, span etc.)
+
+        text:       Actual text content of the paragraph.
     """
 
     __tablename__ = "paper_texts"
@@ -121,16 +104,48 @@ class PaperTexts(ORMBase):
 
 
 class PaperData(ORMBase):
+    """
+    PostGres table to store data extracted from a paragraph using
+    the NER or LLM pipeline for each property.
+
+    Attributes:
+        para_id:    Foreign key referencing the source paragraph used to extract
+                    the data.
+
+        doi:        DOI string of the paper.
+
+        property:   Name of the property.
+
+        material:   Name of the material/polymer.
+
+        value:      Extracted value for the property.
+
+        unit:       Extracted unit for the property.
+
+        condition:  (dict) Additional conditions/information about the
+                    extracteddata.
+
+        smiles:     [Optional] SMILES string for the polymer/material if
+                    available.
+
+        extraction_method:
+                    Name of the extraction method, (example: bert,
+                    openai, polyai etc.)
+
+        extraction_model:
+                    Name of the extraction model, (example: materials bert,
+                    gpt-3.5-turbo, vicuna-33B etc.)
+
+    """
     __tablename__ = "paper_data"
 
-    sid: Mapped[int] = mapped_column(
-        ForeignKey("paper_sections.id", ondelete='CASCADE'),
-        unique=False)
+    para_id: Mapped[int] = mapped_column(
+        ForeignKey("paper_sections.id", ondelete='CASCADE'), unique=False)
 
     doi: Mapped[str] = mapped_column(Text, index=True)
     property: Mapped[str] = mapped_column(Text, index=True)
 
-    polymer: Mapped[str] = mapped_column(Text)
+    material: Mapped[str] = mapped_column(Text)
     value : Mapped[float] = mapped_column(Float)
     unit: Mapped[str] = mapped_column(Text, nullable=True)
 
@@ -140,26 +155,49 @@ class PaperData(ORMBase):
     extraction_method: Mapped[str] = mapped_column(Text)
     extraction_model: Mapped[str] = mapped_column(Text, nullable=True)
 
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
 
-class TableMeta(ORMBase):
-    __tablename__ = "table_meta"
-
-    table : Mapped[str] = mapped_column(Text)
-    description: Mapped[str] = mapped_column(Text)
-    codeversion: Mapped[str] = mapped_column(Text, nullable=True)
-    tag: Mapped[str] = mapped_column(Text, nullable=True)
-
-    def __init__(self, table, **kwargs):
-        super().__init__(**kwargs)
-        self.table = table.__tablename__
-        print("Table:", self.table)
-
 
 class Polymers(ORMBase):
+    """
+    PostGres table containing known polymers, types, SMILES etc.
+    (Migrated from https://github.com/Ramprasad-Group/polymer_scholar/blob/master/data/normalized_polymer_dictionary.json)
+
+    Attributes:
+
+        name:       Name of the polymer.
+
+        is_norm:    True of the name is normalized.
+
+        norm_id:    ID of the row containing the normalized name if name is not
+                    normalized. NULL if already normalized.
+
+        is_polymer: True if the material is a polymer.
+
+        norm_name:  Normalized name.
+
+        iupac_name: IUPAC name of the polymer if available.
+
+        SMILES:     SMILES string of the polymer if available.
+
+        is_family_name:
+                    True if the name is a type of polymer family.
+
+        is_copolymer:
+                    True if the polymer is a copolymer.
+
+        is_blend:   True if the polymer is a blend.
+
+        is_composite:
+                    True if the material is a composite.
+
+        comments:   (dict) Comments about the polymer.
+
+        details:    (dict) Additional details about the polymer.
+
+    """
     __tablename__ = "polymers"
 
     # for all entities
@@ -182,6 +220,102 @@ class Polymers(ORMBase):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+
+class APIRequests(ORMBase):
+    """
+    PostGres table to store API requests and responses.
+
+    Attributes:
+
+        codeversion: version of the current code implementation in date format
+
+        model: model used to query ex. gpt-3.5-turbo (string)
+
+        output: the actual output of the model.
+
+        notes: a description of what was being tested/performed
+
+        request: the request object sent to the api endpoint (json)
+
+        shots: the number of shots (> 0 if few shots learning)
+
+        status: success, fail, too long etc. (string)
+
+        response: model response
+
+        about: what things we inquired about (ex. paper id, table id etc.) (json)
+
+        request_tokens: number of tokens used for request
+
+        response_tokens: number of tokens used for response
+
+    """
+
+    __tablename__ = "llm_api_request"
+
+    codeversion: Mapped[str] = mapped_column(VARCHAR(length=15))
+    model: Mapped[str] = mapped_column(Text)
+    output: Mapped[str] = mapped_column(Text)
+    status: Mapped[Optional[str]] = mapped_column(Text)
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+    request: Mapped[Dict] = mapped_column(JSON)
+    shots: Mapped[int] = mapped_column(Integer, default=0)
+    response: Mapped[Dict] = mapped_column(JSON)
+    about: Mapped[Dict] = mapped_column(JSON)
+    request_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    response_tokens: Mapped[int] = mapped_column(Integer, default=0)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+
+class PaperSections(ORMBase):
+    """
+    [Deprecated: superseded by the paper_texts table.]
+    PostGres table containing paragraph texts migrated from Mongodb parsed
+    by Pranav. Some paragraphs were not migrated correctly due to inconsistent
+    formats of the mongodb data.
+
+    Attributes:
+        doi:        DOI string of the paper.
+
+        format:     One of xml, html.
+
+        type:       Section type (h2, p etc.)
+
+        name:       Section name (Introduction, Methods etc.)
+
+        text:       Paragraph full text.
+    
+    """
+    __tablename__ = "paper_sections"
+
+    pid: Mapped[int] = mapped_column(ForeignKey("papers.id", ondelete='CASCADE'),
+                        unique=False, index=True)
+
+    doi: Mapped[str] = mapped_column(Text, index=True)
+    format: Mapped[str] = mapped_column(VARCHAR(length=4))
+    type: Mapped[str] = mapped_column(Text)
+    name: Mapped[str] = mapped_column(Text)
+    text: Mapped[str] = mapped_column(Text)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class TableMeta(ORMBase):
+    __tablename__ = "table_meta"
+
+    table : Mapped[str] = mapped_column(Text)
+    description: Mapped[str] = mapped_column(Text)
+    codeversion: Mapped[str] = mapped_column(Text, nullable=True)
+    tag: Mapped[str] = mapped_column(Text, nullable=True)
+
+    def __init__(self, table, **kwargs):
+        super().__init__(**kwargs)
+        self.table = table.__tablename__
+        print("Table:", self.table)
 
 
 class PaperTables(ORMBase):
