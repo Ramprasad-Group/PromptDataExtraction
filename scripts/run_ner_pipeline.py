@@ -20,7 +20,8 @@ def extract_data(text) -> dict:
         and records containing materials, amounts, properties etc.
     """
     ner_tags = bert.get_tags(text)
-    relation_extractor = record_extractor.RelationExtraction(text, ner_tags, norm_dataset, prop_metadata)
+    relation_extractor = record_extractor.RelationExtraction(
+        text, ner_tags, norm_dataset, prop_metadata)
     output_para, timings = relation_extractor.process_document()
     return output_para
 
@@ -45,13 +46,21 @@ def add_material_to_postgres(
 
     assert type(material) == dict
 
-    # check if already exists
-    if get_material(paragraph.id, material.get('entity_name')):
+    entity_name = material.get('entity_name')
+    if not entity_name:
         return False
+
+    # check if already exists
+    if get_material(paragraph.id, entity_name):
+        return False
+    
+    if material['components']:
+        log.debug("Components: {}", material['components'])
+        breakpoint()
 
     matobj = ExtractedMaterials()
     matobj.para_id = paragraph.id
-    matobj.entity_name = material.get('entity_name')
+    matobj.entity_name = entity_name
     matobj.material_class = material.get('material_class', '')
     matobj.polymer_type = material.get('polymer_type')
     matobj.normalized_material_name = material.get('normalized_material_name')
@@ -76,41 +85,24 @@ def add_amount_to_postgres(
 
         Returns true if the row was added to db.
     """
-    assert type(amount) == dict
+    if type(amount) != dict:
+        return False
 
     name : str = amount.get('entity_name', None)
-
     if not name:
         return False
     
-    # The material entity name may not exist in the materials table.
-    material = get_material(paragraph.id, name)
-    if material is None:
-        if not name.startswith("poly"):
-            name = "poly" + name
-            material = get_material(paragraph.id, name)
-            if material is None:
-                log.warn("Material not found in extracted_materials "
-                         "to store amount: {}.", amount)
-                return False
-        else:
-            name = name.lstrip("poly")
-            material = get_material(paragraph.id, name)
-            if material is None:
-                log.warn("Material not found in extracted_materials "
-                         "to store amount:", amount)
-                return False
-
     # check if already exists
-    if ExtractedAmount().get_one(db,{
-        'material_id': material.id,
-        'material_amount': amount.get('material_amount')
+    if ExtractedAmount().get_one(db, {
+        'para_id': paragraph.id,
+        'entity_name': name
     }):
         return False
 
 
     amtobj = ExtractedAmount()
-    amtobj.material_id = material.id
+    amtobj.para_id = paragraph.id
+    amtobj.entity_name = name
     amtobj.material_amount = amount.get('material_amount')
 
     amtobj.insert(db)
@@ -128,6 +120,16 @@ def add_property_to_postgres(
     assert type(property) == dict
 
     material_name = material_map.get('entity_name')
+    if not material_name:
+        return False
+
+    # Make sure it's a number or ignore.
+    numeric_value = property.get('property_numeric_value')
+    try:
+        numeric_value = float(numeric_value)
+    except:
+        return False
+
     material = get_material(paragraph.id, material_name)
     if material is None:
         log.warn("Material {} not found in extracted_materials "
@@ -138,6 +140,7 @@ def add_property_to_postgres(
     if ExtractedProperties().get_one(db,{
         'material_id': material.id,
         'entity_name': property.get('entity_name', None),
+        'numeric_value': numeric_value,
     }):
         return False
 
@@ -146,7 +149,7 @@ def add_property_to_postgres(
     propobj.entity_name = property.get('entity_name')
     propobj.value = property.get('property_value')
     propobj.coreferents = list(property.get('coreferents'))
-    propobj.numeric_value = property.get('property_numeric_value')
+    propobj.numeric_value = numeric_value
     propobj.numeric_error = property.get('property_numeric_error')
     propobj.value_average = property.get('property_value_avg')
     propobj.value_descriptor = property.get('property_value_descriptor')
@@ -219,20 +222,34 @@ def run_pipeline(debugCount):
     # Get the last para id added to DB.
     pass
 
+def test_ground_dataset(debugCount, mode = 'Tg'):
+    # Tg and/or bandgap curated ground datasets.
+    t2 = log.trace("Loading ground dataset.")
+    gnd = GroundDataset()
+    tg_gnd, tg_nlp = gnd.create_dataset(mode)
+    t2.done("Loaded ground dataset.")
 
-def debug_single_para(para_id : int):
-    paragraph = PaperTexts()
-    paragraph.id = 1
-    paragraph.pid = 1
-    paragraph.directory = 'test'
-    paragraph.doctype = 'html'
-    paragraph.doi = '10.1039/c6gc03238a'
-    paragraph.text = """
-    The general and efficient copolymerization of lactones with hydroxy-acid bioaromatics was accomplished via a concurrent ring-opening polymerization (ROP) and polycondensation methodology. Suitable lactones were L-lactide or ε-caprolactone and four hydroxy-acid comonomers were prepared as hydroxyethyl variants of the bioaromatics syringic acid, vanillic acid, ferulic acid, and p-coumaric acid. Copolymerization conditions were optimized on a paradigm system with a 20:80 feed ratio of caprolactone:hydroxyethylsyringic acid. Among six investigated catalysts, polymer yield was optimized with 1 mol % of Sb_{2}O_{3}, affording eight copolymer series in good yields (32-95 % for lactide; 80-95 % for caprolactone). Half of the polymers were soluble in the GPC solvent hexafluoroisopropanol and analyzed to high molecular weight, with M_{n} = 10500-60700 Da. Mass spectrometry and ^{1}H NMR analysis revealed an initial ring-opening formation of oligolactones, followed by polycondensation of these with the hydroxy-acid bioaromatic, followed by transesterification, yielding a random copolymer. By copolymerizing bioaromatics with L-lactide, the glass transition temperature (T_{g}) of polylactic acid (PLA, 50 °C) could be improved and tuned in the range of 62-107 °C; the thermal stability (T_{95 %}) of PLA (207 °C) could be substantially increased up to 323 °C. Similarly, bioaromatic incorporation into polycaprolactone (PCL, T_{g} = -60 °C) accessed an improved T_{g} range from -48 to 105 °C, while exchanging petroleum-based content with biobased content. Thus, this ROP/polycondensation methodology yields substantially or fully biobased polymers with thermal properties competitive with incumbent packaging thermoplastics such as polyethylene terephthalate (T_{g} = 67 °C) or polystyrene (T_{g} = 95 °C).
-    """
+    abstract = None
+    n = 0
+    for doi, value in tg_gnd.items():
+        n += 1
+        if debugCount > 0 and n > debugCount:
+            break
 
-    process_paragraph(paragraph)
-    db.commit()
+        print(n, doi)
+        abstract = [item['abstract'] for item in value if item['abstract'] != ''][0]
+        if debugCount > 0:
+            print(abstract)
+
+        paragraph = PaperTexts()
+        paragraph.id = n
+        paragraph.pid = 1
+        paragraph.directory = 'ground_dataset'
+        paragraph.doctype = 'csv'
+        paragraph.doi = doi
+        paragraph.text = abstract
+
+        process_paragraph(paragraph)
 
 
 def init_logger():
@@ -248,16 +265,15 @@ def init_logger():
     )
 
     if sett.Run.debugCount > 0:
-        log.note("Debug run. Will parse maximum {} files.",
+        log.note("Debug run. Will process maximum {} items.",
                  sett.Run.debugCount)
     else:
-        log.note("Production run. Will parse all files in {}",
-                 sett.FullTextParse.paper_corpus_root_dir)
+        log.info("Production run. Will process all items.")
 
     if not sett.FullTextParse.add2postgres:
         log.warn("Will not be adding to postgres.")
     else:
-        log.note("Will be adding extracted data to postgres.")
+        log.info("Will be adding extracted data to postgres.")
 
     return t1
 
@@ -279,15 +295,8 @@ if __name__ == '__main__':
     bert = bert_model.MaterialsBERT(sett.NERPipeline.model)
     bert.init_local_model(device=sett.NERPipeline.pytorch_device)
 
-    # Tg and/or bandgap curated ground datasets.
-    # gnd = GroundDataset()
-    # tg_gnd, tg_nlp = gnd.create_dataset()
-
-    if len(sys.argv) > 1:
-        debug_single_para(int(sys.argv[1]))
-    else:
-        run_pipeline(sett.Run.debugCount)
-
+    # run_pipeline(sett.Run.debugCount)
+    test_ground_dataset(sett.Run.debugCount)
 
     t1.done("All Done.")
     log.close()
