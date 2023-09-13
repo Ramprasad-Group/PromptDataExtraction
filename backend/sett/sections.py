@@ -33,19 +33,6 @@ class full_text_parse:
     paper_corpus_root_dir : str = None
     """ Path to the corpus directory. """
 
-    runName : str = 'test'
-    """ Name of the current run."""
-
-    debugCount : int = 10
-    """ Enable debug mode if > 0 """
-
-    loglevel : int = 8
-    """ Logging level, higher is more verbose.
-        8 = Debug
-        7 = Trace
-        6 = Info etc.
-    """
-
     add2postgres : bool = True
     """ Whether to add parsed items to postgres."""
 
