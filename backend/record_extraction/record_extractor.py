@@ -86,8 +86,13 @@ class RelationExtraction:
             material_records.append(material_record)
         return material_records
     
-    def process_document(self):
-        """Call all individual modules and processes the input text to return a material property record"""
+    def process_document(self) -> (dict, dict):
+        """
+        Call all individual modules and processes the input text to return a material property record.
+
+        Returns: (extracted data, timer dictionary) if passed NER filter,
+            else (False, None) if the text does not pass the filter.
+        """
         if self.check_relevance():
             timer = {'pre_processing': 0, 'abbreviations': 0,  'material_entities': 0, 'property_values': 0, 'material_amount': 0, 'link_records': 0}
             begin = time.time()
