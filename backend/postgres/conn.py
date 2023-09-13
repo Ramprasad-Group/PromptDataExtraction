@@ -17,7 +17,7 @@ def ssh_tunnel(host, port, user, pswd,
             remote_bind_address=(fwd_host, fwd_port),
         )
         server.start()
-        log.note("SSH tunnel established.")
+        log.info("SSH tunnel established.")
         return server
     else:
         log.trace("SSH tunnel skipped.")

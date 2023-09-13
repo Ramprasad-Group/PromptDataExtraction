@@ -512,8 +512,7 @@ class TableMeta(ORMBase):
 
 
 if __name__ == "__main__":
-    import sett
-    from backend import postgres
+    from backend import postgres, sett
 
     sett.load_settings()
     postgres.load_settings()
