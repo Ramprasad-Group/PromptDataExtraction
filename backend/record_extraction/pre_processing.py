@@ -68,6 +68,7 @@ class GroupTokens(RecordProcessor):
                             if token in [':', '/']:
                                 grouped_spans.append(token_label(token, 'O', token_start+j, token_start+j))
                             else:
+                                mat_label = current_label
                                 for mat_mention in material_mentions.entity_list:
                                     if mat_mention.entity_name==token:
                                         mat_label=mat_mention.material_class
