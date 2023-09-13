@@ -296,7 +296,7 @@ if __name__ == '__main__':
     bert.init_local_model(device=sett.NERPipeline.pytorch_device)
 
     # run_pipeline(sett.Run.debugCount)
-    test_ground_dataset(sett.Run.debugCount)
+    test_ground_dataset(sett.Run.debugCount, mode='bandgap')
 
     t1.done("All Done.")
     log.close()
