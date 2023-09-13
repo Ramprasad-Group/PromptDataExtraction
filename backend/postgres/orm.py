@@ -179,9 +179,11 @@ class ExtractedAmount(ORMBase):
 
     __tablename__ = "extracted_material_amounts"
 
-    material_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("extracted_materials.id"), nullable=False
-    )
+    para_id: Mapped[int] = mapped_column(
+        ForeignKey("paper_texts.id", ondelete='CASCADE'),
+        unique=False, index=True)
+    
+    entity_name: Mapped[str] = mapped_column(Text)
     material_amount: Mapped[str] = mapped_column(Text)
 
     def __init__(self, **kw):
