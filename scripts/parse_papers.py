@@ -7,10 +7,9 @@ Validate, normalize and add to database.
 
 import os
 import sys
-import sett
 import pylogg as log
 
-from backend import postgres
+from backend import postgres, sett
 from backend.postgres.orm import Papers, PaperTexts
 
 from backend.utils.frame import Frame
