@@ -256,8 +256,8 @@ class PropertyMetadata(ORMBase):
     units: Mapped[List[str]] = mapped_column(ARRAY(String))
     scale: Mapped[PropertyScale] = mapped_column(String, default='normal')
     short_name: Mapped[str]= mapped_column(Text, nullable=True)
-    lower_limit: Mapped[Float]= mapped_column(Float)
-    upper_limit: Mapped[Float]= mapped_column(Float)
+    lower_limit: Mapped[Float]= mapped_column(Float, nullable=True)
+    upper_limit: Mapped[Float]= mapped_column(Float, nullable=True)
 
     def __init__(self, **kw):
         super().__init__(**kw)
