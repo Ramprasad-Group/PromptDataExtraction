@@ -61,8 +61,8 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
 
     doc = PaperParser(publisher, filepath)
     if doc is None:
-        log.warn(f"Ignore: {formatted_name} (Parser not found)")
-        return None, pg, mn
+        log.error(f"Ignore: {formatted_name} (Parser not found)")
+        return None, pg
 
     try:
         doc.parse(parse_tables=False)
@@ -70,9 +70,9 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
         log.trace("Found {} paragraphs", len(doc.paragraphs))
     except Exception as err:
         log.error("Failed to parse: {} ({})", formatted_name, err)
-        return None, pg, mn
+        return None, pg
 
-    if sett.FullTextParse.debug:
+    if sett.Run.debugCount > 0:
         for para in doc.paragraphs:
             print("\t", "-" * 50)
             print("\t", para.text, flush=True)
@@ -90,19 +90,15 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
 
         db.commit()
 
-    return doc, pg, mn
+    return doc, pg
 
 
 def walk_directory():
     """ Recursively walk a directory containing literature files.
         Create a CSV list by parsing meta information.
     """
-    outcsv = sett.FullTextParse.runName + "/parse_papers_info.csv"
+    outcsv = sett.Run.directory + "/parse_papers_info.csv"
     directory = sett.FullTextParse.paper_corpus_root_dir
-
-    # How many files to parse
-    max_files = sett.FullTextParse.debugCount \
-        if sett.FullTextParse.debug else -1
 
     log.info("Walking directory: %s" %directory)
     df = Frame()
@@ -111,35 +107,32 @@ def walk_directory():
     for root, subdirs, files in os.walk(directory):
         n = 1
         total_pg = 0
-        total_mn = 0
         log.trace("Entering: %s" %root)
 
         for filename in files:
             abs_path = os.path.join(root, filename)
-            doc, pg, mn = parse_file(abs_path, directory)
+            doc, pg = parse_file(abs_path, directory)
 
             if doc is None:
                 continue
 
             df.add(filename=filename, filepath=doc.docpath, ftype=doc.doctype,
                     publisher=doc.publisher, npara=len(doc.paragraphs),
-                    postgres_added=pg, mongodb_added=mn)
+                    postgres_added=pg)
 
-            # Not more than max_files per directory
+            # Not more than debugCount per directory
             # Use -1 for no limit.
             n += 1
             total_pg += pg
-            total_mn += mn
 
             if (n-1) % 50 == 0:
-                log.info("Processed {} papers. Added {} paragraphs to Postgres."
-                         " Added {} paragraphs to MongoDB",
-                         n-1, total_pg, total_mn)
+                log.info("Processed {} papers. "
+                         "Added {} paragraphs to Postgres.",
+                         n-1, total_pg)
 
-            if max_files > 0 and n > max_files:
+            if sett.Run.debugCount > 0 and n > sett.Run.debugCount:
                 log.note("Processed maximum {} papers.", n-1)
-                log.info("Added {} paragraphs to Postgres, "
-                         "{} paragraphs to MongoDB.", total_pg, total_mn)
+                log.info("Added {} paragraphs to Postgres, ", total_pg)
                 break
 
     # save the file list
@@ -161,20 +154,14 @@ def log_run_info():
     log.info("CWD: {}", os.getcwd())
     log.info("Host: {}", os.uname())
 
-    if sett.FullTextParse.debug:
+    if sett.Run.debugCount > 0:
         log.note("Debug run. Will parse maximum {} files.",
                  sett.FullTextParse.debugCount)
     else:
         log.note("Production run. Will parse all files in {}",
                  sett.FullTextParse.paper_corpus_root_dir)
 
-    log.info("Using loglevel = {}", sett.FullTextParse.loglevel)
-
-    if not sett.FullTextParse.add2mongo:
-        log.warn("Will not be adding to mongodb.")
-    else:
-        log.note("Will be adding to mongo collection: {}",
-                 sett.FullTextParse.mongodb_collection)
+    log.info("Using loglevel = {}", sett.Run.logLevel)
 
     if not sett.FullTextParse.add2postgres:
         log.warn("Will not be adding to postgres.")
@@ -186,9 +173,9 @@ def log_run_info():
 
 if __name__ == '__main__':
     
-    os.makedirs(sett.FullTextParse.runName, exist_ok=True)
-    log.setFile(open(sett.FullTextParse.runName+"/parse_papers.log", "w+"))
-    log.setLevel(sett.FullTextParse.loglevel)
+    os.makedirs(sett.Run.directory, exist_ok=True)
+    log.setFile(open(sett.Run.directory+"/parse_papers.log", "w+"))
+    log.setLevel(sett.Run.logLevel)
     log.setFileTimes(show=True)
     log.setConsoleTimes(show=True)
 
