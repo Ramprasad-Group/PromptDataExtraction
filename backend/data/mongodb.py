@@ -1,5 +1,5 @@
 from pymongo import MongoClient
-import sett
+from backend import sett
 
 def connect():
     client = MongoClient(

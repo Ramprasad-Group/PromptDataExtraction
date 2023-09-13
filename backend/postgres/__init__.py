@@ -24,7 +24,7 @@ class db:
     name = 'postgres'
 
 def load_settings():
-    import sett
+    from .. import sett
     ssh.host = sett.PostGres.ssh_host
     ssh.port = 21 if sett.PostGres.ssh_port is None else sett.PostGres.ssh_port
     ssh.user = sett.PostGres.ssh_user
