@@ -18,12 +18,13 @@ class MaterialsBERT:
 
     def init_local_model(self, device = 0):
         # Load model and tokenizer
+        t1 = logger.trace("Loading bert model to device = {}.", device)
         tokenizer = AutoTokenizer.from_pretrained(self.model, model_max_length=512)
         model = AutoModelForTokenClassification.from_pretrained(self.model)
         self.pipeline = pipeline(task="ner", model=model, tokenizer=tokenizer,
                                 aggregation_strategy="simple",
                                 device=device)
-        logger.info("Loaded materials bert.")
+        t1.done("Loaded bert model.")
 
     def get_tags(self, text : str):
         """ Return NER labels for a text. """
