@@ -65,7 +65,8 @@ def engine():
 def raw_sql(query : str, params = {}) -> list[namedtuple]:
     """
         Execute a raw sql query on the database.
-        Ex. result = sql('SELECT * FROM my_table WHERE my_column = :val', {'val': 5})
+        
+        Ex. result = raw_sql('SELECT * FROM my_table WHERE my_column = :val', {'val': 5})
 
         Returns a list of rows.
     """
