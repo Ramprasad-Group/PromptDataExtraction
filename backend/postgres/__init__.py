@@ -1,3 +1,6 @@
+from collections import namedtuple
+from sqlalchemy import text
+
 from . import conn
 from .base import ORMBase
 from .ops import Operation
@@ -58,3 +61,15 @@ def disconnect():
 def engine():
     connect()
     return ENG
+
+def raw_sql(query : str, params = {}) -> list[namedtuple]:
+    """
+        Execute a raw sql query on the database.
+        Ex. result = sql('SELECT * FROM my_table WHERE my_column = :val', {'val': 5})
+
+        Returns a list of rows.
+    """
+    results= SES.execute(text(query), params)
+
+    Row = namedtuple('Row', results.keys())
+    return [Row(*r) for r in results.fetchall()]
