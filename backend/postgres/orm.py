@@ -2,7 +2,10 @@ from datetime import datetime
 from typing import Any, Optional, Dict, Literal, List
 
 from backend.postgres import ORMBase
-from sqlalchemy import Text, JSON, ForeignKey, Integer, DateTime, Float, ARRAY, VARCHAR, Boolean, String
+from sqlalchemy import (
+    Text, JSON, ForeignKey, Integer, DateTime, Float,
+    ARRAY, VARCHAR, Boolean, String
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
@@ -105,33 +108,31 @@ class PaperTexts(ORMBase):
         super().__init__(**kwargs)
 
 
-class FilteredTexts(ORMBase):
-    """
-    PostGres table to store the id of the rows in `paper_texts` that passed
-    a named filter, for example the NER or Tg filter.
+
+ParagraphFilters = Literal['property_tg', 'property_td', 'property_tm',
+                           'property_thermal_conductivity', 'NER']
+
+class FilteredParagraphs(ORMBase):
+    '''
+    Table to track of the paragraphs passing a particular filter.
 
     Attributes:
-        para_id:    Foreign key referencing the source paragraph checked against
-                    the filter.
+        para_id:        Foreign key referencing to the paragraph from
+                        paper_texts.
 
-        filter_name:    Filter name.
+        filter_name:    Must be one of `ParagraphFilters`.
+    '''
 
-        filter_desc:    Filter description/comment, how the filtering was done.
-
-    """
-
-    __tablename__ = "filtered_texts"
+    __tablename__ = "filtered_paragraphs"
 
     para_id: Mapped[int] = mapped_column(
-        ForeignKey("paper_texts.id", ondelete='CASCADE'),
-        unique=False, index=True)
-    
-    filter_name: Mapped[str] = mapped_column(Text, index=True)
-    filter_desc: Mapped[str] = mapped_column(Text)
+        Integer, ForeignKey("paper_texts.id"), nullable= False,
+        unique=False, index=True,
+    )
+    filter_name : Mapped[ParagraphFilters] = mapped_column(String)
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
+    def __init__(self, **kw):
+        super().__init__(**kw)
 
 
 class ExtractedMaterials(ORMBase):
@@ -161,7 +162,7 @@ class ExtractedMaterials(ORMBase):
     normalized_material_name: Mapped[str] = mapped_column(Text)
     coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
     components: Mapped[List[str]] = mapped_column(ARRAY(String))
-    additional_info: Mapped[Dict] = mapped_column(JSON, nullable=True)
+    additional_info: Mapped[Dict] = mapped_column(JSON, default={})
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -176,7 +177,7 @@ class ExtractedAmount(ORMBase):
         material_amount
     '''
 
-    __tablename__ = "materials_amount"
+    __tablename__ = "extracted_material_amounts"
 
     material_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("extracted_materials.id"), nullable=False
@@ -220,11 +221,11 @@ class ExtractedProperties(ORMBase):
     coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
     numeric_value: Mapped[float] = mapped_column(Float)
     numeric_error: Mapped[float] = mapped_column(Float, nullable=True)
-    value_average: Mapped[bool] = mapped_column(Boolean, default=None, nullable= True)
-    value_descriptor: Mapped[str] = mapped_column(Text)
-    unit: Mapped[str]= mapped_column(Text)
-    conditions: Mapped[Dict] = mapped_column(JSON, nullable=True)
-    extraction_method: Mapped[ExtractionMethod]
+    value_average: Mapped[bool] = mapped_column(Boolean, default=False)
+    value_descriptor: Mapped[str] = mapped_column(Text, nullable=True)
+    unit: Mapped[str]= mapped_column(Text, nullable=True)
+    conditions: Mapped[Dict] = mapped_column(JSON, default={})
+    extraction_method: Mapped[ExtractionMethod] = mapped_column(Text)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -251,34 +252,13 @@ class PropertyMetadata(ORMBase):
     name: Mapped[str] = mapped_column(Text)
     other_names: Mapped[List[str]] = mapped_column(ARRAY(String))
     units: Mapped[List[str]] = mapped_column(ARRAY(String))
-    scale: Mapped[PropertyScale]
-    short_name: Mapped[str]= mapped_column(Text)
+    scale: Mapped[PropertyScale] = mapped_column(String, default='normal')
+    short_name: Mapped[str]= mapped_column(Text, nullable=True)
     lower_limit: Mapped[Float]= mapped_column(Float)
     upper_limit: Mapped[Float]= mapped_column(Float)
 
     def __init__(self, **kw):
         super().__init__(**kw)
-
-
-
-ParagraphFilters = Literal['property_tg', 'property_td', 'property_tm', 'property_thermal_conductivity', 'NER']
-
-class FilteredParagraphs:
-    '''
-    Table to track the paragraphs passing a particular filter
-
-    Attributes:
-        para_id: Foreign key referencing to the paragraph from paper_texts
-        filter_name: must be 
-    '''
-    para_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("paper_texts.id"), nullable= False
-    )
-    filter_name = Mapped[ParagraphFilters]
-
-    def __init__(self, **kw):
-        super().__init__(**kw)
-
 
 
 class PaperData(ORMBase):
