@@ -2,8 +2,8 @@ import ast
 import pandas as pd
 from collections import defaultdict
 
-import sett
 from . import mongodb
+from backend import sett
 
 import pylogg
 log = pylogg.New('dataset')
@@ -14,7 +14,7 @@ class GroundDataset:
         """Create dataset for zero shot inference"""
         # Setup database connection
         self.db = mongodb.connect()
-        self.collection = self.db[sett.PEAbstract.mongodb_collection]
+        self.collection = self.db[sett.NERPipeline.mongodb_collection]
     
     def create_dataset(self,  mode='Tg'):
         """Create dataset for downstream zero shot inference"""
@@ -22,13 +22,13 @@ class GroundDataset:
         assert mode in ['Tg', 'bandgap', 'PSC']
 
         if mode=='Tg':
-            df_ground = pd.read_excel(sett.Dataset.tg_ground_xl, keep_default_na=False)
-            df_nlp = pd.read_csv(sett.Dataset.tg_extracted_csv, keep_default_na=False)
+            df_ground = pd.read_excel(sett.DataFiles.tg_ground_xl, keep_default_na=False)
+            df_nlp = pd.read_csv(sett.DataFiles.tg_extracted_csv, keep_default_na=False)
             property_name = 'glass transition temperature'
 
         elif mode=='bandgap':
-            df_ground = pd.read_excel(sett.Dataset.bandgap_ground_xl, keep_default_na=False)
-            df_nlp = pd.read_csv(sett.Dataset.bandgap_extracted_csv, keep_default_na=False)
+            df_ground = pd.read_excel(sett.DataFiles.bandgap_ground_xl, keep_default_na=False)
+            df_nlp = pd.read_csv(sett.DataFiles.bandgap_extracted_csv, keep_default_na=False)
             property_name = 'bandgap'
 
         # df_PSC = pd.read_excel(self.PSC_dataset_location, keep_default_na=False)

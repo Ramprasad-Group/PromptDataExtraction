@@ -27,6 +27,10 @@ class ner_pipeline:
     pytorch_device : int = 0
     """ GPU id to load the BERT model. """
 
+    mongodb_collection : str = 'modular_run_4'
+    """ Mongodb ground/curated dataset collection. """
+
+
 
 @dataclass
 class full_text_parse:
