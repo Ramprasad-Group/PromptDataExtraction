@@ -134,7 +134,7 @@ class FilteredParagraphs(ORMBase):
 
     para_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("paper_texts.id"), nullable= False,
-        unique=False, index=True,
+        unique=True, index=True,
     )
     ner_filter: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -468,9 +468,11 @@ class CuratedData(ORMBase):
 
     Attributes:
 
+        para_id:    Foreign key referencing the source paragraph in paper_texts.
+
         doi:        DOI string of the paper.
 
-        name:       Name of the material.
+        material:   Name of the material.
 
         property_name:
                     Name of the property.
@@ -478,6 +480,9 @@ class CuratedData(ORMBase):
         property_value:
                     String representing numerical value and unit for
                     the property.
+
+        material_coreferents:
+                    List of material other names.
 
     """
 
