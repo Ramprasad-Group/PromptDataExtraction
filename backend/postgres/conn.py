@@ -26,6 +26,7 @@ def ssh_tunnel(host, port, user, pswd,
 
 def setup_engine(host, port, user, pswd, name,
         *, proxy : SSHTunnelForwarder = None, db_url = None):
+    t2 = log.trace("Connecting to PostGres.")
     if db_url is None:
         if proxy is None:
             db_url = "postgresql+psycopg2://{}:{}@{}:{}/{}".format(
@@ -34,7 +35,7 @@ def setup_engine(host, port, user, pswd, name,
             db_url = "postgresql+psycopg2://{}:{}@{}:{}/{}".format(
                 user, pswd, proxy.local_bind_host, proxy.local_bind_port, name)
     engine = create_engine(db_url)
-    log.trace("DB engine created.")
+    t2.done("Connected to PostGres DB: {}", name)
     return engine
 
 
