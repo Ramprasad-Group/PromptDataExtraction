@@ -457,21 +457,18 @@ class CuratedData(ORMBase):
                     String representing numerical value and unit for
                     the property.
 
-        text:       Source text.
-
-        text_type:  Type or section of the source text. Eg. abstract,
-                    introduction etc.    
     """
 
     __tablename__ = "curated_data"
+
+    para_id: Mapped[int] = mapped_column(
+        ForeignKey("paper_texts.id"), unique=False, index=True)
 
     doi: Mapped[str] = mapped_column(Text, index=True)
     material: Mapped[str] = mapped_column(Text)
     property_name: Mapped[str] = mapped_column(Text)
     property_value: Mapped[str] = mapped_column(Text)
     material_coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
-    text_type: Mapped[str] = mapped_column(Text, nullable=True)
-    text: Mapped[str] = mapped_column(Text)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
