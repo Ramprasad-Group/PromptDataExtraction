@@ -93,6 +93,30 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
     return doc, pg
 
 
+def parse_polymer_papers(directory : str = 'acs'):
+    # get the list of dois for specific publisher
+    query = """
+    SELECT * FROM (
+	    SELECT p.doi FROM filtered_papers fp JOIN papers p ON p.doi = fp.doi WHERE p.directory = :pub
+    ) AS poly WHERE poly.doi NOT IN (
+	    SELECT DISTINCT(pt.doi) FROM paper_texts pt WHERE pt.directory = :pub
+    );
+    """
+
+    recs = postgres.raw_sql(query, {'pub': directory})
+
+    log.info("Found {} dois.", len(recs))
+
+    for p in recs[:100]:
+        print(p)
+
+    # get file name for the doi
+
+    # parse and store the file
+
+
+
+
 def walk_directory():
     """ Recursively walk a directory containing literature files.
         Create a CSV list by parsing meta information.
@@ -184,6 +208,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         parse_file(sys.argv[1])
     else:
-        walk_directory()
+        # walk_directory()
+        parse_polymer_papers('acs')
 
     t1.done("All Done.")
