@@ -94,8 +94,11 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
 
 
 def parse_polymer_papers(root : str, directory : str = 'acs'):
-    # get the list of dois for specific publisher that were not found in
-    # paper_texts
+    """ Get the list of DOIs that are polymer papers and not found in the
+        paper_texts table, for a specific publisher directory. Parse and
+        add to paper_texts.
+    """
+
     query = """
     SELECT * FROM (
 	    SELECT p.doi, p.doctype FROM filtered_papers fp
@@ -139,12 +142,6 @@ def parse_polymer_papers(root : str, directory : str = 'acs'):
             log.note("Processed maximum {} papers.", n-1)
             log.info("Added {} paragraphs to Postgres, ", total_pg)
             break
-
-    # get file name for the doi
-
-    # parse and store the file
-
-
 
 
 def walk_directory():
