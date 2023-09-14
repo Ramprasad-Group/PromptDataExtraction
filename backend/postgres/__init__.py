@@ -36,7 +36,10 @@ def load_settings():
     db.port = sett.PostGres.db_port
     db.user = sett.PostGres.db_user
     db.pswd = sett.PostGres.db_pswd
-    db.name = sett.PostGres.db_name
+    try:
+        db.name = sett.Run.databaseName
+    except:
+        db.name = sett.PostGres.db_name
 
 
 def connect():

@@ -256,8 +256,8 @@ class PropertyMetadata(ORMBase):
     units: Mapped[List[str]] = mapped_column(ARRAY(String))
     scale: Mapped[PropertyScale] = mapped_column(String, default='normal')
     short_name: Mapped[str]= mapped_column(Text, nullable=True)
-    lower_limit: Mapped[Float]= mapped_column(Float)
-    upper_limit: Mapped[Float]= mapped_column(Float)
+    lower_limit: Mapped[Float]= mapped_column(Float, nullable=True)
+    upper_limit: Mapped[Float]= mapped_column(Float, nullable=True)
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -438,6 +438,44 @@ class APIRequests(ORMBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+
+class CuratedData(ORMBase):
+    """
+    PostGres table containing curated ground truth data.
+
+    Attributes:
+
+        doi:        DOI string of the paper.
+
+        name:       Name of the material.
+
+        property_name:
+                    Name of the property.
+
+        property_value:
+                    String representing numerical value and unit for
+                    the property.
+
+        text:       Source text.
+
+        text_type:  Type or section of the source text. Eg. abstract,
+                    introduction etc.    
+    """
+
+    __tablename__ = "curated_data"
+
+    doi: Mapped[str] = mapped_column(Text, index=True)
+    material: Mapped[str] = mapped_column(Text)
+    property_name: Mapped[str] = mapped_column(Text)
+    property_value: Mapped[str] = mapped_column(Text)
+    material_coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
+    text_type: Mapped[str] = mapped_column(Text, nullable=True)
+    text: Mapped[str] = mapped_column(Text)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
 
 
 class PaperSections(ORMBase):
