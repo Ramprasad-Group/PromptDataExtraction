@@ -3,6 +3,7 @@
 import pylogg as log
 
 from backend import postgres, sett
+from backend.text import normalize
 from backend.postgres.orm import Papers, PaperTexts
 
 def add_to_postgres(paper : Papers):
@@ -22,7 +23,7 @@ def add_to_postgres(paper : Papers):
     paragraph.doctype = paper.doctype
     paragraph.section = 'abstract'
     paragraph.tag = None
-    paragraph.text = paper.abstract
+    paragraph.text = normalize.normText(paper.abstract)
     paragraph.insert(db)
 
     log.trace(f"Added to PostGres: {paper.abstract}")
@@ -35,7 +36,12 @@ db = postgres.connect()
 
 
 query = """
-SELECT p.id FROM papers p JOIN filtered_papers fp ON fp.doi = p.doi;
+SELECT * FROM (
+    SELECT p.id FROM papers p JOIN filtered_papers fp ON fp.doi = p.doi
+) AS poly WHERE poly.id NOT IN (
+    SELECT pt.pid FROM paper_texts pt
+);
+
 """
 
 t2 = log.info("Querying list of filtered polymer DOIs.")
