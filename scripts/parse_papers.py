@@ -138,12 +138,12 @@ def parse_polymer_papers(root : str, directory : str = 'acs'):
 
         if (n-1) % 50 == 0:
             log.info("Processed {} papers. Added {} paragraphs to Postgres.",
-                     n-1, total_pg)
+                     n, total_pg)
 
         # Not more than debugCount per run
         # Use -1 for no limit.
         if sett.Run.debugCount > 0 and n > sett.Run.debugCount:
-            log.note("Processed maximum {} papers.", n-1)
+            log.note("Processed maximum {} papers.", n)
             log.info("Added {} paragraphs to Postgres, ", total_pg)
             break
 
