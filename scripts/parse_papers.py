@@ -118,6 +118,7 @@ def parse_polymer_papers(root : str, directory : str = 'acs'):
     total_pg = 0
 
     for row in records:
+        n += 1
         doi = row.doi
         doctype = row.doctype
         filename = doi2filename(doi, doctype)
@@ -125,11 +126,14 @@ def parse_polymer_papers(root : str, directory : str = 'acs'):
         if not os.path.isfile(abs_path):
             log.error("File not found: {}", abs_path)
 
-        doc, pg = parse_file(abs_path, directory)
-        if doc is None:
+        try:
+            doc, pg = parse_file(abs_path, directory)
+            if doc is None:
+                continue
+        except Exception as err:
+            log.error(f"Parse error: {abs_path} ({err})")
             continue
 
-        n += 1
         total_pg += pg
 
         if (n-1) % 50 == 0:
@@ -193,6 +197,7 @@ def filename2doi(doi : str):
     doi = doi.replace("@", "/").rstrip('.html')
     doi = doi.rstrip(".xml")
     return doi
+
 
 def doi2filename(doi : str, doctype : str):
     filename = doi.replace("/", "@")
