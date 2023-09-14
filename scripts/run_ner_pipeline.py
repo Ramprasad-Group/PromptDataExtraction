@@ -26,7 +26,7 @@ def extract_data(text) -> dict:
     return output_para
 
 
-def get_material(para_id : int, material_name : str):
+def get_material(para_id : int, material_name : str) -> ExtractedMaterials:
     """ Return an extracted material object using a para id and entity name.
         Returns None if not found.
     """
