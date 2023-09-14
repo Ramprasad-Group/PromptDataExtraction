@@ -66,6 +66,28 @@ class FilteredPapers(ORMBase):
         super().__init__(**kwargs)
 
 
+class TableCursor(ORMBase):
+    """
+    Postgres table to keep track of last processed row.
+
+    Attributes:
+        name:       Name of the process/filter.
+        table:      Name of the table processed.
+        row:        Last processed row number.
+        description:
+                    Optional comment or description.
+    """
+    __tablename__ = "table_cursor"
+
+    name : Mapped[str] = mapped_column(Text)
+    table : Mapped[str] = mapped_column(Text)
+    row: Mapped[int] = mapped_column(Integer)
+    comment : Mapped[str] = mapped_column(Text, nullable=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
 
 class PaperTexts(ORMBase):
     """
