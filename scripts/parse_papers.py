@@ -22,7 +22,7 @@ postgres.load_settings()
 db = postgres.connect()
 
 
-def add_to_postgres(paper : Papers, publisher : str, doctype : str,
+def add_to_postgres(paper : Papers, directory : str, doctype : str,
                     para : ParagraphParser):
     """ Add a paragraph text to postgres if it already does not
         exist in the database.
@@ -35,7 +35,7 @@ def add_to_postgres(paper : Papers, publisher : str, doctype : str,
     
     paragraph = PaperTexts()
     paragraph.pid = paper.id
-    paragraph.pub = publisher
+    paragraph.directory = directory
     paragraph.doi = paper.doi
     paragraph.doctype = doctype
     paragraph.section = None
@@ -57,9 +57,9 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
     formatted_name = filepath.replace(root, "")
 
     doi = filename2doi(filename)
-    publisher = filepath.split("/")[-2]
+    directory = filepath.split("/")[-2]
 
-    doc = PaperParser(publisher, filepath)
+    doc = PaperParser(directory, filepath)
     if doc is None:
         log.error(f"Ignore: {formatted_name} (Parser not found)")
         return None, pg
@@ -85,7 +85,7 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
             if paper is None:
                 log.warn(f"{doi} not found in postgres.")
                 break
-            elif add_to_postgres(paper, publisher, doc.doctype, para):
+            elif add_to_postgres(paper, directory, doc.doctype, para):
                 pg += 1
 
         db.commit()
@@ -93,22 +93,52 @@ def parse_file(filepath, root = "") -> DocumentParser | None:
     return doc, pg
 
 
-def parse_polymer_papers(directory : str = 'acs'):
-    # get the list of dois for specific publisher
+def parse_polymer_papers(root : str, directory : str = 'acs'):
+    # get the list of dois for specific publisher that were not found in
+    # paper_texts
     query = """
     SELECT * FROM (
-	    SELECT p.doi FROM filtered_papers fp JOIN papers p ON p.doi = fp.doi WHERE p.directory = :pub
+	    SELECT p.doi, p.doctype FROM filtered_papers fp
+        JOIN papers p ON p.doi = fp.doi WHERE p.directory = :dirname
     ) AS poly WHERE poly.doi NOT IN (
-	    SELECT DISTINCT(pt.doi) FROM paper_texts pt WHERE pt.directory = :pub
+	    SELECT DISTINCT(pt.doi) FROM paper_texts pt
+        WHERE pt.directory = :dirname
     );
     """
 
-    recs = postgres.raw_sql(query, {'pub': directory})
+    t2 = log.info("Querying list of non-parsed DOIs.")
+    records = postgres.raw_sql(query, {'dirname': directory})
+    t2.done("Found {} DOIs not parsed.", len(records))
 
-    log.info("Found {} dois.", len(recs))
+    n = 0
+    pg = 0
+    total_pg = 0
 
-    for p in recs[:100]:
-        print(p)
+    for row in records:
+        doi = row.doi
+        doctype = row.doctype
+        filename = doi2filename(doi, doctype)
+        abs_path = os.path.join(root, directory, filename)
+        if not os.path.isfile(abs_path):
+            log.error("File not found: {}", abs_path)
+
+        doc, pg = parse_file(abs_path, directory)
+        if doc is None:
+            continue
+
+        n += 1
+        total_pg += pg
+
+        if (n-1) % 50 == 0:
+            log.info("Processed {} papers. Added {} paragraphs to Postgres.",
+                     n-1, total_pg)
+
+        # Not more than debugCount per run
+        # Use -1 for no limit.
+        if sett.Run.debugCount > 0 and n > sett.Run.debugCount:
+            log.note("Processed maximum {} papers.", n-1)
+            log.info("Added {} paragraphs to Postgres, ", total_pg)
+            break
 
     # get file name for the doi
 
@@ -150,8 +180,7 @@ def walk_directory():
             total_pg += pg
 
             if (n-1) % 50 == 0:
-                log.info("Processed {} papers. "
-                         "Added {} paragraphs to Postgres.",
+                log.info("Processed {} papers. Added {} paragraphs to DB.",
                          n-1, total_pg)
 
             if sett.Run.debugCount > 0 and n > sett.Run.debugCount:
@@ -168,19 +197,24 @@ def filename2doi(doi : str):
     doi = doi.rstrip(".xml")
     return doi
 
+def doi2filename(doi : str, doctype : str):
+    filename = doi.replace("/", "@")
+    filename = filename + "." + doctype
+    return filename
+
 
 def log_run_info():
     """
         Log run information for reference purposes.
         Returns a log Timer.
     """
-    t1 = log.note("FullTextParse Run: {}", sett.FullTextParse.runName)
+    t1 = log.note("FullTextParse: {}", sett.Run.directory)
     log.info("CWD: {}", os.getcwd())
     log.info("Host: {}", os.uname())
 
     if sett.Run.debugCount > 0:
         log.note("Debug run. Will parse maximum {} files.",
-                 sett.FullTextParse.debugCount)
+                 sett.Run.debugCount)
     else:
         log.note("Production run. Will parse all files in {}",
                  sett.FullTextParse.paper_corpus_root_dir)
@@ -190,7 +224,8 @@ def log_run_info():
     if not sett.FullTextParse.add2postgres:
         log.warn("Will not be adding to postgres.")
     else:
-        log.note("Will be adding to postgres table: paper_texts")
+        log.note("Will be adding to {}.paper_texts",
+                 sett.PostGres.db_name)
 
     return t1
 
@@ -209,6 +244,6 @@ if __name__ == '__main__':
         parse_file(sys.argv[1])
     else:
         # walk_directory()
-        parse_polymer_papers('acs')
+        parse_polymer_papers(sett.FullTextParse.paper_corpus_root_dir, 'acs')
 
     t1.done("All Done.")
