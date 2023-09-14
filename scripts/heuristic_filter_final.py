@@ -42,20 +42,31 @@ material_entity_types = ['POLYMER', 'POLYMER_FAMILY', 'MONOMER', 'ORGANIC']
 
 filtration_dict = defaultdict(int)
 
-def add_to_filtered_paragrahs(para, filter_name):
-	paragraph = FilteredParagraphs().get_one(db, {'para_id': para.id, 'filter_name': filter_name})
+
+
+def add_to_filtered_paragrahs(para, filter_name, found_status):
+	paragraph = FilteredParagraphs().get_one(db, {'para_id': para.id})
+	setattr(filter_name)
+
+	#if paragraph found update the entry corresponding to filter_name
 	if paragraph is not None:
-			log.trace(f"Paragraph in PostGres: {para.id}. Skipped.")
-			return False
-	
-	obj = FilteredParagraphs()
-	obj.para_id = para.id
-	obj.filter_name = filter_name
-	obj.insert(db)
+		paragraph.filter_name = found_status
+		# db.commit()
+		log.trace(f"Paragraph in PostGres: {para.id}. Updated {filter_name} status.")
 
-	log.trace(f"Added to PostGres: {para.id}")
+	else:
+		#if paragraph not found in table, add entry
+		obj = FilteredParagraphs()
+		obj.para_id = para.id
+		obj.filter_name = found_status
+		obj.insert(db)
+		log.trace(f"Added paragraph to PostGres: {para.id}")
 
-	return True
+	if found_status:
+		log.note(f"{para.id} passed the heuristic filter.")
+	else:
+		log.trace(f"{para.id} did not pass the heuristic filter.")
+
 			
 
 	
@@ -77,9 +88,9 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 
 	log.info(f'Number of documents belonging to publisher {publisher_directory}: {len(poly_dois)}')
 
-	relevant_paras = 0
+	parsed_para = 0
 	processed_dois = 0
-
+	
 	for doi in poly_dois:
 
 		if sett.Run.debugCount >0:
@@ -88,31 +99,36 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 			
 		log.trace(f"Processing {doi}")
 
-		# processed_dois +=1
 		filtration_dict['total_dois'] +=1
 
 		paragraphs = PaperTexts().get_all(db, {'doi': doi})
 		log.trace(f'Number of paragraphs found: {len(paragraphs)}')
-
-		relevant_doi = False
+		
+		# relevant_doi = False
 		relevant_doi_paras = 0
+
 		for para in paragraphs:
+			
 			filtration_dict['total_paragraphs'] +=1
 			found = process_property(mode= mode,keyword_list=keyword_list, para= para, prop_metadata=prop_metadata)
+			add_to_filtered_paragrahs(para=para, filter_name = filter_name, found_status= found)
+			
+			if filtration_dict['total_paragraphs'] % 1 == 0:
+				db.commit()
 			
 			if found:
-				log.warn(f"{para.id} passed the heuristic filter ")
-				relevant_paras +=1
+				# relevant_paras +=1
 				relevant_doi_paras +=1
-
-				if add_to_filtered_paragrahs(para=para, filter_name = filter_name):
-					if relevant_paras % 1 == 0:
-						db.commit()
+		
+				# if add_to_filtered_paragrahs(para=para, filter_name = filter_name, found_status= found):
+					# if relevant_paras % 50 == 0:
+					# 	db.commit()
 					
 
-			else:
-				log.info(f"{para.id} did not pass the heuristic filter")
-				# log.trace(para.text)
+			# else:
+			# 	log.info(f"{para.id} did not pass the heuristic filter")
+			# 	# log.trace(para.text)
+		
 		
 		if relevant_doi_paras>0:
 			filtration_dict[f"{mode}_documents"] +=1
@@ -132,7 +148,6 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 def keyword_filter(keyword_list, para):
 	"""Pass a filter to only pass paragraphs with relevant information to the LLM"""
 	if any([keyword in para.text or keyword in para.text.lower() for keyword in keyword_list]):
-		log.warn(f'{para.id} passed the heuristic filter check.')
 		return True
 	
 	return False
@@ -141,57 +156,27 @@ def process_property(mode, keyword_list, para, prop_metadata, ner_filter= False)
 	if keyword_filter(keyword_list, para):
 		filtration_dict[f'{mode}_keyword_paragraphs']+=1
 		return True
-		# if ner_filter:
-		# 	ner_output, ner_filter_output = ner_filter(para, unit_list= prop_metadata.units, ner_output=ner_output)
-		# 	return ner_output, ner_filter_output
-		
-
-		# if ner_filter_output:
-		# 	self.filtration_dict[f'{mode}_keyword_paragraphs_ner']+=1
-		# 	# if self.args.use_llm and self.args.use_conventional_pipeline and not output_bert:
-		# 	#     tasks = [self.process_single_example_async(text=para, seed_prompt=seed_prompt, mode=mode), self.process_BERT_pipeline_async(ner_output, para, doi)]
-		# 	#     results = await asyncio.gather(*tasks)
-		# 	#     output_llm, current_token_count = results[0]
-		# 	#     output_bert = results[1]
-
-		# 	if self.args.use_conventional_pipeline and not output_bert:
-		# 		output_bert = self.process_BERT_pipeline(ner_output, para, doi)
-
-		# 	if self.args.use_llm:
-		# 		output_llm, current_token_count = self.process_single_example(text=para, seed_prompt=seed_prompt, mode=mode)
-		# 		try:
-		# 			output_dict = json.loads(output_llm)
-		# 			output_llm = self.post_process(output_dict)
-		# 		except Exception as e:
-		# 			logger.info(f'Error message: {e}')
-		# 			logger.info(f'For {doi}, output is: {output_llm}')
-		# 			self.filtration_dict[f'{mode}_json_decode_error']+=1
-		# 			output_llm = {}
-		# 		self.filtration_dict[f'{mode}_token_count']+=current_token_count
-		# 	else:
-		# 		self.filtration_dict[f'{mode}_token_count']+=self.count_tokens(self.construct_prompt(para, mode))+token_count+self.generation_constant
-	
-	# return output_llm, output_bert, ner_output
+	return False
 
 
 def log_run_info(property, publisher_directory):
-    """
-        Log run information for reference purposes.
-        Returns a log Timer.
-    """
-    t1 = log.note(f"Heuristic Filter Run for property: {property} and publisher: {publisher_directory}")
-    log.info("CWD: {}", os.getcwd())
-    log.info("Host: {}", os.uname())
+		"""
+				Log run information for reference purposes.
+				Returns a log Timer.
+		"""
+		t1 = log.note(f"Heuristic Filter Run for property: {property} and publisher: {publisher_directory}")
+		log.info("CWD: {}", os.getcwd())
+		log.info("Host: {}", os.uname())
 
-    if sett.Run.debugCount > 0:
-        log.note("Debug run. Will parse maximum {} files.",
-                 sett.Run.debugCount)
-    else:
-        log.note("Production run. Will parse all files.")
+		if sett.Run.debugCount > 0:
+				log.note("Debug run. Will parse maximum {} files.",
+								 sett.Run.debugCount)
+		else:
+				log.note("Production run. Will parse all files.")
 
-    log.info("Using loglevel = {}", sett.Run.logLevel)
+		log.info("Using loglevel = {}", sett.Run.logLevel)
 
-    return t1
+		return t1
 
 
 if __name__ == '__main__':
