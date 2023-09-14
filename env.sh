@@ -20,7 +20,15 @@ fi
 
 conda activate $(realpath _conda_env)
 export LD_LIBRARY_PATH=$(realpath _conda_env/lib64):$LD_LIBRARY_PATH
-export PYTHONPATH=$(realpath backend/prompt_extraction):$(realpath backend/record_extraction):.
+export PYTHONPATH=.
 
 # Use ssh tunnel on client to connect to the frontend
 # ssh -4 -L 8501:127.0.0.1:8501 -N -f tyrion2.mse.gatech.edu
+
+
+update() {
+    pip -v install -r requirements.txt
+    python backend/sett/__init__.py
+}
+
+"$@"
