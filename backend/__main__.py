@@ -48,9 +48,9 @@ def main():
     elif args.command == settings.ScriptName:
         settings.run(args)
 
+    postgres.disconnect()
     t1.done("All done.")
     log.close()
-
 
 if __name__ == "__main__":
     main()
