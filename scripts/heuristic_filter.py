@@ -7,12 +7,12 @@ from collections import defaultdict
 from backend import postgres, sett
 from backend.postgres.orm import Papers, FilteredPapers, PaperTexts, FilteredParagraphs, PropertyMetadata
 
-# import pranav.prompt_extraction.config
-# from pranav.prompt_extraction.run_inference import RunInformationExtraction
-# from pranav.prompt_extraction.parse_args import parse_args
-# from pranav.prompt_extraction.utils import connect_remote_database, LoadNormalizationDataset, ner_feed
-# from pranav.prompt_extraction.pre_processing import PreProcessor
-# from pranav.prompt_extraction.run_inference import RunInformationExtraction
+import pranav.prompt_extraction.config
+from pranav.prompt_extraction.run_inference import RunInformationExtraction
+from pranav.prompt_extraction.parse_args import parse_args
+from pranav.prompt_extraction.utils import connect_remote_database, LoadNormalizationDataset, ner_feed
+from pranav.prompt_extraction.pre_processing import PreProcessor
+from pranav.prompt_extraction.run_inference import RunInformationExtraction
 
 import json
 import torch    
@@ -27,39 +27,32 @@ db = postgres.connect()
 # 	def __init__(self, args):
 # 		super(HeuristicFilter, self).__init__(args=args)
 
-metadata = {'Tg':{'ground_truth_data': f'data/glass_transition_temperature/dataset_ground.json',
-												'coreferents': ['Tg', 'T_{g}', 'T g', 'T_{g})', "T_{g} 's", 'glass transition', 'glass transitions', 'glass transition temperature', 'glass transition temperatures', 'glass transition temperatures', 'T_{g}s', 'glass-transition temperatures'],
-												'DOI_list': ['10.1002/pola.1179', '10.1002/app.34170'],
-												'unit_list': ['K', '° C', '°C']
-												},
-								'bandgap':{'ground_truth_data': f'data/bandgap/dataset_ground.json',
-												'coreferents': ['bandgap', 'band gap', 'band-gap', 'band-gaps', 'bandgaps', 'band gaps', 'E_{g}', 'optical bandgap', 'optical band gap', 'optical band gaps', 'optical bandgaps', 'bandgap energies', 'optical energy bandgaps', 'optical energy gap', 'energy bandgap', 'optical band-gaps', 'optical-band-gap energies', 'optical band-gap', 'optical band gap energy', 'band gap energies', 'band gap energy', 'electrochemical band gap', 'electrochemical band gaps', 'Eg'],
-												'DOI_list': ['10.1039/c8nj04453h', '10.1021/cm202247a', '10.1016/j.eurpolymj.2014.07.006'],
-												'unit_list': ['eV']
-												}
-								}
+
 material_entity_types = ['POLYMER', 'POLYMER_FAMILY', 'MONOMER', 'ORGANIC']
 
 filtration_dict = defaultdict(int)
 
+
+
 def add_to_filtered_paragrahs(para, filter_name):
 	paragraph = FilteredParagraphs().get_one(db, {'para_id': para.id, 'filter_name': filter_name})
 	if paragraph is not None:
-			log.trace(f"Paragraph in PostGres: {para.id}. Skipped.")
-			return False
+		log.trace(f"Paragraph in PostGres: {para.id}. Skipped.")
+		return False
 	
-	obj = FilteredParagraphs()
-	obj.para_id = para.id
-	obj.filter_name = filter_name
-	obj.insert(db)
+	else:
+		obj = FilteredParagraphs()
+		obj.para_id = para.id
+		obj.filter_name = filter_name
+		obj.insert(db)
 
-	log.trace(f"Added to PostGres: {para.id}")
+		log.trace(f"Added to PostGres: {para.id}")
 
-	return True
+		return True
 			
 
 	
-def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
+def heuristic_filter_check(property:str, publisher_directory:str, filter_name:str):
 	mode = property.replace(" ", "_")
 	filter_name = filter_name
 
@@ -78,8 +71,6 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 	log.info(f'Number of documents belonging to publisher {publisher_directory}: {len(poly_dois)}')
 
 	relevant_paras = 0
-	processed_dois = 0
-
 	for doi in poly_dois:
 
 		if sett.Run.debugCount >0:
@@ -87,18 +78,18 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 				break
 			
 		log.trace(f"Processing {doi}")
-
-		# processed_dois +=1
 		filtration_dict['total_dois'] +=1
 
 		paragraphs = PaperTexts().get_all(db, {'doi': doi})
 		log.trace(f'Number of paragraphs found: {len(paragraphs)}')
 
-		relevant_doi = False
 		relevant_doi_paras = 0
+
+		#para entry has correspondinf id and text
 		for para in paragraphs:
 			filtration_dict['total_paragraphs'] +=1
-			found = process_property(mode= mode,keyword_list=keyword_list, para= para, prop_metadata=prop_metadata)
+			found = process_property(mode= mode,keyword_list=keyword_list, para= para, 
+														prop_metadata=prop_metadata, ner_filter=False, heuristic_filter=True)
 			
 			if found:
 				log.warn(f"{para.id} passed the heuristic filter ")
@@ -106,7 +97,7 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 				relevant_doi_paras +=1
 
 				if add_to_filtered_paragrahs(para=para, filter_name = filter_name):
-					if relevant_paras % 1 == 0:
+					if relevant_paras % 50 == 0:
 						db.commit()
 					
 
@@ -128,6 +119,8 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 			log.info(f'Number of paragraphs with {property} information after NER filter: {filtration_dict[f"{mode}_keyword_paragraphs_ner"]}')
 			log.info(f'Last processed para_id: {para.id}')
 
+	db.commit()
+
 
 def keyword_filter(keyword_list, para):
 	"""Pass a filter to only pass paragraphs with relevant information to the LLM"""
@@ -137,41 +130,35 @@ def keyword_filter(keyword_list, para):
 	
 	return False
 
-def process_property(mode, keyword_list, para, prop_metadata, ner_filter= False):
-	if keyword_filter(keyword_list, para):
-		filtration_dict[f'{mode}_keyword_paragraphs']+=1
-		return True
-		# if ner_filter:
-		# 	ner_output, ner_filter_output = ner_filter(para, unit_list= prop_metadata.units, ner_output=ner_output)
-		# 	return ner_output, ner_filter_output
-		
+def process_property(mode, keyword_list, para, prop_metadata, ner_filter= False, heuristic_filter = True):
+	if heuristic_filter:
+		if keyword_filter(keyword_list, para):
+			filtration_dict[f'{mode}_keyword_paragraphs']+=1
+			return True
+	# if ner_filter:
+	# 	ner_output, ner_filter_output = ner_filter(para, unit_list= prop_metadata.units, ner_output=ner_output)
+	# 	if ner_filter_output:
+	# 		filtration_dict[f'{mode}_keyword_paragraphs_ner']+=1
 
-		# if ner_filter_output:
-		# 	self.filtration_dict[f'{mode}_keyword_paragraphs_ner']+=1
-		# 	# if self.args.use_llm and self.args.use_conventional_pipeline and not output_bert:
-		# 	#     tasks = [self.process_single_example_async(text=para, seed_prompt=seed_prompt, mode=mode), self.process_BERT_pipeline_async(ner_output, para, doi)]
-		# 	#     results = await asyncio.gather(*tasks)
-		# 	#     output_llm, current_token_count = results[0]
-		# 	#     output_bert = results[1]
 
-		# 	if self.args.use_conventional_pipeline and not output_bert:
-		# 		output_bert = self.process_BERT_pipeline(ner_output, para, doi)
-
-		# 	if self.args.use_llm:
-		# 		output_llm, current_token_count = self.process_single_example(text=para, seed_prompt=seed_prompt, mode=mode)
-		# 		try:
-		# 			output_dict = json.loads(output_llm)
-		# 			output_llm = self.post_process(output_dict)
-		# 		except Exception as e:
-		# 			logger.info(f'Error message: {e}')
-		# 			logger.info(f'For {doi}, output is: {output_llm}')
-		# 			self.filtration_dict[f'{mode}_json_decode_error']+=1
-		# 			output_llm = {}
-		# 		self.filtration_dict[f'{mode}_token_count']+=current_token_count
-		# 	else:
-		# 		self.filtration_dict[f'{mode}_token_count']+=self.count_tokens(self.construct_prompt(para, mode))+token_count+self.generation_constant
+# def ner_filter(para, unit_list, ner_output=None):
+# 	"""Pass paragraph through NER pipeline to check whether it contains relevant information"""
+# 	if ner_output is None:
+# 			ner_output = ner_pipeline(para.text)
+# 	mat_flag = False
+# 	prop_name_flag = False
+# 	prop_value_flag = False
+# 	for entity in ner_output:
+# 			if entity['entity_group'] in material_entity_types:
+# 					mat_flag = True
+# 			elif entity['entity_group'] == 'PROP_NAME':
+# 					prop_name_flag = True
+# 			elif entity['entity_group'] == 'PROP_VALUE' and any([entity['word'].endswith(unit.lower()) for unit in unit_list]): # Using ends with to avoid false positives such as K in kPa or °C/min
+# 					prop_value_flag = True
+			
+# 	output_flag = mat_flag and prop_name_flag and prop_value_flag
 	
-	# return output_llm, output_bert, ner_output
+# 	return ner_output, output_flag
 
 
 def log_run_info(property, publisher_directory):
@@ -209,6 +196,6 @@ if __name__ == '__main__':
 		
 	t1 = log_run_info(property, publisher_directory)
 	
-	heuristic_filter(property= property, publisher_directory= publisher_directory, filter_name=filter_name)
+	heuristic_filter_check(property= property, publisher_directory= publisher_directory, filter_name=filter_name)
 		
 	t1.done("All Done.")

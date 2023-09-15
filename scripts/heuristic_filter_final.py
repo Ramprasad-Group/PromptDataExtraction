@@ -92,7 +92,6 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 	processed_dois = 0
 	
 	for doi in poly_dois:
-
 		if sett.Run.debugCount >0:
 			if filtration_dict['total_dois'] > sett.Run.debugCount:
 				break
@@ -108,7 +107,6 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 		relevant_doi_paras = 0
 
 		for para in paragraphs:
-			
 			filtration_dict['total_paragraphs'] +=1
 			found = process_property(mode= mode,keyword_list=keyword_list, para= para, prop_metadata=prop_metadata)
 			add_to_filtered_paragrahs(para=para, filter_name = filter_name, found_status= found)
@@ -117,19 +115,8 @@ def heuristic_filter(property:str, publisher_directory:str, filter_name:str):
 				db.commit()
 			
 			if found:
-				# relevant_paras +=1
 				relevant_doi_paras +=1
-		
-				# if add_to_filtered_paragrahs(para=para, filter_name = filter_name, found_status= found):
-					# if relevant_paras % 50 == 0:
-					# 	db.commit()
-					
 
-			# else:
-			# 	log.info(f"{para.id} did not pass the heuristic filter")
-			# 	# log.trace(para.text)
-		
-		
 		if relevant_doi_paras>0:
 			filtration_dict[f"{mode}_documents"] +=1
 			log.note(f'DOI: {doi} contains paragraphs for property: {mode}.')
