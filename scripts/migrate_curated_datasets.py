@@ -1,3 +1,4 @@
+import os
 import pylogg as log
 from tqdm import tqdm
 
@@ -7,6 +8,9 @@ from backend.data.dataset_pranav import GroundDataset
 from backend.text.normalize import normText
 
 sett.load_settings()
+os.makedirs(sett.Run.directory, exist_ok=True)
+log.init(sett.Run.logLevel, sett.Run.directory)
+
 postgres.load_settings()
 db = postgres.connect()
 
@@ -21,6 +25,7 @@ t1.done("Loaded dataset.")
 
 for doi, value in tqdm(gnd.items()):
     abstract = [item['abstract'] for item in value if item['abstract'] != ''][0]
+    abstract = normText(abstract)
 
     paper : Papers = Papers().get_one(db, {'doi': doi})
     if paper is None:
@@ -41,7 +46,7 @@ for doi, value in tqdm(gnd.items()):
         para.doctype = paper.doctype
         para.section = "abstract"
         # para.text = abstract
-        para.text = normText(abstract)
+        para.text = abstract
         para.directory = paper.directory
 
         para.insert(db)

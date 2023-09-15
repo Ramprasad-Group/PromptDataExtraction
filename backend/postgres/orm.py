@@ -82,7 +82,7 @@ class TableCursor(ORMBase):
     name : Mapped[str] = mapped_column(Text)
     table : Mapped[str] = mapped_column(Text)
     row: Mapped[int] = mapped_column(Integer)
-    comment : Mapped[str] = mapped_column(Text, nullable=True)
+    comments: Mapped[Dict] = mapped_column(JSON, default={})
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

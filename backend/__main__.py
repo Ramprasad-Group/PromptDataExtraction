@@ -30,7 +30,8 @@ def main():
 
     t1 = log.init(
         log_level=sett.Run.logLevel,
-        output_directory=sett.Run.directory
+        output_directory=sett.Run.directory,
+        logfile_name=args.command + ".log",
     )
     log.setMaxLength(1000)
     postgres.load_settings()
