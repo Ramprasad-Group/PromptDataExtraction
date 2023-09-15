@@ -7,18 +7,22 @@ from backend.console import (
     calculate_metrics,
     checkpoint,
     db_tables,
-    settings
+    settings,
+    ner_curated,
 )
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest='command', required=True)
 
+    # Register the scripts with argparse.
     calculate_metrics.add_args(subparsers)
     checkpoint.add_args(subparsers)
     db_tables.add_args(subparsers)
     settings.add_args(subparsers)
+    ner_curated.add_args(subparsers)
 
+    # Additional arguments for the current run.
     parser.add_argument('--debug', type=int, default=0,
                         help="Debug count, override settings.yaml, default 0")
     parser.add_argument('--log', type=int, default=0,
@@ -27,6 +31,8 @@ def parse_args() -> argparse.Namespace:
                         help="Database name. Optional, override settings.yaml.")
     parser.add_argument('--dir', default=None,
                         help="Run directory. Optional, override settings.yaml.")
+    
+    # Parse arguments.
     args = parser.parse_args()
     return args
 
@@ -48,6 +54,7 @@ def main():
     if args.dir:
         sett.Run.directory = args.dir
 
+    # Initialize the logger.
     os.makedirs(sett.Run.directory, exist_ok=True)
 
     t1 = log.init(
@@ -56,8 +63,11 @@ def main():
         logfile_name=args.command + ".log",
     )
     log.setMaxLength(1000)
+
+    # Initialize configurations.
     postgres.load_settings()
 
+    # Check and run the command against the registered scripts.
     if args.command == calculate_metrics.ScriptName:
         calculate_metrics.run(args)
 
@@ -70,9 +80,14 @@ def main():
     elif args.command == settings.ScriptName:
         settings.run(args)
 
+    elif args.command == ner_curated.ScriptName:
+        ner_curated.run(args)
+
+    # Finalize.
     postgres.disconnect()
     t1.done("All done.")
     log.close()
+
 
 if __name__ == "__main__":
     main()
