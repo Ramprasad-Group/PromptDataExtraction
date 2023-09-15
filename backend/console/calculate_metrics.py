@@ -27,7 +27,6 @@ def add_args(subparsers : argparse._SubParsersAction):
     parser = subparsers.add_parser(
         ScriptName,
         help='Calculate metrics using curated data table.')
-    parser.add_argument('value', help="Name of the value")
 
 def run(args : argparse.ArgumentParser):
     db = postgres.connect()
@@ -35,11 +34,11 @@ def run(args : argparse.ArgumentParser):
 
     metrics = curated.compute_metrics(db, tg_corefs, 'materials-bert')
     with open(sett.Run.directory + "/tg_metrics.json", "w") as fp:
-        json.dump(metrics, fp)
+        json.dump(metrics, fp, indent=4)
     t1.done("Metrics: {}", metrics)
 
     metrics = curated.compute_metrics(db, eg_corefs, 'materials-bert')
     with open(sett.Run.directory + "/eg_metrics.json", "w") as fp:
-        json.dump(metrics, fp)
+        json.dump(metrics, fp, indent=4)
 
     t1.done("Metrics: {}", metrics)

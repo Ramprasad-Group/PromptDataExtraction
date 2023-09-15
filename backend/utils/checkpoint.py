@@ -10,7 +10,7 @@ log = pylogg.New('ckpt')
 
 
 def add_new(db, name : str, table : str, row : int,
-                   comment : str = None) -> bool:
+                   comment : dict = {}) -> bool:
     """ Add a new checkpoint by inserting and committing
         a new row id to the table_cursor.
         
@@ -24,7 +24,7 @@ def add_new(db, name : str, table : str, row : int,
         Returns True if successful.
     """
     t2 = log.info(f"New Checkpoint. Name: {name}, Table: {table}, Row: {row} "
-             f"Comment: {comment}")
+             f"Comments: {comment}")
 
     cursor = TableCursor()
     cursor.name = name
@@ -39,8 +39,6 @@ def add_new(db, name : str, table : str, row : int,
             log.error("Current Row ID is older than previous checkpoint.")
             log.error("Row ID: {}, previous checkpoint: {}.{} for process {}",
                       row, c.table, c.row, name)
-            if sett.Run.debugCount > 0:
-                raise ValueError("Row ID older than checkpoint.")
             return False
     
     cursor.insert(db)
@@ -49,7 +47,7 @@ def add_new(db, name : str, table : str, row : int,
     return True
 
 
-def get_last(db, name : str, table : str, comment : str = None) -> int:
+def get_last(db, name : str, table : str, comment : dict = {}) -> int:
     """ Return the last stored max row id for the specified table.
         Returns 0 if no checkpoint is found.
 
@@ -67,7 +65,7 @@ def get_last(db, name : str, table : str, comment : str = None) -> int:
 
 
 def list_all(db, name : str, table : str,
-                     comment : str = None) -> list[TableCursor]:
+                     comment : dict = {}) -> list[TableCursor]:
     """ Get the list of all previous checkpoints.
 
         db:         PostGres scoped session object.
@@ -76,6 +74,4 @@ def list_all(db, name : str, table : str,
         comment:    Additional information, filtering string (optional).
     """
     criteria = {'name': name, 'table': table}
-    if comment:
-        criteria['comment'] = comment
     return TableCursor().get_all(db, criteria)
