@@ -1,11 +1,7 @@
 import pylogg
 from argparse import ArgumentParser, _SubParsersAction
 
-from backend import postgres, sett
-from backend.postgres.orm import CuratedData, PaperTexts
-from backend.record_extraction import bert_model, pipeline, utils
-
-ScriptName = 'curated-ner'
+ScriptName = 'ner-curated'
 
 log = pylogg.New(ScriptName)
 
@@ -13,13 +9,17 @@ log = pylogg.New(ScriptName)
 def add_args(subparsers: _SubParsersAction):
     parser: ArgumentParser = subparsers.add_parser(
         ScriptName,
-        help='Run NER pipeline on curated dataset.')
+        help='Run NER pipeline on curated data rows.')
     parser.add_argument(
         'runname',
         help="Name of the run, e.g., test-ner-pipeline.")
 
 
 def run(args: ArgumentParser):
+    from backend import postgres, sett
+    from backend.postgres.orm import CuratedData, PaperTexts
+    from backend.record_extraction import bert_model, pipeline, utils
+
     db = postgres.connect()
 
     extraction_info = {
