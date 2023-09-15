@@ -1,5 +1,5 @@
-import sett
 import streamlit as st
+from backend import sett, postgres
 
 ## Configurations
 ## -----------------------------------------------------------------------------
@@ -14,7 +14,7 @@ import pylogg as log
 ## -----------------------------------------------------------------------------
 def main():
 
-    st.write(f"# Welcome to {sett.WebUI.name}! 👋")
+    st.write(f"# Welcome to {sett.WebUI.header}! 👋")
 
     st.markdown(
         """
@@ -37,6 +37,7 @@ def main():
 
 if __name__ == "__main__":
     sett.load_settings()
-    log.setLevel(log.DEBUG if sett.Run.debug else log.INFO)
+    postgres.load_settings()
+    log.setLevel(log.DEBUG if sett.Run.debugCount > 0 else log.INFO)
 
     main()
