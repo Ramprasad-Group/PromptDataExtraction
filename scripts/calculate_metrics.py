@@ -27,8 +27,19 @@ if __name__ == '__main__':
         'the glass transition temperature',
         'glass transition', 'glass transition temperatures',
     ]
+
     metrics = curated.compute_metrics(db, tg_corefs, 'materials-bert')
     with open(sett.Run.directory + "/tg_metrics.json", "w") as fp:
+        json.dump(metrics, fp)
+    t1.done("Metrics: {}", metrics)
+
+    eg_corefs = [
+        'bandgap', 'band gap', 'band gaps', 'E_{g}',
+        'optical band gap', 'optical bandgap',
+    ]
+
+    metrics = curated.compute_metrics(db, eg_corefs, 'materials-bert')
+    with open(sett.Run.directory + "/eg_metrics.json", "w") as fp:
         json.dump(metrics, fp)
 
     t1.done("Metrics: {}", metrics)
