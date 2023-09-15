@@ -6,11 +6,12 @@ from . import (
     pre_processing, utils
 )
 
+
 class RelationExtraction:
     """
     Calls all the submodules in order and returns the output from processing a
     single document.
-    
+
     Parameters
     ---------------
     text: string
@@ -19,7 +20,7 @@ class RelationExtraction:
         List each entry of which is a Namedtuple containing the token and its label
     verbose: boolean
         Return the token spans of property_name and property_value if True
-    
+
     Needs normalization dataset as input and passed to ProcessMaterialEntities
 
     Returns
@@ -28,8 +29,8 @@ class RelationExtraction:
         Contains parsed version of all material property records for given document
     """
 
-    def __init__(self, text : str, spans : list,
-                 normalization_dataset : dict, property_metadata : dict,
+    def __init__(self, text: str, spans: list,
+                 normalization_dataset: dict, property_metadata: dict,
                  polymer_filter=True, logger=None, verbose=False):
 
         self.text = text
@@ -46,9 +47,9 @@ class RelationExtraction:
         truth_value_mat_entity = False
         truth_value_prop_name = False
         for item in self.spans:
-            if item.label=='PROP_VALUE':
+            if item.label == 'PROP_VALUE':
                 truth_value_prop = True
-            elif item.label=='PROP_NAME':
+            elif item.label == 'PROP_NAME':
                 truth_value_prop_name = True
             elif self.polymer_filter and item.label in ['POLYMER', 'MONOMER', 'POLYMER_FAMILY']:
                 truth_value_mat_entity = True
@@ -65,27 +66,33 @@ class RelationExtraction:
                 for material_entity in self.material_entity_processor.material_mentions.entity_list:
                     if material_entity.material_class in ['blend', 'copolymer']:
                         for component in material_entity.components:
-                            if  property_entity.material_name in component.coreferents:
-                                material_record['material_name'] = [component.return_dict()]
+                            if property_entity.material_name in component.coreferents:
+                                material_record['material_name'] = [
+                                    component.return_dict()]
                                 break
 
                     elif property_entity.material_name in material_entity.coreferents:
-                        material_record['material_name'] = [material_entity.return_dict()]
+                        material_record['material_name'] = [
+                            material_entity.return_dict()]
                         break
-            
+
                 if property_entity.material_amount:
                     material_record['material_amount'] = {}
                     material_record['material_amount']['entity_name'] = property_entity.material_amount_entity
                     material_record['material_amount']['material_amount'] = property_entity.material_amount
-                material_record['property_record'] = property_entity.return_dict(verbose=self.verbose) # Convert to dictionary and remove the 2 entries
-            
+                material_record['property_record'] = property_entity.return_dict(
+                    verbose=self.verbose)  # Convert to dictionary and remove the 2 entries
+
             else:
-                material_record['material_name'] = self.material_entity_processor.material_mentions.return_list_dict()
-                material_record['material_amount'] = self.mat_amount_processor.material_amounts.return_list_dict()
-                material_record['property_record'] = property_entity.return_dict(verbose=self.verbose)
+                material_record['material_name'] = self.material_entity_processor.material_mentions.return_list_dict(
+                )
+                material_record['material_amount'] = self.mat_amount_processor.material_amounts.return_list_dict(
+                )
+                material_record['property_record'] = property_entity.return_dict(
+                    verbose=self.verbose)
             material_records.append(material_record)
         return material_records
-    
+
     def process_document(self) -> (dict, dict):
         """
         Call all individual modules and processes the input text to return a material property record.
@@ -94,18 +101,20 @@ class RelationExtraction:
             else (False, None) if the text does not pass the filter.
         """
         if self.check_relevance():
-            timer = {'pre_processing': 0, 'abbreviations': 0,  'material_entities': 0, 'property_values': 0, 'material_amount': 0, 'link_records': 0}
+            timer = {'pre_processing': 0, 'abbreviations': 0,  'material_entities': 0,
+                     'property_values': 0, 'material_amount': 0, 'link_records': 0}
             begin = time.time()
             pre_processor = pre_processing.GroupTokens(self.spans, self.logger)
             self.grouped_spans, material_mentions, property_mentions = pre_processor.group_tokens()
-            timer['pre_processing']=time.time()-begin
+            timer['pre_processing'] = time.time()-begin
             begin = time.time()
             abbreviation_pairs = find_abbreviations(self.text)
-            timer['abbreviations']=time.time()-begin
+            timer['abbreviations'] = time.time()-begin
             begin = time.time()
-            self.material_entity_processor = process_material_entities.ProcessMaterialEntities(self.grouped_spans, self.text, material_mentions, abbreviation_pairs, self.normalization_dataset, self.logger)
+            self.material_entity_processor = process_material_entities.ProcessMaterialEntities(
+                self.grouped_spans, self.text, material_mentions, abbreviation_pairs, self.normalization_dataset, self.logger)
             self.material_entity_processor.run()
-            timer['material_entities']=time.time()-begin
+            timer['material_entities'] = time.time()-begin
             begin = time.time()
             self.prop_processor = property_extraction.PropertyExtractor(
                 self.property_metadata,
@@ -113,16 +122,18 @@ class RelationExtraction:
                 abbreviation_pairs, logger=self.logger)
 
             self.prop_processor.run()
-            timer['property_values']=time.time()-begin
+            timer['property_values'] = time.time()-begin
             begin = time.time()
-            self.mat_amount_processor = material_amount_extraction.MaterialAmountExtractor(self.grouped_spans, self.logger)
+            self.mat_amount_processor = material_amount_extraction.MaterialAmountExtractor(
+                self.grouped_spans, self.logger)
             self.mat_amount_processor.run()
             timer['material_amount'] = time.time()-begin
             begin = time.time()
             material_records = self.link_records()
-            cumulative_output_data = {'polymer_family': self.material_entity_processor.polymer_family.return_list_dict(), # Convert EntityList to list of dictionaries
-                                    'monomers': self.material_entity_processor.monomers.return_list_dict(), # Convert EntityList to list of dictionaries
-                                    'material_records': material_records}
+            cumulative_output_data = {'polymer_family': self.material_entity_processor.polymer_family.return_list_dict(),  # Convert EntityList to list of dictionaries
+                                      # Convert EntityList to list of dictionaries
+                                      'monomers': self.material_entity_processor.monomers.return_list_dict(),
+                                      'material_records': material_records}
             timer['link_records'] = time.time()-begin
             return cumulative_output_data, timer
         else:

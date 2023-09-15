@@ -9,14 +9,19 @@ log = pylogg.New('ner')
 
 
 def process_paragraph(db, bert, norm_dataset, prop_metadata,
+                      extraction_info : dict,
                       paragraph : PaperTexts):
     """ Extract data from an individual paragraph object. """
+
+    assert 'method' in extraction_info.keys(), \
+        "extraction_info must specify a method field."
+
     t2 = log.trace("Processing paragraph.")
     # Get the paragraph text
     text = paragraph.text
 
     # Get the output object
-    ner_output = extract_data(text)
+    ner_output = extract_data(bert, norm_dataset, prop_metadata, text)
 
     if ner_output is False:
         log.trace("Text is not relevant, not output.")
@@ -81,7 +86,8 @@ def get_material(db, para_id : int, material_name : str) -> ExtractedMaterials:
 
 
 def add_material_to_postgres(
-        db, paragraph : PaperTexts, material : dict) -> bool:
+        db, extraction_info : dict,
+        paragraph : PaperTexts, material : dict) -> bool:
     """ Add an extracted material entry to postgres.
         Check uniqueness based on para id and material entity name.
 
@@ -110,6 +116,7 @@ def add_material_to_postgres(
     matobj.coreferents = list(material.get('coreferents'))
     matobj.components = list(material.get('components'))
     matobj.additional_info = {}
+    matobj.extraction_info = extraction_info
 
     role = material.get('role')
     if role:
@@ -122,7 +129,8 @@ def add_material_to_postgres(
 
 
 def add_amount_to_postgres(
-        db, paragraph : PaperTexts, amount : dict) -> bool:
+        db, extraction_info : dict,
+        paragraph : PaperTexts, amount : dict) -> bool:
     """ Add an extracted material amount entry to postgres.
         Check uniqueness based on material id and material entity name.
 
@@ -147,14 +155,15 @@ def add_amount_to_postgres(
     amtobj.para_id = paragraph.id
     amtobj.entity_name = name
     amtobj.material_amount = amount.get('material_amount')
+    amtobj.extraction_info = extraction_info
 
     amtobj.insert(db)
     return True
 
 
 def add_property_to_postgres(
-        db, paragraph : PaperTexts,
-        material_map : dict, property : dict) -> bool:
+        db, extraction_info : dict,
+        paragraph : PaperTexts, material_map : dict, property : dict) -> bool:
     """ Add an extracted material property values to postgres.
         Check uniqueness based on material id and property entity name.
 
@@ -198,7 +207,7 @@ def add_property_to_postgres(
     propobj.value_descriptor = property.get('property_value_descriptor')
     propobj.unit = property.get('property_unit')
 
-    propobj.extraction_method = 'materials-bert'
+    propobj.extraction_info = extraction_info
 
     propobj.conditions = {}
     tcond = property.get('', None)

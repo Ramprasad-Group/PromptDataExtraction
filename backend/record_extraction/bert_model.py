@@ -6,8 +6,6 @@ from transformers import (
     AutoModelForTokenClassification, AutoTokenizer, pipeline
 )
 
-from .utils import ner_feed
-
 logger = pylogg.New('bert')
 
 class MaterialsBERT:
@@ -16,17 +14,18 @@ class MaterialsBERT:
         self.model = model
         self.pipeline = None
 
-    def init_local_model(self, device = 0):
+    def init_local_model(self, device=0):
         # Load model and tokenizer
         t1 = logger.trace("Loading bert model to device = {}.", device)
-        tokenizer = AutoTokenizer.from_pretrained(self.model, model_max_length=512)
+        tokenizer = AutoTokenizer.from_pretrained(
+            self.model, model_max_length=512)
         model = AutoModelForTokenClassification.from_pretrained(self.model)
         self.pipeline = pipeline(task="ner", model=model, tokenizer=tokenizer,
-                                aggregation_strategy="simple",
-                                device=device)
+                                 aggregation_strategy="simple",
+                                 device=device)
         t1.done("Loaded bert model.")
 
-    def get_tags(self, text : str):
+    def get_tags(self, text: str):
         """ Return NER labels for a text. """
         tokens = self.pipeline(text)
         return self._ner_feed(tokens, text)
@@ -63,9 +62,11 @@ class MaterialsBERT:
                 while char_index < end_index-1:
                     token_labels.append(token_label(token, current_label))
                     char_index += len(token)
-                    if char_index < text_len-1 and text[char_index+1] == ' ': char_index+=1
+                    if char_index < text_len-1 and text[char_index+1] == ' ':
+                        char_index += 1
                     i += 1
-                    if i < len_doc: token=doc[i].text
+                    if i < len_doc:
+                        token = doc[i].text
                 seq_index += 1
                 if seq_index < seq_len:
                     start_index = seq_pred[seq_index]["start"]
@@ -76,5 +77,5 @@ class MaterialsBERT:
                 char_index += len(token)
                 if char_index < text_len-1 and text[char_index+1] == ' ':
                     char_index += 1
-        
+
         return token_labels

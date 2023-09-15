@@ -12,14 +12,17 @@ class MaterialAmountExtractor(RecordProcessor):
     def material_amount_infer(self, sentence, labels):
         for i, span in enumerate(sentence):
             if span.label == 'MATERIAL_AMOUNT':
-                j=1
-                while i+j<len(sentence) or i-j>=0:
-                    if i+j<len(sentence) and sentence[i+j].label in self.material_entities:
-                        self.material_amounts.entity_list.append(MaterialAmount(entity_name=sentence[i+j].text, material_amount=span.text))
+                j = 1
+                while i+j < len(sentence) or i-j >= 0:
+                    if i+j < len(sentence) and sentence[i+j].label in self.material_entities:
+                        self.material_amounts.entity_list.append(MaterialAmount(
+                            entity_name=sentence[i+j].text, material_amount=span.text))
                         break
-                    elif i-j>=0 and sentence[i-j].label in self.material_entities:
-                        self.material_amounts.entity_list.append(MaterialAmount(entity_name=sentence[i-j].text, material_amount=span.text))
+                    elif i-j >= 0 and sentence[i-j].label in self.material_entities:
+                        self.material_amounts.entity_list.append(MaterialAmount(
+                            entity_name=sentence[i-j].text, material_amount=span.text))
                         break
-                    j+=1
+                    j += 1
+
     def run(self):
         self.process_sentence(self.grouped_spans, self.material_amount_infer)

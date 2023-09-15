@@ -1,6 +1,7 @@
 import pylogg as logger
 
-def compute_metrics(ground_truth : dict, extracted : dict):
+
+def compute_metrics(ground_truth: dict, extracted: dict):
     """
         Compute the metrics for the extracted data against a ground truth data.
         The datasets must of type:
@@ -27,24 +28,31 @@ def compute_metrics(ground_truth : dict, extracted : dict):
                     t3 = logger.trace("Comparing: {} against {}", item, record)
                     extracted_property_value = item['property_value']
                     if type(item['material']) is not str:
-                        logger.info(f"material key is not a string for {doi} {item['material']}")
+                        logger.info(
+                            f"material key is not a string for {doi} {item['material']}")
                         continue
-                    if extracted_property_value is not None and extracted_property_value!='N/A':
-                        extracted_property_value = extracted_value_postprocessing(extracted_property_value)
+                    if extracted_property_value is not None and extracted_property_value != 'N/A':
+                        extracted_property_value = extracted_value_postprocessing(
+                            extracted_property_value)
                         if extracted_property_value is None:
-                            logger.info(f'Extracted property value is not a string or a well formed dict for {doi}: {extracted_property_value}')
+                            logger.info(
+                                f'Extracted property value is not a string or a well formed dict for {doi}: {extracted_property_value}')
                             continue
-                        property_flag = compare_property_value(extracted_property_value, property_value)
-                        material_flag = any([entity_postprocess(item['material']) in entity_postprocess(material) or entity_postprocess(material) in entity_postprocess(item['material']) for material in material_coreferents])
-                        if material_flag and property_flag: # Fuzzier notion of matching
+                        property_flag = compare_property_value(
+                            extracted_property_value, property_value)
+                        material_flag = any([entity_postprocess(item['material']) in entity_postprocess(material) or entity_postprocess(
+                            material) in entity_postprocess(item['material']) for material in material_coreferents])
+                        if material_flag and property_flag:  # Fuzzier notion of matching
                             tp += 1
                             t3.done("Match found")
                             break
                         elif property_flag:
-                            logger.info(f'For {doi} and {item["material"]} property value match {extracted_property_value} but material entity does not match. True coreferents {material_coreferents}')
+                            logger.info(
+                                f'For {doi} and {item["material"]} property value match {extracted_property_value} but material entity does not match. True coreferents {material_coreferents}')
                         elif material_flag:
-                            logger.info(f'For {doi} material entities match: {item["material"]} but property value does not match. True property value: {property_value}; Extracted property value: {extracted_property_value}')
-                    
+                            logger.info(
+                                f'For {doi} material entities match: {item["material"]} but property value does not match. True property value: {property_value}; Extracted property value: {extracted_property_value}')
+
                 else:
                     fn += 1
                     error_doi_set.add(doi)
@@ -52,17 +60,20 @@ def compute_metrics(ground_truth : dict, extracted : dict):
         else:
             fn += len(item_list)
             error_doi_set.add(doi)
-            logger.info(f'False negative: {item_list}, DOI {doi} not in extracted dataset')
-    
+            logger.info(
+                f'False negative: {item_list}, DOI {doi} not in extracted dataset')
+
     for doi, item_list in extracted.items():
         ground_truth_list = ground_truth[doi]
         for item in item_list:
             # material = item['material']
             extracted_property_value = item['property_value']
-            if extracted_property_value is not None and extracted_property_value!='N/A':
-                extracted_property_value = extracted_value_postprocessing(extracted_property_value)
+            if extracted_property_value is not None and extracted_property_value != 'N/A':
+                extracted_property_value = extracted_value_postprocessing(
+                    extracted_property_value)
                 if extracted_property_value is None:
-                    logger.info(f'Extracted property value is not a string or a well formed dict for {doi}: {extracted_property_value}')
+                    logger.info(
+                        f'Extracted property value is not a string or a well formed dict for {doi}: {extracted_property_value}')
                     fp += 1
                     error_doi_set.add(doi)
                     continue
@@ -73,7 +84,8 @@ def compute_metrics(ground_truth : dict, extracted : dict):
                     property_value = str(record['property_value'])
                     # break_flag = compare_property_value(extracted_property_value, property_value)
                     if any([
-                        entity_postprocess(item['material']) in entity_postprocess(material)
+                        entity_postprocess(
+                            item['material']) in entity_postprocess(material)
                         or entity_postprocess(material) in entity_postprocess(item['material'])
                         for material in record['material_coreferents']
                     ]):
@@ -88,15 +100,15 @@ def compute_metrics(ground_truth : dict, extracted : dict):
                 error_doi_set.add(doi)
                 logger.info(f'False positive: {item} for DOI {doi}')
 
-    if tp+fp>=0:
+    if tp+fp >= 0:
         precision = tp / (tp + fp)
     else:
         precision = 0
-    if tp+fn>=0:
+    if tp+fn >= 0:
         recall = tp / (tp + fn)
     else:
         recall = 0
-    if precision+recall>0:
+    if precision+recall > 0:
         f1 = 2 * (precision * recall) / (precision + recall)
     else:
         f1 = 0
@@ -114,10 +126,13 @@ def compute_metrics(ground_truth : dict, extracted : dict):
 
 def extracted_value_postprocessing(extracted_property_value):
     if type(extracted_property_value) is str:
-        extracted_property_value = property_postprocessing(extracted_property_value)
+        extracted_property_value = property_postprocessing(
+            extracted_property_value)
     elif type(extracted_property_value) is dict and all([type(val) is str for val in extracted_property_value.values()]):
-        logger.info(f'Extracted property value is dict: {extracted_property_value}')
-        extracted_property_value = [property_postprocessing(val) for val in extracted_property_value.values()]
+        logger.info(
+            f'Extracted property value is dict: {extracted_property_value}')
+        extracted_property_value = [property_postprocessing(
+            val) for val in extracted_property_value.values()]
     elif type(extracted_property_value) is int or type(extracted_property_value) is float:
         extracted_property_value = str(extracted_property_value)
     elif type(extracted_property_value) is list and all([type(val) is str for val in extracted_property_value]):
@@ -128,17 +143,20 @@ def extracted_value_postprocessing(extracted_property_value):
 
     return extracted_property_value
 
+
 def property_postprocessing(property_value: str) -> str:
     """ Normalize property unit. """
     property_value = property_value.replace('°C', '° C')
     return property_value
+
 
 def entity_postprocess(entity: str) -> str:
     """ Normalize entity name. """
     entity = entity.replace(' ', '').lower()
     return entity
 
-def compare_property_value(extracted_property_value, property_value)->bool:
+
+def compare_property_value(extracted_property_value, property_value) -> bool:
     break_flag = False
     if type(extracted_property_value) is str:
         if property_value in extracted_property_value or extracted_property_value in property_value:
@@ -147,5 +165,5 @@ def compare_property_value(extracted_property_value, property_value)->bool:
         for ex in extracted_property_value:
             if entity_postprocess(property_value) in entity_postprocess(ex) or entity_postprocess(ex) in entity_postprocess(property_value):
                 break_flag = True
-                break    
+                break
     return break_flag

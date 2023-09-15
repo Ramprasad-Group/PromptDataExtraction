@@ -8,7 +8,7 @@ import json
 
 class PropertyExtractor(RecordProcessor):
     def __init__(self,
-                 property_metadata : dict,
+                 property_metadata: dict,
                  grouped_spans=None, text=None, property_mentions=None,
                  abbreviation_pairs=None, print_spans=False, logger=None):
         """
@@ -33,126 +33,145 @@ class PropertyExtractor(RecordProcessor):
         self.RE_NUMBER = r'[+-]?\d+[.]?\d*(?:\s?±\s?\d+[.]?\d*)?(?:x10\^{[-]?\d*})?'
         self.RE_EXP = r'10\^{[-]?\d*}'
         self.RE_EXP_UNIT = r'([a-zA-Z]+\^{[-]?\d*})'
-        self.property_value_descriptor_list = ['<', '>', '~', '=', 'and', '≈', 'to', '-']
+        self.property_value_descriptor_list = [
+            '<', '>', '~', '=', 'and', '≈', 'to', '-']
         self.property_mentions = property_mentions
         self.property_value_pairs = EntityList()
 
         self.prop_records_metadata = property_metadata
-        
+
         self.convert_fraction_to_percentage = [
             v['property_list'] for k, v in self.prop_records_metadata.items()
-            if v['unit_list'][0]=='%'
+            if v['unit_list'][0] == '%'
         ]
-    
+
     def property_extraction(self, sentence, labels):
         # Can use the code/logic for processing single sentences that we tried last year
         # Examine single sentence analysis code/dependency parsing from last year
         # Might also feed in all sentences to this code so that information from adjacent sentences can be utilized if necessary
         category_counts = Counter(labels)
-        # Sentence may have more than 2 values reported and respectively might occur more than once 
+        # Sentence may have more than 2 values reported and respectively might occur more than once
         # The below condition takes care of cases like 'polymer has Tg and Tm of 23 deg. C and 50 deg. C respectively'
-        if category_counts.get('PROP_VALUE', 0)>=2 and category_counts.get('PROP_NAME', 0)>=2 and any([span.text=='respectively' for span in sentence]):
+        if category_counts.get('PROP_VALUE', 0) >= 2 and category_counts.get('PROP_NAME', 0) >= 2 and any([span.text == 'respectively' for span in sentence]):
             # prop_value_indices = []
             # prop_name_indices = []
             # first_property = False
             # The below logic is very specific to when respectively occurs in a sentence
             for i, span in enumerate(sentence):
-                if self.print_spans: print(span)
+                if self.print_spans:
+                    print(span)
                 if span.text == 'respectively':
-                    j=i-1
+                    j = i-1
                     prop_value_queue = deque()
-                    while j>=0:
-                        if sentence[j].label=='PROP_VALUE':
+                    while j >= 0:
+                        if sentence[j].label == 'PROP_VALUE':
                             prop_value_queue.append(sentence[j])
-                        elif sentence[j].label=='PROP_NAME':
+                        elif sentence[j].label == 'PROP_NAME':
                             if self.property_value_pairs.entity_list and sentence[j].text not in self.property_value_pairs.entity_list[-1].coreferents and prop_value_queue:
                                 prop_value = prop_value_queue.popleft()
                                 self.property_value_pairs.entity_list.append(PropertyValuePair(entity_name=sentence[j].text, entity_start=sentence[j].token_start, entity_end=sentence[j].token_end,
                                                                                                property_value=prop_value.text, property_value_start=prop_value.token_start, property_value_end=prop_value.token_end,
                                                                                                coreferents=self.find_property_coreferents(sentence[j].text)))
-                        j-=1
+                        j -= 1
                     if not prop_value_queue and self.logger:
-                        self.logger.warning(f'For {" ".join([sent.text for sent in sentence])} the queue is non-empty')
+                        self.logger.warning(
+                            f'For {" ".join([sent.text for sent in sentence])} the queue is non-empty')
         else:
             for i, span in enumerate(sentence):
-                if self.print_spans: print(span)
+                if self.print_spans:
+                    print(span)
                 if span.label == 'PROP_VALUE':
-                    j=i-1
-                    while j>=0:
-                        if sentence[j].label=='PROP_NAME':
+                    j = i-1
+                    while j >= 0:
+                        if sentence[j].label == 'PROP_NAME':
                             property_dict = PropertyValuePair(entity_name=sentence[j].text, entity_start=sentence[j].token_start, entity_end=sentence[j].token_end,
                                                               property_value=span.text, property_value_start=span.token_start, property_value_end=span.token_end,
                                                               coreferents=self.find_property_coreferents(sentence[j].text))
-                                             # No default material name and amount included to be consistent with the previous case
+                            # No default material name and amount included to be consistent with the previous case
 
-                            material_entities = ['ORGANIC', 'POLYMER', 'INORGANIC', 'POLYMER_FAMILY', 'MONOMER']
+                            material_entities = [
+                                'ORGANIC', 'POLYMER', 'INORGANIC', 'POLYMER_FAMILY', 'MONOMER']
                             increment = 1
-                            while j+increment<len(sentence) or j-increment>=0:
-                                if j-increment>0 and sentence[j-increment].label == 'MATERIAL_AMOUNT':
+                            while j+increment < len(sentence) or j-increment >= 0:
+                                if j-increment > 0 and sentence[j-increment].label == 'MATERIAL_AMOUNT':
                                     if sentence[j-increment+1].label in material_entities:
-                                        property_dict.material_amount = sentence[j-increment].text
-                                        property_dict.material_amount_entity = sentence[j-increment+1].text
+                                        property_dict.material_amount = sentence[j -
+                                                                                 increment].text
+                                        property_dict.material_amount_entity = sentence[j -
+                                                                                        increment+1].text
                                     elif sentence[j-increment-1].label in material_entities:
-                                        property_dict.material_amount = sentence[j-increment].text
-                                        property_dict.material_amount_entity = sentence[j-increment-1].text
+                                        property_dict.material_amount = sentence[j -
+                                                                                 increment].text
+                                        property_dict.material_amount_entity = sentence[j -
+                                                                                        increment-1].text
 
                                     break
-                                if j+increment<len(sentence) and sentence[j+increment].label == 'MATERIAL_AMOUNT':
+                                if j+increment < len(sentence) and sentence[j+increment].label == 'MATERIAL_AMOUNT':
                                     if sentence[j+increment+1].label in material_entities:
-                                        property_dict.material_amount = sentence[j+increment].text
-                                        property_dict.material_amount_entity = sentence[j+increment+1].text
+                                        property_dict.material_amount = sentence[j +
+                                                                                 increment].text
+                                        property_dict.material_amount_entity = sentence[j +
+                                                                                        increment+1].text
                                     elif sentence[j+increment-1].label in material_entities:
-                                        property_dict.material_amount = sentence[j+increment].text
-                                        property_dict.material_amount_entity = sentence[j+increment-1].text
-                                    break
-                                increment+=1
-
-                            increment = 1
-                            while j+increment<len(sentence) or j-increment>=0:
-                                if j-increment>0 and sentence[j-increment].label in material_entities and sentence[j-increment].text!=property_dict.material_amount_entity:
-                                    property_dict.material_name = sentence[j-increment].text
-                                    break
-                                if j+increment<len(sentence) and sentence[j+increment].label in material_entities and sentence[j+increment].text!=property_dict.material_amount_entity:
-                                    property_dict.material_name = sentence[j+increment].text
+                                        property_dict.material_amount = sentence[j +
+                                                                                 increment].text
+                                        property_dict.material_amount_entity = sentence[j +
+                                                                                        increment-1].text
                                     break
                                 increment += 1
-                            self.property_value_pairs.entity_list.append(property_dict)
+
+                            increment = 1
+                            while j+increment < len(sentence) or j-increment >= 0:
+                                if j-increment > 0 and sentence[j-increment].label in material_entities and sentence[j-increment].text != property_dict.material_amount_entity:
+                                    property_dict.material_name = sentence[j -
+                                                                           increment].text
+                                    break
+                                if j+increment < len(sentence) and sentence[j+increment].label in material_entities and sentence[j+increment].text != property_dict.material_amount_entity:
+                                    property_dict.material_name = sentence[j +
+                                                                           increment].text
+                                    break
+                                increment += 1
+                            self.property_value_pairs.entity_list.append(
+                                property_dict)
                             break
-                        j-=1
+                        j -= 1
                 # Put in logging code to report property names that did not have an adjacent property value
 
                 # iterate backwards till you hit a prop_name
-        sentence_str = (' '.join([span.text for span in sentence]))#.replace('° C', '°C')
+        # .replace('° C', '°C')
+        sentence_str = (' '.join([span.text for span in sentence]))
         # Extraction of temperature conditions only, can generalize this code block for other conditions
-        temperature_list = re.findall('\d+ ° C', sentence_str) # Only considering one unit for temperature
+        # Only considering one unit for temperature
+        temperature_list = re.findall('\d+ ° C', sentence_str)
         for temperature_value in temperature_list:
             # Using exact equal might cause issues. There might be temperature ranges reported for conditions we might miss
             if not any([temperature_value in property_dict.property_value for property_dict in self.property_value_pairs.entity_list]):
                 for property_dict in self.property_value_pairs.entity_list:
                     if property_dict.entity_name in sentence_str:
-                        property_dict.temperature_condition=temperature_value
+                        property_dict.temperature_condition = temperature_value
                 break
         # Can repeat this for frequency for dielectric constant
         frequency_list = re.findall('\d+ \w?Hz', sentence_str)
-        frequency_list+= re.findall('10\^{\d\s?} Hz', sentence_str)
-        dielectric_properties = ['dielectric loss', 'dielectric constant', 'relative permittivity']
+        frequency_list += re.findall('10\^{\d\s?} Hz', sentence_str)
+        dielectric_properties = ['dielectric loss',
+                                 'dielectric constant', 'relative permittivity']
         for frequency_value in frequency_list:
             # Using exact equal might cause issues. There might be temperature ranges reported for conditions we might miss
-            if not any([property_dict.property_value==frequency_value for property_dict in self.property_value_pairs.entity_list]):
+            if not any([property_dict.property_value == frequency_value for property_dict in self.property_value_pairs.entity_list]):
                 for property_dict in self.property_value_pairs.entity_list:
                     if property_dict.entity_name in dielectric_properties and property_dict.entity_name in sentence_str:
-                        property_dict.frequency_condition=frequency_value.replace(' }', '}')
+                        property_dict.frequency_condition = frequency_value.replace(
+                            ' }', '}')
                 break
-
 
     def find_property_coreferents(self, property_name):
         """Find the coreferents of a property entity given the entity"""
         for i, property_entity in enumerate(self.property_mentions.entity_list):
             if property_name in property_entity.coreferents:
                 return property_entity.coreferents
-        
+
         return []
-    
+
     def coreference_property_names(self):
         """Combine entities by abbreviation or by case"""
         # Might normalize property values as well later on if required
@@ -166,7 +185,7 @@ class PropertyExtractor(RecordProcessor):
                     property_entity.coreferents.append(abbr[0])
                 elif abbr[0] == property_name:
                     property_entity.coreferents.append(abbr[1])
-        
+
         # Find abbreviations not detected by ChemDataExtractor by looking for adjacent tokens with same label with abbreviation
         # Upper bounded in length or preceded by a left bracket token
         i = 0
@@ -174,34 +193,38 @@ class PropertyExtractor(RecordProcessor):
 
         while i < span_length:
             current_label = self.grouped_spans[i].label
-            if current_label== 'PROP_NAME':
+            if current_label == 'PROP_NAME':
                 property_name = self.grouped_spans[i].text
                 coreference_proximity = 2
                 for j in range(coreference_proximity):
-                    i+=1
+                    i += 1
                     # We assume the an abbreviation follows the property name and typically has a bounded length or if not that the previous token was a bracket
                     # The second condition might be needed if the abbreviation refers to some long copolymer
-                    if i<span_length and self.grouped_spans[i].label == current_label and (len(self.grouped_spans[i].text)<=self.avg_abbr_length or self.grouped_spans[i-1].text=='('):
+                    if i < span_length and self.grouped_spans[i].label == current_label and (len(self.grouped_spans[i].text) <= self.avg_abbr_length or self.grouped_spans[i-1].text == '('):
                         for k, property_entity in enumerate(self.property_mentions.entity_list):
                             if property_entity.entity_name.lower() == property_name.lower() and property_name not in property_entity.coreferents:
-                                property_entity.coreferents.append(property_name)
+                                property_entity.coreferents.append(
+                                    property_name)
                             # Exceptions to the below clause are possible open-circuit voltage and PCE
                             elif property_entity.entity_name.lower() == property_name.lower() and self.grouped_spans[i].text not in property_entity.coreferents and not self.coreference_exception(property_name, self.grouped_spans[i].text):
-                                property_entity.coreferents.append(self.grouped_spans[i].text)
-                            
-            i+=1
+                                property_entity.coreferents.append(
+                                    self.grouped_spans[i].text)
+
+            i += 1
         delete_index = []
         for prop_entity1, prop_entity2 in itertools.combinations(self.property_mentions.entity_list, 2):
-            prop_index_1 = self.property_mentions.entity_list.index(prop_entity1)
-            prop_index_2 = self.property_mentions.entity_list.index(prop_entity2)
+            prop_index_1 = self.property_mentions.entity_list.index(
+                prop_entity1)
+            prop_index_2 = self.property_mentions.entity_list.index(
+                prop_entity2)
             if prop_entity1.entity_name in prop_entity2.coreferents or prop_entity2.entity_name in prop_entity1.coreferents:
                 if len(prop_entity1.coreferents) > len(prop_entity2.coreferents):
                     delete_index.append(prop_index_2)
                 else:
                     delete_index.append(prop_index_1)
-        
+
         self.property_mentions.delete_entries(delete_index)
-    
+
     def coreference_exception(self, prop1, prop2):
         reg_exp1 = f'{prop1}[,]? and {prop2}'
         reg_exp2 = f'{prop2}[,]? and {prop1}'
@@ -210,22 +233,21 @@ class PropertyExtractor(RecordProcessor):
                    (f'{prop2}, {prop1}' in self.text) or \
                    (re.findall(reg_exp1, self.text)) or \
                    (re.findall(reg_exp2, self.text))
-                   
+
         except:
             return False
 
-         
     def property_value_postprocessing(self):
         for property_entity in self.property_value_pairs.entity_list:
             self.single_property_entity_postprocessing(property_entity)
-        
+
         # This block takes care of cases where 2 property values are mentioned consecutively with a single property name and units are mentioned for the second but not the first property value
         for i, property_entity in enumerate(self.property_value_pairs.entity_list):
-            if property_entity.property_unit=='':
-                if i<len(self.property_value_pairs.entity_list)-1 and property_entity.entity_name==self.property_value_pairs.entity_list[i+1].entity_name \
-                                                                  and self.property_value_pairs.entity_list[i+1].property_unit != '':
-                    property_entity.property_unit = self.property_value_pairs.entity_list[i+1].property_unit
-
+            if property_entity.property_unit == '':
+                if i < len(self.property_value_pairs.entity_list)-1 and property_entity.entity_name == self.property_value_pairs.entity_list[i+1].entity_name \
+                        and self.property_value_pairs.entity_list[i+1].property_unit != '':
+                    property_entity.property_unit = self.property_value_pairs.entity_list[
+                        i+1].property_unit
 
     def single_property_entity_postprocessing(self, property_entity):
         """Process a single property_entity. Split out in this manner so that it can be exposed to other classes"""
@@ -246,25 +268,28 @@ class PropertyExtractor(RecordProcessor):
         for value in numeric_values:
             if '±' in value:
                 values = value.split('±')
-                property_entity.property_numeric_value = self.process_numeric_values(values[0].strip())
-                property_entity.property_numeric_error = self.process_numeric_values(values[-1].strip())
+                property_entity.property_numeric_value = self.process_numeric_values(
+                    values[0].strip())
+                property_entity.property_numeric_error = self.process_numeric_values(
+                    values[-1].strip())
                 break
         else:
             if numeric_values:
-                property_entity.property_numeric_value = sum([self.process_numeric_values(num) for num in numeric_values])/(len(numeric_values))
+                property_entity.property_numeric_value = sum([self.process_numeric_values(
+                    num) for num in numeric_values])/(len(numeric_values))
             else:
                 property_entity.property_numeric_value = ''
-        
+
         # Deal with cases like 10^{7} not covered by our regular expressions.. Hack solution, find a way to integrate this with our regular expression
         if '10^{' in property_value and not any(['10^{' in value for value in numeric_values]):
             numeric_values = re.findall(self.RE_EXP, property_value)
             if numeric_values:
-                property_entity.property_numeric_value = sum([self.process_numeric_values(num) for num in numeric_values])/(len(numeric_values))
+                property_entity.property_numeric_value = sum([self.process_numeric_values(
+                    num) for num in numeric_values])/(len(numeric_values))
             else:
                 property_entity.property_numeric_value = ''
 
-        
-        property_entity.numeric_value_avg = len(numeric_values)>1
+        property_entity.numeric_value_avg = len(numeric_values) > 1
         leftover_str = property_value
         for value in numeric_values:
             leftover_str = leftover_str.replace(value, '')
@@ -281,10 +306,11 @@ class PropertyExtractor(RecordProcessor):
 
         property_entity.property_unit = leftover_str.strip()
         self.unit_conversion(property_entity)
-    
+
     def process_numeric_values(self, value):
         if '^{' in value and '}' in value and 'x' in value:
-            mantissa, exponent = value.split('x')[0].strip(), value.split('x')[1].strip().replace('10^{', '').replace('}', '')
+            mantissa, exponent = value.split('x')[0].strip(), value.split(
+                'x')[1].strip().replace('10^{', '').replace('}', '')
             numeric_value = float(mantissa)*10**(float(exponent))
             return numeric_value
         elif '^{' in value and '}' in value and 'x' not in value:
@@ -298,7 +324,8 @@ class PropertyExtractor(RecordProcessor):
         """Convert units for a predefined list of entries into a predefined standard"""
         # Add more units to this
         if property_entity.property_unit and property_entity.property_unit[-1] in ['.']:
-            property_entity.property_unit = property_entity.property_unit[:-1].strip()
+            property_entity.property_unit = property_entity.property_unit[:-1].strip(
+            )
 
         if property_entity.property_numeric_value:
             if property_entity.property_unit == 'K':
@@ -324,9 +351,9 @@ class PropertyExtractor(RecordProcessor):
                 property_entity.property_numeric_value /= 1000
                 property_entity.property_numeric_error /= 1000
                 property_entity.property_unit = 'V'
-            elif property_entity.property_unit in ['kg/mol', 'kg mol^{-1}','KDa', 'kDa']:
+            elif property_entity.property_unit in ['kg/mol', 'kg mol^{-1}', 'KDa', 'kDa']:
                 property_entity.property_numeric_value *= 1000
-                property_entity.property_numeric_error *= 1000 
+                property_entity.property_numeric_error *= 1000
                 property_entity.property_unit = 'g/mol'
             elif property_entity.property_unit in ['mW/mK', 'mW m^{-1} K^{-1}', 'mW/m*K', 'mW*m^{-1}*K^{-1}', 'mW/(m*K)', 'mW/m K', 'mW/m * K']:
                 property_entity.property_numeric_value /= 1000
@@ -476,10 +503,9 @@ class PropertyExtractor(RecordProcessor):
                 property_entity.property_numeric_value *= 100
                 property_entity.property_numeric_error *= 100
                 property_entity.property_unit = 'μW m^{-1} K^{-2}'
-            elif property_entity.property_unit == '' and property_entity.property_numeric_value<=1.0 and property_entity.property_numeric_value>=0.0 and property_entity.entity_name in self.convert_fraction_to_percentage:
+            elif property_entity.property_unit == '' and property_entity.property_numeric_value <= 1.0 and property_entity.property_numeric_value >= 0.0 and property_entity.entity_name in self.convert_fraction_to_percentage:
                 property_entity.property_numeric_value *= 100
                 property_entity.property_unit = '%'
-            
 
     def run(self):
         """Calls all methods in order to process data"""
