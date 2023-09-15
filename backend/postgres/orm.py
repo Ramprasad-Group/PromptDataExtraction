@@ -169,6 +169,7 @@ class ExtractedMaterials(ORMBase):
         coreferents
         components
         additional_info
+        extraction_info
     """
 
     __tablename__ = "extracted_materials"
@@ -184,6 +185,7 @@ class ExtractedMaterials(ORMBase):
     coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
     components: Mapped[List[str]] = mapped_column(ARRAY(String))
     additional_info: Mapped[Dict] = mapped_column(JSON, default={})
+    extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -196,6 +198,7 @@ class ExtractedAmount(ORMBase):
     Attributes:
         material_id: Foreign key referencing to material entity
         material_amount
+        extraction_info
     '''
 
     __tablename__ = "extracted_material_amounts"
@@ -206,13 +209,10 @@ class ExtractedAmount(ORMBase):
     
     entity_name: Mapped[str] = mapped_column(Text)
     material_amount: Mapped[str] = mapped_column(Text)
+    extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
 
     def __init__(self, **kw):
         super().__init__(**kw)
-
-
-
-ExtractionMethod = Literal['materials-bert', 'gpt-3.5-turbo']
 
 
 class ExtractedProperties(ORMBase):
@@ -230,7 +230,7 @@ class ExtractedProperties(ORMBase):
         value_descriptor: condition given for reported value (ex: "less than" 8 eV)
         unit: property unit
         conditions: temperature_condition, frequency_condition
-        extraction_method: name of extraction model. Must be 'materials-bert' or 'gpt-3.5-turbo'.
+        extraction_info: dictionary containing extraction method, source set etc.
 
     '''
     
@@ -248,7 +248,7 @@ class ExtractedProperties(ORMBase):
     value_descriptor: Mapped[str] = mapped_column(Text, nullable=True)
     unit: Mapped[str]= mapped_column(Text, nullable=True)
     conditions: Mapped[Dict] = mapped_column(JSON, default={})
-    extraction_method: Mapped[ExtractionMethod] = mapped_column(Text)
+    extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -282,63 +282,6 @@ class PropertyMetadata(ORMBase):
 
     def __init__(self, **kw):
         super().__init__(**kw)
-
-
-class PaperData(ORMBase):
-    """
-    PostGres table to store data extracted from a paragraph using
-    the NER or LLM pipeline for each property.
-
-    Attributes:
-        para_id:    Foreign key referencing the source paragraph used to extract
-                    the data.
-
-        doi:        DOI string of the paper.
-
-        property:   Name of the property.
-
-        material:   Name of the material/polymer.
-
-        value:      Extracted value for the property.
-
-        unit:       Extracted unit for the property.
-
-        condition:  (dict) Additional conditions/information about the
-                    extracteddata.
-
-        smiles:     [Optional] SMILES string for the polymer/material if
-                    available.
-
-        extraction_method:
-                    Name of the extraction method, (example: bert,
-                    openai, polyai etc.)
-
-        extraction_model:
-                    Name of the extraction model, (example: materials bert,
-                    gpt-3.5-turbo, vicuna-33B etc.)
-
-    """
-    __tablename__ = "paper_data"
-
-    para_id: Mapped[int] = mapped_column(
-        ForeignKey("paper_texts.id", ondelete='CASCADE'),
-        unique=False, index=True)
-
-    doi: Mapped[str] = mapped_column(Text, index=True)
-    property: Mapped[str] = mapped_column(Text, index=True)
-
-    material: Mapped[str] = mapped_column(Text)
-    value : Mapped[float] = mapped_column(Float)
-    unit: Mapped[str] = mapped_column(Text, nullable=True)
-
-    condition: Mapped[Dict] = mapped_column(JSON, default={})
-    smiles: Mapped[str] = mapped_column(Text, nullable=True)
-
-    extraction_method: Mapped[str] = mapped_column(Text)
-    extraction_model: Mapped[str] = mapped_column(Text, nullable=True)
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
 
 class Polymers(ORMBase):
@@ -500,41 +443,6 @@ class CuratedData(ORMBase):
         super().__init__(**kwargs)
 
 
-
-class PaperSections(ORMBase):
-    """
-    [Deprecated: superseded by the `paper_texts` table.]
-    PostGres table containing paragraph texts migrated from Mongodb parsed
-    by Pranav. Some paragraphs were not migrated correctly due to inconsistent
-    formats of the mongodb data.
-
-    Attributes:
-        doi:        DOI string of the paper.
-
-        format:     One of xml, html.
-
-        type:       Section type (h2, p etc.)
-
-        name:       Section name (Introduction, Methods etc.)
-
-        text:       Paragraph full text.
-    
-    """
-    __tablename__ = "paper_sections"
-
-    pid: Mapped[int] = mapped_column(ForeignKey("papers.id", ondelete='CASCADE'),
-                        unique=False, index=True)
-
-    doi: Mapped[str] = mapped_column(Text, index=True)
-    format: Mapped[str] = mapped_column(VARCHAR(length=4))
-    type: Mapped[str] = mapped_column(Text)
-    name: Mapped[str] = mapped_column(Text)
-    text: Mapped[str] = mapped_column(Text)
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
 class PaperTables(ORMBase):
     __tablename__ = "paper_tables"
 
@@ -558,20 +466,6 @@ class PaperTables(ORMBase):
         super().__init__(**kwargs)
         if self.date_added is None:
             self.date_added = datetime.now()
-
-
-class TableMeta(ORMBase):
-    __tablename__ = "table_meta"
-
-    table : Mapped[str] = mapped_column(Text)
-    description: Mapped[str] = mapped_column(Text)
-    codeversion: Mapped[str] = mapped_column(Text, nullable=True)
-    tag: Mapped[str] = mapped_column(Text, nullable=True)
-
-    def __init__(self, table, **kwargs):
-        super().__init__(**kwargs)
-        self.table = table.__tablename__
-        print("Table:", self.table)
 
 
 if __name__ == "__main__":
