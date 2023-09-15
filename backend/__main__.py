@@ -19,6 +19,14 @@ def parse_args() -> argparse.Namespace:
     db_tables.add_args(subparsers)
     settings.add_args(subparsers)
 
+    parser.add_argument('--debug', type=int, default=0,
+                        help="Debug count, override settings.yaml, default 0")
+    parser.add_argument('--log', type=int, default=0,
+                        help="Log level. Optional, override settings.yaml.")
+    parser.add_argument('--db', default=None,
+                        help="Database name. Optional, override settings.yaml.")
+    parser.add_argument('--dir', default=None,
+                        help="Run directory. Optional, override settings.yaml.")
     args = parser.parse_args()
     return args
 
@@ -26,6 +34,20 @@ def parse_args() -> argparse.Namespace:
 def main():
     args = parse_args()
     sett.load_settings()
+
+    # Override settings.yaml
+    if args.debug > 0:
+        sett.Run.debugCount = args.debug
+
+    if args.log > 0:
+        sett.Run.logLevel = args.log
+
+    if args.db:
+        sett.Run.databaseName = args.db
+
+    if args.dir:
+        sett.Run.directory = args.dir
+
     os.makedirs(sett.Run.directory, exist_ok=True)
 
     t1 = log.init(
