@@ -1,18 +1,61 @@
-import os
-import json
-import pylogg as log
-
-from backend import postgres, sett
-from backend.utils.frame import Frame
+import pylogg
+from backend.record_extraction import record_extractor
 from backend.postgres.orm import (
-    PaperTexts, FilteredParagraphs, CuratedData,
+    PaperTexts,
     ExtractedMaterials, ExtractedAmount, ExtractedProperties,
 )
-from backend.record_extraction import (
-    bert_model, record_extractor, utils
-)
 
-def extract_data(text) -> dict:
+log = pylogg.New('ner')
+
+
+def process_paragraph(db, paragraph : PaperTexts):
+    """ Extract data from an individual paragraph object. """
+    t2 = log.trace("Processing paragraph.")
+    # Get the paragraph text
+    text = paragraph.text
+
+    # Get the output object
+    ner_output = extract_data(text)
+
+    if ner_output is False:
+        log.trace("Text is not relevant, not output.")
+        return
+
+    polymer_families = ner_output.get("polymer_family", [])
+    monomers = ner_output.get("monomers", [])
+    records = ner_output.get("material_records", [])
+
+    log.trace("Found {} records.", len(records))
+
+    # We need to insert and commit the materials first.
+    for rec in records:
+        # list of dicts
+        materials_list = rec.get("material_name", [])
+        for material in materials_list:
+            add_material_to_postgres(paragraph, material)
+
+    db.commit()
+
+    for rec in records:
+        # list of dicts
+        materials_list = rec.get("material_name", [])
+
+        # list of dicts
+        for amount in rec.get('material_amount', []):
+            add_amount_to_postgres(paragraph, amount)
+
+        # dict
+        prop = rec.get('property_record', {})
+
+        # Generally we expect to have only one material for a property dict.
+        # But there can be multiple in the materials list sometimes.
+        for material in materials_list:
+            add_property_to_postgres(paragraph, material, prop)
+    
+    t2.done("Paragraph processed: {} records.", len(records))
+
+
+def extract_data(bert, norm_dataset, prop_metadata, text) -> dict:
     """ Extract data from a text by passing through the materials bert
         NER pipeline.
 
@@ -26,7 +69,7 @@ def extract_data(text) -> dict:
     return output_para
 
 
-def get_material(para_id : int, material_name : str) -> ExtractedMaterials:
+def get_material(db, para_id : int, material_name : str) -> ExtractedMaterials:
     """ Return an extracted material object using a para id and entity name.
         Returns None if not found.
     """
@@ -37,7 +80,7 @@ def get_material(para_id : int, material_name : str) -> ExtractedMaterials:
 
 
 def add_material_to_postgres(
-        paragraph : PaperTexts, material : dict) -> bool:
+        db, paragraph : PaperTexts, material : dict) -> bool:
     """ Add an extracted material entry to postgres.
         Check uniqueness based on para id and material entity name.
 
@@ -56,7 +99,6 @@ def add_material_to_postgres(
     
     if material['components']:
         log.debug("Components: {}", material['components'])
-        breakpoint()
 
     matobj = ExtractedMaterials()
     matobj.para_id = paragraph.id
@@ -79,7 +121,7 @@ def add_material_to_postgres(
 
 
 def add_amount_to_postgres(
-        paragraph : PaperTexts, amount : dict) -> bool:
+        db, paragraph : PaperTexts, amount : dict) -> bool:
     """ Add an extracted material amount entry to postgres.
         Check uniqueness based on material id and material entity name.
 
@@ -110,7 +152,7 @@ def add_amount_to_postgres(
 
 
 def add_property_to_postgres(
-        paragraph : PaperTexts,
+        db, paragraph : PaperTexts,
         material_map : dict, property : dict) -> bool:
     """ Add an extracted material property values to postgres.
         Check uniqueness based on material id and property entity name.
@@ -168,126 +210,3 @@ def add_property_to_postgres(
 
     propobj.insert(db)
     return True
-
-
-def process_paragraph(paragraph : PaperTexts):
-    """ Extract data from an individual paragraph object. """
-    t2 = log.trace("Processing paragraph.")
-    # Get the paragraph text
-    text = paragraph.text
-
-    # Get the output object
-    ner_output = extract_data(text)
-
-    if ner_output is False:
-        log.trace("Text is not relevant, not output.")
-        return
-
-    polymer_families = ner_output.get("polymer_family", [])
-    monomers = ner_output.get("monomers", [])
-    records = ner_output.get("material_records", [])
-
-    log.trace("Found {} records.", len(records))
-
-    # We need to insert and commit the materials first.
-    for rec in records:
-        # list of dicts
-        materials_list = rec.get("material_name", [])
-        for material in materials_list:
-            add_material_to_postgres(paragraph, material)
-
-    db.commit()
-
-    for rec in records:
-        # list of dicts
-        materials_list = rec.get("material_name", [])
-
-        # list of dicts
-        for amount in rec.get('material_amount', []):
-            add_amount_to_postgres(paragraph, amount)
-
-        # dict
-        prop = rec.get('property_record', {})
-
-        # Generally we expect to have only one material for a property dict.
-        # But there can be multiple in the materials list sometimes.
-        for material in materials_list:
-            add_property_to_postgres(paragraph, material, prop)
-    
-    t2.done("Paragraph processed: {} records.", len(records))
-
-
-def run_pipeline(debugCount):
-    # Make sure we are not processing previously processed paragraphs.
-    # Get the last para id added to DB.
-    pass
-
-
-def run_on_curated_dataset(debugCount):
-    """ Run the NER pipeline on the texts/abstracts of the curated dataset. """
-    n = 0
-    for data in next(CuratedData().iter(db, size=100)):
-        n += 1
-        print(n, data.doi)
-
-        if debugCount > 0 and n >= debugCount:
-            break
-
-        paragraph = PaperTexts().get_one(db, {'id': data.para_id})
-
-        if debugCount > 0:
-            print(paragraph.text)
-
-        process_paragraph(paragraph)
-
-
-def init_logger():
-    """
-        Log run information for reference purposes.
-        Returns a log Timer.
-    """
-    os.makedirs(sett.Run.directory, exist_ok=True)
-
-    t1 = log.init(
-        log_level=sett.Run.logLevel,
-        output_directory=sett.Run.directory
-    )
-
-    log.setMaxLength(1000)
-
-    if sett.Run.debugCount > 0:
-        log.note("Debug run. Will process maximum {} items.",
-                 sett.Run.debugCount)
-    else:
-        log.info("Production run. Will process all items.")
-
-    if not sett.FullTextParse.add2postgres:
-        log.warn("Will not be adding to postgres.")
-    else:
-        log.info("Will be adding extracted data to postgres.")
-
-    return t1
-
-
-if __name__ == '__main__':
-    sett.load_settings()
-    t1 = init_logger()
-
-    # Load NEN dataset and property metadata.
-    normdata = utils.LoadNormalizationDataset(sett.DataFiles.polymer_nen_json)
-    norm_dataset = normdata.process_normalization_files()
-    prop_metadata = utils.load_property_metadata(sett.DataFiles.properties_json)
-
-    # Connect to database    
-    postgres.load_settings()
-    db = postgres.connect()
-
-    # Load Materials bert to GPU
-    bert = bert_model.MaterialsBERT(sett.NERPipeline.model)
-    bert.init_local_model(device=sett.NERPipeline.pytorch_device)
-
-    # run_pipeline(sett.Run.debugCount)
-    # run_on_curated_dataset(sett.Run.debugCount)
-
-    t1.done("All Done.")
-    log.close()

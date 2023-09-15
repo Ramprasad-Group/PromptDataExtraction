@@ -66,6 +66,28 @@ class FilteredPapers(ORMBase):
         super().__init__(**kwargs)
 
 
+class TableCursor(ORMBase):
+    """
+    Postgres table to keep track of last processed row.
+
+    Attributes:
+        name:       Name of the process/filter.
+        table:      Name of the table processed.
+        row:        Last processed row number.
+        description:
+                    Optional comment or description.
+    """
+    __tablename__ = "table_cursor"
+
+    name : Mapped[str] = mapped_column(Text)
+    table : Mapped[str] = mapped_column(Text)
+    row: Mapped[int] = mapped_column(Integer)
+    comment : Mapped[str] = mapped_column(Text, nullable=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
 
 class PaperTexts(ORMBase):
     """
@@ -108,7 +130,6 @@ class PaperTexts(ORMBase):
         super().__init__(**kwargs)
 
 
-
 ParagraphFilters = Literal['property_tg', 'property_td', 'property_tm',
                            'property_thermal_conductivity', 'NER']
 
@@ -117,41 +138,19 @@ class FilteredParagraphs(ORMBase):
     Table to track of the paragraphs passing a particular filter.
 
     Attributes:
-        para_id:    Foreign key referencing to the paragraph from
-                    paper_texts.
+        para_id:        Foreign key referencing to the paragraph from
+                        paper_texts.
 
-        filter1:    (bool) True if the paragraph passed the filter 1.
-        filter2:    (bool) True if the paragraph passed the filter 2.
-        etc.
-
-    Note: add new columns by executing the following SQL.
-        `ALTER TABLE filtered_paragraphs ADD COLUMN "new filter"
-         Boolean NOT NULL DEFAULT FALSE;`
-
+        filter_name:    Must be one of `ParagraphFilters`.
     '''
 
     __tablename__ = "filtered_paragraphs"
 
     para_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("paper_texts.id"), nullable= False,
-        unique=True, index=True,
+        unique=False, index=True,
     )
-    ner_filter: Mapped[bool] = mapped_column(Boolean, default=False)
-
-    property_tg: Mapped[bool] = mapped_column(Boolean, default=False)
-    property_td: Mapped[bool] = mapped_column(Boolean, default=False)
-    property_tm: Mapped[bool] = mapped_column(Boolean, default=False)
-    property_th_conductivity: Mapped[bool] = mapped_column(
-        Boolean, default=False)
-
-    property_bandgap: Mapped[bool] = mapped_column(
-        Boolean, default=False)
-    property_youngs_modulus: Mapped[bool] = mapped_column(
-        Boolean, default=False)
-    property_tensile_strength: Mapped[bool] = mapped_column(
-        Boolean, default=False)
-    property_water_contact_angle: Mapped[bool] = mapped_column(
-        Boolean, default=False)
+    filter_name : Mapped[ParagraphFilters] = mapped_column(String)
 
     def __init__(self, **kw):
         super().__init__(**kw)

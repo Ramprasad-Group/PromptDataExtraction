@@ -8,7 +8,6 @@ import pandas as pd
 import streamlit as st
 from frontend.base import Container, StaticFile
 
-import sett
 
 class Exporter(Container):
     def __init__(self) -> None:
