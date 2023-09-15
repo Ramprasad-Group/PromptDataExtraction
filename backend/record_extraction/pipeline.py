@@ -1,16 +1,15 @@
 import pylogg
 from backend.record_extraction import record_extractor
 from backend.postgres.orm import (
-    PaperTexts,
-    ExtractedMaterials, ExtractedAmount, ExtractedProperties,
+    PaperTexts, ExtractedMaterials, ExtractedAmount, ExtractedProperties,
 )
 
 log = pylogg.New('ner')
 
 
 def process_paragraph(db, bert, norm_dataset, prop_metadata,
-                      extraction_info : dict,
-                      paragraph : PaperTexts):
+                      extraction_info: dict,
+                      paragraph: PaperTexts):
     """ Extract data from an individual paragraph object. """
 
     assert 'method' in extraction_info.keys(), \
@@ -38,7 +37,7 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
         # list of dicts
         materials_list = rec.get("material_name", [])
         for material in materials_list:
-            add_material_to_postgres(paragraph, material)
+            add_material_to_postgres(db, extraction_info, paragraph, material)
 
     db.commit()
 
@@ -48,7 +47,7 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
 
         # list of dicts
         for amount in rec.get('material_amount', []):
-            add_amount_to_postgres(paragraph, amount)
+            add_amount_to_postgres(db, extraction_info, paragraph, amount)
 
         # dict
         prop = rec.get('property_record', {})
@@ -56,8 +55,9 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
         # Generally we expect to have only one material for a property dict.
         # But there can be multiple in the materials list sometimes.
         for material in materials_list:
-            add_property_to_postgres(paragraph, material, prop)
-    
+            add_property_to_postgres(
+                db, extraction_info, paragraph, material, prop)
+
     t2.done("Paragraph processed: {} records.", len(records))
 
 
@@ -75,7 +75,7 @@ def extract_data(bert, norm_dataset, prop_metadata, text) -> dict:
     return output_para
 
 
-def get_material(db, para_id : int, material_name : str) -> ExtractedMaterials:
+def get_material(db, para_id: int, material_name: str) -> ExtractedMaterials:
     """ Return an extracted material object using a para id and entity name.
         Returns None if not found.
     """
@@ -86,8 +86,8 @@ def get_material(db, para_id : int, material_name : str) -> ExtractedMaterials:
 
 
 def add_material_to_postgres(
-        db, extraction_info : dict,
-        paragraph : PaperTexts, material : dict) -> bool:
+        db, extraction_info: dict,
+        paragraph: PaperTexts, material: dict) -> bool:
     """ Add an extracted material entry to postgres.
         Check uniqueness based on para id and material entity name.
 
@@ -101,9 +101,9 @@ def add_material_to_postgres(
         return False
 
     # check if already exists
-    if get_material(paragraph.id, entity_name):
+    if get_material(db, paragraph.id, entity_name):
         return False
-    
+
     if material['components']:
         log.debug("Components: {}", material['components'])
 
@@ -129,8 +129,8 @@ def add_material_to_postgres(
 
 
 def add_amount_to_postgres(
-        db, extraction_info : dict,
-        paragraph : PaperTexts, amount : dict) -> bool:
+        db, extraction_info: dict,
+        paragraph: PaperTexts, amount: dict) -> bool:
     """ Add an extracted material amount entry to postgres.
         Check uniqueness based on material id and material entity name.
 
@@ -139,17 +139,16 @@ def add_amount_to_postgres(
     if type(amount) != dict:
         return False
 
-    name : str = amount.get('entity_name', None)
+    name: str = amount.get('entity_name', None)
     if not name:
         return False
-    
+
     # check if already exists
     if ExtractedAmount().get_one(db, {
         'para_id': paragraph.id,
         'entity_name': name
     }):
         return False
-
 
     amtobj = ExtractedAmount()
     amtobj.para_id = paragraph.id
@@ -162,8 +161,8 @@ def add_amount_to_postgres(
 
 
 def add_property_to_postgres(
-        db, extraction_info : dict,
-        paragraph : PaperTexts, material_map : dict, property : dict) -> bool:
+        db, extraction_info: dict,
+        paragraph: PaperTexts, material_map: dict, property: dict) -> bool:
     """ Add an extracted material property values to postgres.
         Check uniqueness based on material id and property entity name.
 
@@ -182,14 +181,14 @@ def add_property_to_postgres(
     except:
         return False
 
-    material = get_material(paragraph.id, material_name)
+    material = get_material(db, paragraph.id, material_name)
     if material is None:
         log.warn("Material {} not found in extracted_materials "
                  "to store properties.", material_name)
         return False
 
     # check if already exists
-    if ExtractedProperties().get_one(db,{
+    if ExtractedProperties().get_one(db, {
         'material_id': material.id,
         'entity_name': property.get('entity_name', None),
         'numeric_value': numeric_value,
