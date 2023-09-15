@@ -1,4 +1,5 @@
 import pylogg as log
+from tqdm import tqdm
 from backend.postgres.orm import (
     PaperTexts, CuratedData, ExtractedMaterials, ExtractedProperties
 )
@@ -20,7 +21,7 @@ def compute_metrics(db, property_names : list[str], extraction_method : str):
     ]
     log.info("Total {} paragraphs found from curated data.", len(para_ids))
 
-    for n, id in enumerate(para_ids):
+    for id in tqdm(para_ids):
         para = PaperTexts().get_one(db, {'id': id})
 
         t2 = log.trace("Processing paragraph: {}", para.id)
