@@ -66,6 +66,28 @@ class FilteredPapers(ORMBase):
         super().__init__(**kwargs)
 
 
+class TableCursor(ORMBase):
+    """
+    Postgres table to keep track of last processed row.
+
+    Attributes:
+        name:       Name of the process/filter.
+        table:      Name of the table processed.
+        row:        Last processed row number.
+        description:
+                    Optional comment or description.
+    """
+    __tablename__ = "table_cursor"
+
+    name : Mapped[str] = mapped_column(Text)
+    table : Mapped[str] = mapped_column(Text)
+    row: Mapped[int] = mapped_column(Integer)
+    comment : Mapped[str] = mapped_column(Text, nullable=True)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
 
 class PaperTexts(ORMBase):
     """
@@ -106,7 +128,6 @@ class PaperTexts(ORMBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
 
 
 ParagraphFilters = Literal['property_tg', 'property_td', 'property_tm',
@@ -256,8 +277,8 @@ class PropertyMetadata(ORMBase):
     units: Mapped[List[str]] = mapped_column(ARRAY(String))
     scale: Mapped[PropertyScale] = mapped_column(String, default='normal')
     short_name: Mapped[str]= mapped_column(Text, nullable=True)
-    lower_limit: Mapped[Float]= mapped_column(Float)
-    upper_limit: Mapped[Float]= mapped_column(Float)
+    lower_limit: Mapped[Float]= mapped_column(Float, nullable=True)
+    upper_limit: Mapped[Float]= mapped_column(Float, nullable=True)
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -438,6 +459,46 @@ class APIRequests(ORMBase):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+
+class CuratedData(ORMBase):
+    """
+    PostGres table containing curated ground truth data.
+
+    Attributes:
+
+        para_id:    Foreign key referencing the source paragraph in paper_texts.
+
+        doi:        DOI string of the paper.
+
+        material:   Name of the material.
+
+        property_name:
+                    Name of the property.
+
+        property_value:
+                    String representing numerical value and unit for
+                    the property.
+
+        material_coreferents:
+                    List of material other names.
+
+    """
+
+    __tablename__ = "curated_data"
+
+    para_id: Mapped[int] = mapped_column(
+        ForeignKey("paper_texts.id"), unique=False, index=True)
+
+    doi: Mapped[str] = mapped_column(Text, index=True)
+    material: Mapped[str] = mapped_column(Text)
+    property_name: Mapped[str] = mapped_column(Text)
+    property_value: Mapped[str] = mapped_column(Text)
+    material_coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
 
 
 class PaperSections(ORMBase):

@@ -18,6 +18,9 @@ class run:
         6 = Info etc.
     """
 
+    databaseName : str = 'polylet'
+    """ PostGres database to use for current run. """
+
 
 @dataclass
 class ner_pipeline:

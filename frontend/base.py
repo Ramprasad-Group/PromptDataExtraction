@@ -3,7 +3,6 @@ import os
 import urllib.parse
 import streamlit as st
 
-import sett
 
 class Container:
     """ Initialize a container/div area in the webpage. """
