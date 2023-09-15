@@ -1,5 +1,4 @@
 import pylogg
-import sett
 import streamlit as st
 from stqdm import stqdm
 
@@ -8,8 +7,11 @@ from frontend.sidebar import Sidebar
 from frontend.upload import Uploader
 from frontend.base import Container
 
-from backend.postgres.orm import Papers, PaperSections
-from backend.ner_pipeline import TextDataExtractor
+from backend import sett
+from backend.postgres.orm import (
+    Papers, PaperTexts, ExtractedMaterials, ExtractedProperties
+)
+from backend.record_extraction import pipeline
 
 logger = pylogg.New('test')
 G = st.session_state
@@ -20,7 +22,7 @@ class Sidebar:
         self.properties = []
         self.property_df = res.selected_properties().get_list()
         self.only_polymers = False
-        self.debug = sett.Run.debug
+        self.debug = sett.Run.debugCount > 0
 
         if not 'doi' in G:
             G.doi = ''
@@ -62,8 +64,9 @@ class Body(Container):
         with self.div:
             st.components.v1.html(js)
 
-    def show(self, paper, side, text_list):
-        ner = res.materials_bert()
+    def show(self, paper, side, text_list : list[PaperTexts]):
+        bert = res.materials_bert()
+        norm_dataset, prop_metadata = res.ner_files()
 
         with self.div:
             st.header(paper.title, anchor='header')
@@ -73,23 +76,22 @@ class Body(Container):
             for prop in side.properties:
                 selected_props.append(prop)
                 selected_props += res.selected_properties().get_corefs(prop)
-            st.write("Looking for properties", selected_props)
+            # st.write("Looking for properties", selected_props)
 
             # abstract = paper.abstract
             groups = []
 
             for para in stqdm(text_list):
-                st.markdown(f"[{para.type}] **{para.name}**: {para.text}")
-                tags = ner.get_tags(para.text)
-                record = TextDataExtractor(para.text, tags, debug=side.debug)
-                groups = record.extract(only_polymers=side.only_polymers)
+                st.markdown(f"[{para.doi}] **{para.directory.upper()}**: {para.text}")
+                groups = pipeline.extract_data(
+                    bert, norm_dataset, prop_metadata, para.text)
                 if groups:
-                    with st.expander("NER Tags"):
+                    with st.expander("NER Results"):
                         st.write(groups)
-                    st.write("Polymers:", record.polymers)
-                    st.write("Materials:", record.materials)
-                    st.write("Properties:", record.properties)
-                    st.write("Abbreviations:", record.abbreviations)
+                    # st.write("Polymers:", record.polymers)
+                    # st.write("Materials:", record.materials)
+                    # st.write("Properties:", record.properties)
+                    # st.write("Abbreviations:", record.abbreviations)
                 else:
                     st.warning("No extractable data found.")
 
@@ -119,7 +121,7 @@ def main():
             G.doi = paper.doi
             G.next = False
 
-        text_list : list[PaperSections] = PaperSections().get_all(
+        text_list : list[PaperTexts] = PaperTexts().get_all(
             db, criteria={'doi': side.doi})
         
         
@@ -131,4 +133,6 @@ def main():
 
 
 if __name__ == '__main__':
+    bert = res.materials_bert()
+    norm_dataset, prop_metadata = res.ner_files()
     main()
