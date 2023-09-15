@@ -1,16 +1,16 @@
 import os
-import sys
+import json
 import pylogg as log
 
 from backend import postgres, sett
 from backend.utils.frame import Frame
 from backend.postgres.orm import (
-    PaperTexts, FilteredParagraphs,
+    PaperTexts, FilteredParagraphs, CuratedData,
     ExtractedMaterials, ExtractedAmount, ExtractedProperties,
 )
-
-from backend.data.dataset_pranav import GroundDataset
-from backend.record_extraction import bert_model, record_extractor, utils
+from backend.record_extraction import (
+    bert_model, record_extractor, utils
+)
 
 def extract_data(text) -> dict:
     """ Extract data from a text by passing through the materials bert
@@ -214,7 +214,7 @@ def process_paragraph(paragraph : PaperTexts):
         for material in materials_list:
             add_property_to_postgres(paragraph, material, prop)
     
-    t2.done("Paragraph processed.")
+    t2.done("Paragraph processed: {} records.", len(records))
 
 
 def run_pipeline(debugCount):
@@ -222,32 +222,21 @@ def run_pipeline(debugCount):
     # Get the last para id added to DB.
     pass
 
-def test_ground_dataset(debugCount, mode = 'Tg'):
-    # Tg and/or bandgap curated ground datasets.
-    t2 = log.trace("Loading ground dataset.")
-    gnd = GroundDataset()
-    tg_gnd, tg_nlp = gnd.create_dataset(mode)
-    t2.done("Loaded ground dataset.")
 
-    abstract = None
+def run_on_curated_dataset(debugCount):
+    """ Run the NER pipeline on the texts/abstracts of the curated dataset. """
     n = 0
-    for doi, value in tg_gnd.items():
+    for data in next(CuratedData().iter(db, size=100)):
         n += 1
-        if debugCount > 0 and n > debugCount:
+        print(n, data.doi)
+
+        if debugCount > 0 and n >= debugCount:
             break
 
-        print(n, doi)
-        abstract = [item['abstract'] for item in value if item['abstract'] != ''][0]
-        if debugCount > 0:
-            print(abstract)
+        paragraph = PaperTexts().get_one(db, {'id': data.para_id})
 
-        paragraph = PaperTexts()
-        paragraph.id = n
-        paragraph.pid = 1
-        paragraph.directory = 'ground_dataset'
-        paragraph.doctype = 'csv'
-        paragraph.doi = doi
-        paragraph.text = abstract
+        if debugCount > 0:
+            print(paragraph.text)
 
         process_paragraph(paragraph)
 
@@ -263,6 +252,8 @@ def init_logger():
         log_level=sett.Run.logLevel,
         output_directory=sett.Run.directory
     )
+
+    log.setMaxLength(1000)
 
     if sett.Run.debugCount > 0:
         log.note("Debug run. Will process maximum {} items.",
@@ -296,7 +287,7 @@ if __name__ == '__main__':
     bert.init_local_model(device=sett.NERPipeline.pytorch_device)
 
     # run_pipeline(sett.Run.debugCount)
-    test_ground_dataset(sett.Run.debugCount, mode='bandgap')
+    # run_on_curated_dataset(sett.Run.debugCount)
 
     t1.done("All Done.")
     log.close()
