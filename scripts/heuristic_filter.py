@@ -6,6 +6,7 @@ from collections import defaultdict
 
 from backend import postgres, sett
 from backend.postgres.orm import Papers, FilteredPapers, PaperTexts, FilteredParagraphs, PropertyMetadata
+from backend.utils import checkpoint
 
 
 sett.load_settings()
@@ -65,7 +66,9 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 		log.trace(f"Processing {doi}")
 		filtration_dict['total_dois'] +=1
 
-		paragraphs = PaperTexts().get_all(db, {'doi': doi})
+		#ordering paragraphs by pid
+		paragraphs = db.query(PaperTexts).filter_by('doi' == doi).order_by(PaperTexts.pid).all()
+		# paragraphs = PaperTexts().get_all(db, {'doi': doi})
 		log.trace(f'Number of paragraphs found: {len(paragraphs)}')
 
 		relevant_doi_paras = 0
@@ -103,6 +106,7 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 			log.info(f'Number of paragraphs with {property} keywords: {filtration_dict[f"{mode}_keyword_paragraphs"]}')
 			# log.info(f'Number of paragraphs with {property} information after NER filter: {filtration_dict[f"{mode}_keyword_paragraphs_ner"]}')
 	
+	checkpoint.add_new(db, name = filter_name, table = PaperTexts.__tablename__, row = para.id, comment = 'for acs')
 	log.info(f'Last processed para_id: {para.id}')
 	db.commit()
 
@@ -144,10 +148,10 @@ def log_run_info(property, publisher_directory):
 
 if __name__ == '__main__':
 	
-	publisher_directory = 'rsc'
-	property = "thermal conductivity"
+	publisher_directory = 'acs'
+	property = "melting temperature"
 	filename = property.replace(" ", "_")
-	filter_name = 'property_thermal_conductivity'
+	filter_name = 'property_tm'
 	
 	os.makedirs(sett.Run.directory, exist_ok=True)
 	log.setFile(open(sett.Run.directory+f"/hf_{publisher_directory}_{filename}.log", "w+"))
