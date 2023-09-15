@@ -30,7 +30,7 @@ def add_new(db, name : str, table : str, row : int,
     cursor.name = name
     cursor.table = table 
     cursor.row = row
-    cursor.comment = comment
+    cursor.comments = comment
 
     # Make sure the row id is newer.
     current_cursors = list_all(db, name, table, comment)
