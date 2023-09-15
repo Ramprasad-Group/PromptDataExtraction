@@ -12,7 +12,7 @@ from pranav.prompt_extraction.run_inference import RunInformationExtraction
 from pranav.prompt_extraction.parse_args import parse_args
 from pranav.prompt_extraction.utils import connect_remote_database, LoadNormalizationDataset, ner_feed
 from pranav.prompt_extraction.pre_processing import PreProcessor
-from pranav.prompt_extraction.run_inference import RunInformationExtraction
+# from pranav.prompt_extraction.run_inference import RunInformationExtraction
 
 import json
 import torch    
@@ -35,13 +35,13 @@ else:
 	device = 'cpu'
 
 normalization_dataloader = LoadNormalizationDataset()
-train_data, test_data = normalization_dataloader.process_normalization_files()
+# train_data, test_data = normalization_dataloader.process_normalization_files()
 
 # Load model and tokenizer
-model_file = 'models/MaterialsBERT'
+model_file = 'backend/models/MaterialsBERT'
 tokenizer = AutoTokenizer.from_pretrained(model_file, model_max_length=512)
 model = AutoModelForTokenClassification.from_pretrained(model_file)
-ner_pipeline = pipeline(task="ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple", device=self.device)
+ner_pipeline = pipeline(task="ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple", device=device)
 
 pre_processor = PreProcessor()
 
@@ -49,19 +49,19 @@ token_cost = 0.002/1000 # Cost per token in dollars
 generation_constant = 30
 
 
-def add_to_filtered_paragrahs(para, ner_filter_name):
-	paragraph = FilteredParagraphs().get_one(db, {'para_id': para.id, 'filter_name': ner_filter_name})
+def add_to_filtered_paragrahs(para_id, ner_filter_name):
+	paragraph = FilteredParagraphs().get_one(db, {'para_id': para_id, 'filter_name': ner_filter_name})
 	if paragraph is not None:
-		log.trace(f"Paragraph in PostGres: {para.id}. Skipped.")
+		log.trace(f"Paragraph in PostGres: {para_id}. Skipped.")
 		return False
 	
 	else:
 		obj = FilteredParagraphs()
-		obj.para_id = para.id
+		obj.para_id = para_id
 		obj.filter_name = ner_filter_name
 		obj.insert(db)
 
-		log.trace(f"Added to PostGres: {para.id}")
+		log.trace(f"Added to PostGres: {para_id}")
 
 
 def ner_filter_check(property: str, publisher_directory: str, prop_filter_name: str, ner_filter_name:str):
@@ -80,35 +80,42 @@ def ner_filter_check(property: str, publisher_directory: str, prop_filter_name: 
 	relevant_paras = 0
 	#para_id has corresponding id and text
 	for para in paragraphs:
+		para_id = para[0]
+		para_text = para[1]
+
+		if sett.Run.debugCount >0:
+			if filtration_dict['total_paragraphs'] > sett.Run.debugCount:
+				break
+
 		filtration_dict['total_paragraphs'] +=1
 
-		ner_output, ner_filter_output = ner_filter(para.text, unit_list= prop_metadata.units, ner_output=ner_output)
+		ner_output, ner_filter_output = ner_filter(para_text, unit_list= prop_metadata.units, ner_output=None)
 		if ner_filter_output:
-			log.note(f'Paragraph: {para.id} passed {ner_filter_name}.')
+			log.note(f'Paragraph: {para_id} passed {ner_filter_name}.')
 			filtration_dict[f'{mode}_keyword_paragraphs_ner']+=1
-			if add_to_filtered_paragrahs(para, ner_filter_name):
+			if add_to_filtered_paragrahs(para_id, ner_filter_name):
 				relevant_paras +=1
 
-				if relevant_paras % 1 == 0:
+				if relevant_paras % 50 == 0:
 					db.commit()
 
 		else:
-			log.info(f"{para.id} did not pass {ner_filter_name}")
+			log.info(f"{para_id} did not pass {ner_filter_name}")
 
-		if filtration_dict['total_paragraphs']% 100 == 0 or filtration_dict['total_paragraphs']== sett.Run.debugCount:
+		if filtration_dict['total_paragraphs']% 100 == 0 or filtration_dict['total_paragraphs']== len(paragraphs):
 			log.info(f'Number of total paragraphs: {filtration_dict["total_paragraphs"]}')
-			log.info(f'Number of paragraphs with {property} information after heiruistic filter: {len(paragraphs)}')
-			log.info(f'Number of paragraphs with {property} information after NER filter: {filtration_dict[f"{mode}_keyword_paragraphs_ner"]}')
-	
-	log.note(f'Last processed para_id: {para.id}')
+			log.info(f'Number of paragraphs with {property} information after heuristic filter: {len(paragraphs)}')
+			log.info(f'Number of paragraphs with {property} information after NER filter ({ner_filter_name}) : {filtration_dict[f"{mode}_keyword_paragraphs_ner"]}')
+
+	log.note(f'Last processed para_id: {para_id}')
 	db.commit()
 
 
 
-def ner_filter(para, unit_list, ner_output=None):
+def ner_filter(para_text, unit_list, ner_output=None):
 	"""Pass paragraph through NER pipeline to check whether it contains relevant information"""
 	if ner_output is None:
-			ner_output = ner_pipeline(para.text)
+			ner_output = ner_pipeline(para_text)
 	mat_flag = False
 	prop_name_flag = False
 	prop_value_flag = False
@@ -148,10 +155,10 @@ def log_run_info(property, publisher_directory):
 if __name__ == '__main__':
 	
 	publisher_directory = 'rsc'
-	property = "thermal decomposition temperature"
+	property = "thermal conductivity"
 	filename = property.replace(" ", "_")
-	prop_filter_name = 'property_td'
-	ner_filter_name = 'ner_td'
+	prop_filter_name = 'property_thermal_conductivity'
+	ner_filter_name = 'ner_thermal_conductivity'
 	
 	#set the reqd directory in settings.yaml
 	os.makedirs(sett.Run.directory, exist_ok=True)
