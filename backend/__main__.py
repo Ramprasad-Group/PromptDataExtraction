@@ -5,7 +5,8 @@ from backend import postgres, sett
 
 from backend.console import (
     calculate_metrics,
-    checkpoint
+    checkpoint,
+    db_tables
 )
 
 def parse_args() -> argparse.Namespace:
@@ -14,6 +15,7 @@ def parse_args() -> argparse.Namespace:
 
     calculate_metrics.add_args(subparsers)
     checkpoint.add_args(subparsers)
+    db_tables.add_args(subparsers)
 
     args = parser.parse_args()
     return args
@@ -36,6 +38,9 @@ def main():
 
     elif args.command == checkpoint.ScriptName:
         checkpoint.run(args)
+
+    elif args.command == db_tables.ScriptName:
+        db_tables.run(args)
 
     t1.done("All done.")
     log.close()
