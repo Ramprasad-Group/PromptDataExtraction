@@ -5,7 +5,9 @@ import pylogg
 from backend import sett, postgres
 from backend.metrics import curated
 
-log = pylogg.New("calc_metrics")
+ScriptName = 'metrics'
+
+log = pylogg.New(ScriptName)
 
 tg_corefs = [
     'Tg', 'T_{g}', 'T_{g}s', 'T_{g})',
@@ -23,14 +25,13 @@ eg_corefs = [
 def add_args(subparsers : argparse._SubParsersAction):
     """ Add module specific arguments. """
     parser = subparsers.add_parser(
-        'metric', help='Calculate metrics using curated data table.')
+        ScriptName,
+        help='Calculate metrics using curated data table.')
     parser.add_argument('value', help="Name of the value")
 
 def run(args : argparse.ArgumentParser):
     db = postgres.connect()
     t1 = log.info("Calculating metrics.")
-
-    return
 
     metrics = curated.compute_metrics(db, tg_corefs, 'materials-bert')
     with open(sett.Run.directory + "/tg_metrics.json", "w") as fp:

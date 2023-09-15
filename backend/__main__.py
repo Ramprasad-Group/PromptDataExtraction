@@ -4,7 +4,8 @@ import pylogg as log
 from backend import postgres, sett
 
 from backend.console import (
-    calculate_metrics
+    calculate_metrics,
+    checkpoint
 )
 
 def parse_args() -> argparse.Namespace:
@@ -12,6 +13,7 @@ def parse_args() -> argparse.Namespace:
     subparsers = parser.add_subparsers(dest='command', required=True)
 
     calculate_metrics.add_args(subparsers)
+    checkpoint.add_args(subparsers)
 
     args = parser.parse_args()
     return args
@@ -27,11 +29,13 @@ def main():
         output_directory=sett.Run.directory
     )
     log.setMaxLength(1000)
-
     postgres.load_settings()
 
-    if args.command == 'metric':
+    if args.command == calculate_metrics.ScriptName:
         calculate_metrics.run(args)
+
+    elif args.command == checkpoint.ScriptName:
+        checkpoint.run(args)
 
     t1.done("All done.")
     log.close()
