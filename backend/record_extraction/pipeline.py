@@ -8,7 +8,8 @@ from backend.postgres.orm import (
 log = pylogg.New('ner')
 
 
-def process_paragraph(db, paragraph : PaperTexts):
+def process_paragraph(db, bert, norm_dataset, prop_metadata,
+                      paragraph : PaperTexts):
     """ Extract data from an individual paragraph object. """
     t2 = log.trace("Processing paragraph.")
     # Get the paragraph text

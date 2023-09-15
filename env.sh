@@ -23,7 +23,7 @@ export LD_LIBRARY_PATH=$(realpath _conda_env/lib64):$LD_LIBRARY_PATH
 export PYTHONPATH=.
 
 # Use ssh tunnel on client to connect to the frontend
-# ssh -4 -L 8501:127.0.0.1:8501 -N -f tyrion2.mse.gatech.edu
+# ssh -4 -L 8501:127.0.0.1:8501 tyrion.mse.gatech.edu
 
 
 update() {

@@ -4,6 +4,7 @@ from tqdm import tqdm
 from backend import postgres, sett
 from backend.postgres.orm import CuratedData, Papers, PaperTexts
 from backend.data.dataset_pranav import GroundDataset
+from backend.text.normalize import normText
 
 sett.load_settings()
 postgres.load_settings()
@@ -26,6 +27,7 @@ for doi, value in tqdm(gnd.items()):
         log.error("No such paper in DB: {}", doi)
         continue
 
+    # Add the text to paper texts.
     para : PaperTexts = PaperTexts().get_one(db, {
         'pid': paper.id, 'text': abstract})
     
@@ -38,7 +40,8 @@ for doi, value in tqdm(gnd.items()):
         para.pid = paper.id
         para.doctype = paper.doctype
         para.section = "abstract"
-        para.text = abstract
+        # para.text = abstract
+        para.text = normText(abstract)
         para.directory = paper.directory
 
         para.insert(db)
@@ -46,6 +49,7 @@ for doi, value in tqdm(gnd.items()):
         para : PaperTexts = PaperTexts().get_one(db, {
             'pid': paper.id, 'text': abstract})
 
+    # Add the curated records and link to paper texts.
     for record in value:
         cure = CuratedData()
         cure.para_id = para.id

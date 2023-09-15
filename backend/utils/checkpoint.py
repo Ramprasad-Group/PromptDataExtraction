@@ -3,7 +3,7 @@
 """
 
 import pylogg
-from backend import postgres, sett
+from backend import sett
 from backend.postgres.orm import TableCursor
 
 log = pylogg.New('ckpt')
@@ -79,42 +79,3 @@ def list_all(db, name : str, table : str,
     if comment:
         criteria['comment'] = comment
     return TableCursor().get_all(db, criteria)
-
-
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('name', help="Process name")
-    parser.add_argument('table', help="Table name")
-    parser.add_argument('-r', '--row', type=int, default=0,
-                        help="Max row processed")
-    parser.add_argument('-c', '--comment', default=None, help="Comment string")
-    parser.add_argument('-l', '--list', default=False, help="List all",
-                        action='store_true')
-    parser.add_argument('-g', '--get', default=False, help="Get last max row",
-                        action='store_true')
-    args = parser.parse_args()
-
-    sett.load_settings()
-    postgres.load_settings()
-    pylogg.setLevel(sett.Run.logLevel)
-    db = postgres.connect()
-
-    if args.list:
-        history = list_all(db, args.name, args.table, args.comment)
-        for item in history:
-            print(f"\nName: {item.name}, Table: {item.table}, Row: {item.row}")
-            if item.comment:
-                print(f"Comment: {item.comment}")
-            print("-"*50)
-        if not history:
-            print("No history found.")
-
-    if args.get:
-        last = get_last(db, args.name, args.table, args.comment)
-        print(f"\nTable: {args.table}, Last ID: {last}, Comment: {args.comment}")
-
-    if not args.list and not args.get:
-        add_new(db, args.name, args.table, args.row, args.comment)
-
-    pylogg.close()
