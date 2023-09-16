@@ -38,6 +38,9 @@ def run(args: ArgumentParser):
     bert = bert_model.MaterialsBERT(sett.NERPipeline.model)
     bert.init_local_model(device=sett.NERPipeline.pytorch_device)
 
+    log.info("Running NER pipeline on curated dataset.")
+    log.info("Extraction info = {}", extraction_info)
+
     n = 0
     # Process each paragraph linked to the curated data.
     for data in next(CuratedData().iter(db, size=100)):
