@@ -121,13 +121,16 @@ def run(args: ArgumentParser):
             p += 1
 
             if not (p+1) % 50:
-                log.note("NER filter passed: {} / {} paragraphs.", p, n)
+                log.note("NER filter passed: {} / {} paragraphs ({:.02f} %)",
+                         p, n, 100 * p / n)
                 db.commit()
         
         last = row.para_id
 
+    log.note("NER filter passed: {} / {} paragraphs ({:.02f} %)",
+             p, n, 100 * p / n)
+
     # Store the last processed id.
-    log.note("NER filter passed: {} / {} paragraphs.", p, n)
     log.note("Last processed row ID: {}", last)
     checkpoint.add_new(
         db, args.filter, PaperTexts.__tablename__, last, runinfo)
