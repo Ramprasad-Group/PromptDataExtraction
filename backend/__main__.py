@@ -98,7 +98,7 @@ def main():
 
     # Finalize.
     postgres.disconnect()
-    t1.done("All done.")
+    t1.note("All done.")
     log.close()
 
 
