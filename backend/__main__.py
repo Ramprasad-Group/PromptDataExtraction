@@ -9,6 +9,7 @@ from backend.console import (
     db_tables,
     settings,
     ner_curated,
+    ner_filtered,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -21,6 +22,7 @@ def parse_args() -> argparse.Namespace:
     db_tables.add_args(subparsers)
     settings.add_args(subparsers)
     ner_curated.add_args(subparsers)
+    ner_filtered.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--debug', type=int, default=0,
@@ -64,6 +66,9 @@ def main():
     )
     log.setMaxLength(1000)
 
+    if sett.Run.debugCount > 0:
+        log.note("Debug Run, Count = {}", sett.Run.debugCount)
+
     # Initialize configurations.
     postgres.load_settings()
 
@@ -82,6 +87,9 @@ def main():
 
     elif args.command == ner_curated.ScriptName:
         ner_curated.run(args)
+
+    elif args.command == ner_filtered.ScriptName:
+        ner_filtered.run(args)
 
     # Finalize.
     postgres.disconnect()
