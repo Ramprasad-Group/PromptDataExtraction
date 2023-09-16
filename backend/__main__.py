@@ -10,6 +10,7 @@ from backend.console import (
     settings,
     ner_curated,
     ner_filtered,
+    filter_by_ner,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +24,7 @@ def parse_args() -> argparse.Namespace:
     settings.add_args(subparsers)
     ner_curated.add_args(subparsers)
     ner_filtered.add_args(subparsers)
+    filter_by_ner.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--debug', type=int, default=0,
@@ -90,6 +92,9 @@ def main():
 
     elif args.command == ner_filtered.ScriptName:
         ner_filtered.run(args)
+
+    elif args.command == filter_by_ner.ScriptName:
+        filter_by_ner.run(args)
 
     # Finalize.
     postgres.disconnect()
