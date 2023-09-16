@@ -94,8 +94,8 @@ def run(args: ArgumentParser):
     if len(records) == 0:
         return
     else:
-        log.note(
-            "Row IDs: {} to {}", records[0].para_id, records[-1].para_id)
+        log.note("Unprocessed Row IDs: {} to {}",
+                 records[0].para_id, records[-1].para_id)
 
     # Load Materials bert to GPU
     bert = bert_model.MaterialsBERT(sett.NERPipeline.model)
@@ -106,7 +106,7 @@ def run(args: ArgumentParser):
 
     n = 0
     p = 0
-    # Process each paragraph linked to the curated data.
+    # Process all paragraphs returned.
     for row in tqdm(records):
         n += 1
         if row.para_id < last:
@@ -115,7 +115,7 @@ def run(args: ArgumentParser):
         if sett.Run.debugCount > 0 and n > sett.Run.debugCount:
             break
 
-        # Fetch the paragraph.
+        # Fetch the paragraph texts.
         paragraph = PaperTexts().get_one(db, {'id': row.para_id})
 
         ner_tags = bert.get_tags(paragraph.text)
