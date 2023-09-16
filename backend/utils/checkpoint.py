@@ -39,7 +39,7 @@ def add_new(db, name : str, table : str, row : int,
             log.error("Current Row ID is older than previous checkpoint.")
             log.error("Row ID: {}, previous checkpoint: {}.{} for process {}",
                       row, c.table, c.row, name)
-            return False
+            break
     
     cursor.insert(db)
     db.commit()

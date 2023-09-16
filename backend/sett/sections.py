@@ -21,6 +21,9 @@ class run:
     databaseName : str = 'polylet'
     """ PostGres database to use for current run. """
 
+    userName : str = ''
+    """ User name or email to store into database. """
+
 
 @dataclass
 class ner_pipeline:

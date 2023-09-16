@@ -44,6 +44,5 @@ def new_session(engine) -> scoped_session:
     session = scoped_session(
         sessionmaker(autocommit=False, autoflush=False, bind=connection)
     )
-    log.trace("DB connected.")
     return session
 
