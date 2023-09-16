@@ -115,8 +115,8 @@ def ner_filter_check(property: str, publisher_directory: str, prop_filter_name: 
 
 
 	checkpoint.add_new(db, name = ner_filter_name, table = PaperTexts.__tablename__, row = para_id, 
-										comment = {'publisher': publisher_directory, 'filter': ner_filter_name, 
-										'debug': True if sett.Run.debugCount > 0 else False, 'user': 'sonakshi'})
+										comment = {'user': 'sonakshi', 'filter': ner_filter_name, 'publisher': publisher_directory,
+										'debug': True if sett.Run.debugCount > 0 else False })
 	log.note(f'Last processed para_id: {para_id}')
 	db.commit()
 
@@ -165,10 +165,10 @@ def log_run_info(property, publisher_directory):
 if __name__ == '__main__':
 	
 	publisher_directory = 'acs'
-	property = "melting temperature"
+	property = "thermal decomposition temperature"
 	filename = property.replace(" ", "_")
-	prop_filter_name = 'property_tm'
-	ner_filter_name = 'ner_tm'
+	prop_filter_name = 'property_td'
+	ner_filter_name = 'ner_td'
 	
 	#set the reqd directory in settings.yaml
 	os.makedirs(sett.Run.directory, exist_ok=True)

@@ -56,6 +56,8 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 
 	log.info(f'Number of documents belonging to publisher {publisher_directory}: {len(poly_dois)}')
 
+	last_processed_id = checkpoint.get_last(db, name= filter_name, table= PaperTexts.__tablename__)
+	
 	relevant_paras = 0
 	for doi in poly_dois:
 
@@ -73,7 +75,6 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 
 		relevant_doi_paras = 0
 
-		last_processed_id = checkpoint.get_last(db, name= filter_name, table= PaperTexts.__tablename__)
 		#para entry has correspondinf id and text
 		for para in paragraphs:
 			if para.id <= last_processed_id:
@@ -109,8 +110,8 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 			log.info(f'Number of paragraphs with {property} keywords: {filtration_dict[f"{mode}_keyword_paragraphs"]}')
 	
 	checkpoint.add_new(db, name = filter_name, table = PaperTexts.__tablename__, row = para.id, 
-										comment = {'publisher': publisher_directory, 'filter': filter_name, 
-										'debug': True if sett.Run.debugCount > 0 else False, 'user': 'sonakshi'})
+										comment = {'user': 'sonakshi', 'filter': filter_name, 'publisher': publisher_directory,
+										'debug': True if sett.Run.debugCount > 0 else False})
 	
 	log.info(f'Last processed para_id: {para.id}')
 	db.commit()
@@ -119,7 +120,7 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 def keyword_filter(keyword_list, para):
 	"""Pass a filter to only pass paragraphs with relevant information to the LLM"""
 	if any([keyword in para.text or keyword in para.text.lower() for keyword in keyword_list]):
-		log.note(f'{para.id} passed the heuristic filter check.')
+		# log.note(f'{para.id} passed the heuristic filter check.')
 		return True
 	
 	return False
@@ -154,9 +155,9 @@ def log_run_info(property, publisher_directory):
 if __name__ == '__main__':
 	
 	publisher_directory = 'acs'
-	property = "melting temperature"
+	property = "thermal decomposition temperature"
 	filename = property.replace(" ", "_")
-	filter_name = 'property_tm'
+	filter_name = 'property_td'
 	
 	os.makedirs(sett.Run.directory, exist_ok=True)
 	log.setFile(open(sett.Run.directory+f"/hf_{publisher_directory}_{filename}.log", "w+"))
