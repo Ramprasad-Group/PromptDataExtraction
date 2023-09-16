@@ -14,6 +14,9 @@ def add_args(subparsers: _SubParsersAction):
     parser.add_argument(
         "-r", "--runname", default='ner-pipeline',
         help="Optional name of the run. Default: ner-pipeline")
+    parser.add_argument(
+        "-l", "--limit", default=100000, type=int,
+        help="Number of paragraphs to process. Default: 100000")
 
 
 def run(args: ArgumentParser):
@@ -32,7 +35,7 @@ def run(args: ArgumentParser):
 
     runinfo = {
         'user': sett.Run.userName,
-        'filter_name': 'ner_%',
+        'filter_name': 'ner_filter',
     }
 
     # Last processed row.
@@ -41,18 +44,29 @@ def run(args: ArgumentParser):
     log.info("Last run row ID: {}", last)
 
     query = """
-    SELECT fp.id AS filter_id, pt.id AS para_id
-    FROM filtered_paragraphs fp JOIN paper_texts pt ON fp.para_id = pt.id 
-    WHERE fp.id > :last AND fp.filter_name LIKE 'ner_%'
-    ORDER BY fp.id;
+    SELECT * FROM (
+        --Get the para ids of the filtered paragraphs.
+        SELECT fp.id AS filter_id, pt.id AS para_id
+        FROM filtered_paragraphs fp JOIN paper_texts pt ON fp.para_id = pt.id 
+        WHERE fp.id > 8432 AND fp.filter_name = 'ner_filter'
+        ORDER BY fp.id LIMIT 1000
+    ) AS ft
+        --Ingore previously processed ones.
+        WHERE ft.para_id NOT IN (
+            SELECT em.para_id FROM extracted_materials em)
+        AND ft.para_id NOT IN (
+            SELECT ema.para_id FROM extracted_material_amounts ema);
     """
 
-    t2 = log.info("Querying list of non-processed filtered paragraphs.")
-    records = postgres.raw_sql(query, {'last': last})
+    t2 = log.info("Querying list of non-processed NER filtered paragraphs.")
+    records = postgres.raw_sql(query, {'last': last, 'limit': args.limit})
     t2.note("Found {} paragraphs not parsed.", len(records))
 
     if len(records) == 0:
         return
+    else:
+        log.note("Unprocessed Row IDs: {} to {}",
+                 records[0].filter_id, records[-1].filter_id)
 
     # Load NEN dataset and property metadata.
     nd = utils.LoadNormalizationDataset(sett.DataFiles.polymer_nen_json)
