@@ -6,6 +6,7 @@ from collections import defaultdict
 
 from backend import postgres, sett
 from backend.postgres.orm import Papers, FilteredPapers, PaperTexts, FilteredParagraphs, PropertyMetadata
+from backend.utils import checkpoint
 
 import pranav.prompt_extraction.config
 from pranav.prompt_extraction.run_inference import RunInformationExtraction
@@ -68,20 +69,25 @@ def ner_filter_check(property: str, publisher_directory: str, prop_filter_name: 
 	mode = property.replace(" ", "_")
 
 	prop_metadata = PropertyMetadata().get_one(db, {"name": property})
-	unit_list = prop_metadata.units
 	
 	#selecting paragraphs that have passed the heuristic filter check for property
 	paragraphs = (db.query(FilteredParagraphs.para_id, PaperTexts.text)
 							 .join(PaperTexts, FilteredParagraphs.para_id == PaperTexts.id)
 							 .filter(FilteredParagraphs.filter_name == prop_filter_name)
-							 .order_by(FilteredParagraphs.id)
+							 .order_by(PaperTexts.id)
 							 .all())
+
+	last_processed_id = checkpoint.get_last(db, name= ner_filter_name, table= PaperTexts.__tablename__)
 
 	relevant_paras = 0
 	#para_id has corresponding id and text
 	for para in paragraphs:
+
 		para_id = para[0]
 		para_text = para[1]
+
+		if para_id <= last_processed_id:
+			continue
 
 		if sett.Run.debugCount >0:
 			if filtration_dict['total_paragraphs'] > sett.Run.debugCount:
@@ -107,6 +113,10 @@ def ner_filter_check(property: str, publisher_directory: str, prop_filter_name: 
 			log.info(f'Number of paragraphs with {property} information after heuristic filter: {len(paragraphs)}')
 			log.info(f'Number of paragraphs with {property} information after NER filter ({ner_filter_name}) : {filtration_dict[f"{mode}_keyword_paragraphs_ner"]}')
 
+
+	checkpoint.add_new(db, name = ner_filter_name, table = PaperTexts.__tablename__, row = para_id, 
+										comment = {'publisher': publisher_directory, 'filter': ner_filter_name, 
+										'debug': True if sett.Run.debugCount > 0 else False, 'user': 'sonakshi'})
 	log.note(f'Last processed para_id: {para_id}')
 	db.commit()
 
@@ -154,11 +164,11 @@ def log_run_info(property, publisher_directory):
 
 if __name__ == '__main__':
 	
-	publisher_directory = 'rsc'
-	property = "thermal conductivity"
+	publisher_directory = 'acs'
+	property = "melting temperature"
 	filename = property.replace(" ", "_")
-	prop_filter_name = 'property_thermal_conductivity'
-	ner_filter_name = 'ner_thermal_conductivity'
+	prop_filter_name = 'property_tm'
+	ner_filter_name = 'ner_tm'
 	
 	#set the reqd directory in settings.yaml
 	os.makedirs(sett.Run.directory, exist_ok=True)

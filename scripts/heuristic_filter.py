@@ -67,14 +67,18 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 		filtration_dict['total_dois'] +=1
 
 		#ordering paragraphs by pid
-		paragraphs = db.query(PaperTexts).filter_by('doi' == doi).order_by(PaperTexts.pid).all()
+		paragraphs = db.query(PaperTexts).filter_by(doi = doi).order_by(PaperTexts.id).all()
 		# paragraphs = PaperTexts().get_all(db, {'doi': doi})
 		log.trace(f'Number of paragraphs found: {len(paragraphs)}')
 
 		relevant_doi_paras = 0
 
+		last_processed_id = checkpoint.get_last(db, name= filter_name, table= PaperTexts.__tablename__)
 		#para entry has correspondinf id and text
 		for para in paragraphs:
+			if para.id <= last_processed_id:
+				continue
+
 			filtration_dict['total_paragraphs'] +=1
 			found = process_property(mode= mode,keyword_list=keyword_list, para= para, 
 														prop_metadata=prop_metadata, ner_filter=False, heuristic_filter=True)
@@ -101,12 +105,13 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 		if filtration_dict['total_dois']% 100 == 0 or filtration_dict['total_dois']== len(poly_dois):
 			log.info(f'Number of total documents: {filtration_dict["total_dois"]}')
 			log.info(f'Number of total paragraphs: {filtration_dict["total_paragraphs"]}')
-			# log.note(f'Number of relevant documents: {filtration_dict["relevant_documents"]}')
 			log.info(f'Number of documents with {property} information: {filtration_dict[f"{mode}_documents"]}')
 			log.info(f'Number of paragraphs with {property} keywords: {filtration_dict[f"{mode}_keyword_paragraphs"]}')
-			# log.info(f'Number of paragraphs with {property} information after NER filter: {filtration_dict[f"{mode}_keyword_paragraphs_ner"]}')
 	
-	checkpoint.add_new(db, name = filter_name, table = PaperTexts.__tablename__, row = para.id, comment = 'for acs')
+	checkpoint.add_new(db, name = filter_name, table = PaperTexts.__tablename__, row = para.id, 
+										comment = {'publisher': publisher_directory, 'filter': filter_name, 
+										'debug': True if sett.Run.debugCount > 0 else False, 'user': 'sonakshi'})
+	
 	log.info(f'Last processed para_id: {para.id}')
 	db.commit()
 
@@ -114,7 +119,7 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 def keyword_filter(keyword_list, para):
 	"""Pass a filter to only pass paragraphs with relevant information to the LLM"""
 	if any([keyword in para.text or keyword in para.text.lower() for keyword in keyword_list]):
-		log.warn(f'{para.id} passed the heuristic filter check.')
+		log.note(f'{para.id} passed the heuristic filter check.')
 		return True
 	
 	return False
