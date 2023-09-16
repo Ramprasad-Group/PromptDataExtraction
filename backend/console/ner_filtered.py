@@ -72,7 +72,7 @@ def run(args: ArgumentParser):
     # Process each paragraph linked to the curated data.
     for row in tqdm(records):
         n += 1
-        if row.para_id < last:
+        if row.filter_id < last:
             continue
 
         if sett.Run.debugCount > 0 and n > sett.Run.debugCount:
