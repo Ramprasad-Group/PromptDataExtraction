@@ -27,17 +27,32 @@ def add_args(subparsers : argparse._SubParsersAction):
     parser = subparsers.add_parser(
         ScriptName,
         help='Calculate metrics using curated data table.')
+    parser.add_argument(
+        'runname',
+        help="Name of the run, e.g., test-ner-pipeline.")
+    parser.add_argument(
+        '-m', '--method',
+        default = 'materials-bert',
+        help="Name of extraction method, default: materials-bert")
+
 
 def run(args : argparse.ArgumentParser):
     db = postgres.connect()
-    t1 = log.info("Calculating metrics.")
 
-    metrics = curated.compute_metrics(db, tg_corefs, 'materials-bert')
+    t1 = log.info("Calculating metrics on curated dataset.")
+    log.info("Method: {} Run: {}", args.method, args.runname)
+
+    metrics = curated.compute_metrics(
+        db, tg_corefs, args.method, args.runname)
+
     with open(sett.Run.directory + "/tg_metrics.json", "w") as fp:
         json.dump(metrics, fp, indent=4)
+
     t1.done("Metrics: {}", metrics)
 
-    metrics = curated.compute_metrics(db, eg_corefs, 'materials-bert')
+    metrics = curated.compute_metrics(
+        db, eg_corefs, args.method, args.runname)
+
     with open(sett.Run.directory + "/eg_metrics.json", "w") as fp:
         json.dump(metrics, fp, indent=4)
 
