@@ -104,8 +104,14 @@ def run(args: ArgumentParser):
                 extraction_info, paragraph)
         except Exception as err:
             log.error("Failed to process paragraph {}: {}", row.para_id, err)
+            if sett.Run.debugCount > 0:
+                raise err
         
         last = row.filter_id
+
+        if not (n % 50) or n == len(records):
+            log.info("Processed {} paragraphs.", n)
+
 
     # Store the last processed id.
     log.note("Last processed row ID: {}", last)
