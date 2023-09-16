@@ -80,6 +80,8 @@ def run(args: ArgumentParser):
         db, args.filter, PaperTexts.__tablename__, runinfo)
     log.info("Last run row ID: {}", last)
 
+    # Query the unprocessed list of rows.
+    # This may take a while depending on the SQL.
     query = """
     SELECT pt.id AS para_id FROM paper_texts pt
     WHERE pt.id > :last ORDER BY pt.id LIMIT :limit;
@@ -91,6 +93,9 @@ def run(args: ArgumentParser):
 
     if len(records) == 0:
         return
+    else:
+        log.note(
+            "Row IDs: {} to {}", records[0].para_id, records[-1].para_id)
 
     # Load Materials bert to GPU
     bert = bert_model.MaterialsBERT(sett.NERPipeline.model)
