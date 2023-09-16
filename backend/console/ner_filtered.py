@@ -98,9 +98,12 @@ def run(args: ArgumentParser):
         if sett.Run.debugCount > 0:
             print(paragraph.text)
 
-        pipeline.process_paragraph(
-            db, bert, norm_dataset, prop_metadata,
-            extraction_info, paragraph)
+        try:
+            pipeline.process_paragraph(
+                db, bert, norm_dataset, prop_metadata,
+                extraction_info, paragraph)
+        except Exception as err:
+            log.error("Failed to process paragraph {}: {}", row.para_id, err)
         
         last = row.filter_id
 
