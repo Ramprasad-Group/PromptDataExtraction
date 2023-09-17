@@ -69,8 +69,9 @@ class PaperCorpus(ORMBase):
     directory: Mapped[str] = mapped_column(Text)
     doctype: Mapped[str] = mapped_column(VARCHAR(length=6))
     filename: Mapped[str] = mapped_column(Text, index=True)
-    filebytes: Mapped[int] = mapped_column(Integer)
-    filemtime: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    filebytes: Mapped[int] = mapped_column(Integer, default=-1)
+    filemtime: Mapped[datetime] = mapped_column(DateTime(timezone=True),
+                                                nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
