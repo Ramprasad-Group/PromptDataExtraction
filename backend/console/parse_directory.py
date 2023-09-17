@@ -93,7 +93,8 @@ def _parse_file(db, filepath, root="") -> DocumentParser | None:
             pg += 1
 
     db.commit()
-    t2.done("Parse done. {}", filepath)
+    t2.done("Parse done ({} paragraphs found). {}",
+            len(doc.paragraphs), filepath)
     return doc, pg
 
 
@@ -112,8 +113,15 @@ def doi2filename(doi: str, doctype: str):
 def run(args: ArgumentParser):
     db = postgres.connect()
 
+    if args.directory.endswith("/"):
+        args.directory = args.directory[:-1]
+
+    if not os.path.isdir(args.directory):
+        raise ValueError("No such directory", args.directory)
+
     if args.file:
         sett.Run.debugCount = 1
+        args.file = os.path.join(args.directory, args.file)
         return _parse_file(db, args.file)
 
     # Get the list of DOIs that are polymer papers and not found in the
@@ -129,12 +137,6 @@ def run(args: ArgumentParser):
         AND pt."section" IS DISTINCT FROM 'abstract'
     );
     """
-    
-    if args.directory.endswith("/"):
-        args.directory = args.directory[:-1]
-
-    if not os.path.isdir(args.directory):
-        raise ValueError("No such directory", args.directory)
 
     dirname = os.path.basename(args.directory)
 
