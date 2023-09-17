@@ -22,6 +22,11 @@ def add_args(subparsers: _SubParsersAction):
     parser.add_argument(
         'directory',
         help="Path to directory in the corpus.")
+    parser.add_argument(
+        '-f', '--file',
+        default=None,
+        help="Parse a single file, useful for debugging."
+    )
 
 
 def _add_to_postgres(db, paper: Papers, directory: str, doctype: str,
@@ -106,6 +111,10 @@ def doi2filename(doi: str, doctype: str):
 
 def run(args: ArgumentParser):
     db = postgres.connect()
+
+    if args.file:
+        sett.Run.debugCount = 1
+        return _parse_file(db, args.file)
 
     # Get the list of DOIs that are polymer papers and not found in the
     # paper_texts table, for a specific publisher directory.
