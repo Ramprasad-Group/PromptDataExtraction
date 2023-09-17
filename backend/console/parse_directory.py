@@ -50,6 +50,7 @@ def _add_to_postgres(db, paper: Papers, directory: str, doctype: str,
 
 
 def _parse_file(db, filepath, root="") -> DocumentParser | None:
+    t2 = log.trace("Parsing {}", filepath)
     # Keep count of added items for statistics.
     pg = 0
     filename = os.path.basename(filepath)
@@ -80,12 +81,13 @@ def _parse_file(db, filepath, root="") -> DocumentParser | None:
 
     for para in doc.paragraphs:
         if paper is None:
-            log.warn(f"{doi} not found in postgres.")
+            log.warn(f"Paper {doi} not found in postgres.")
             break
         elif _add_to_postgres(db, paper, directory, doc.doctype, para):
             pg += 1
 
     db.commit()
+    t2.done("Parse done. {}", filepath)
     return doc, pg
 
 
@@ -114,8 +116,15 @@ def run(args: ArgumentParser):
     ) AS poly WHERE poly.doi NOT IN (
 	    SELECT pt.doi FROM paper_texts pt
         WHERE pt.directory = :dirname
+        AND pt."section" IS DISTINCT FROM 'abstract'
     );
     """
+    
+    if args.directory.endswith("/"):
+        args.directory = args.directory[:-1]
+
+    if not os.path.isdir(args.directory):
+        raise ValueError("No such directory", args.directory)
 
     dirname = os.path.basename(args.directory)
 
@@ -155,7 +164,7 @@ def run(args: ArgumentParser):
 
         # Not more than debugCount per run
         # Use -1 for no limit.
-        if sett.Run.debugCount > 0 and n > sett.Run.debugCount:
+        if sett.Run.debugCount > 0 and n >= sett.Run.debugCount:
             log.note("Processed maximum {} papers.", n)
             log.info("Added {} paragraphs to Postgres, ", total_pg)
             break
