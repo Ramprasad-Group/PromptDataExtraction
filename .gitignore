@@ -11,3 +11,4 @@ runs/
 *.log
 .env
 *.json
+notebooks/*.png
