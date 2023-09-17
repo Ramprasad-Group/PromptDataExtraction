@@ -24,19 +24,18 @@ def _add_to_postgres(db, abspath : str, rootdir : str = ''):
     """ Add a paragraph text to postgres if it already does not
         exist in the database.
     """
+    relpath = abspath.removeprefix(rootdir).removeprefix('/')
+    paperfile = PaperCorpus().get_one(db, {'relpath': relpath})
 
-    filename = os.path.basename(abspath)
-    doistr = filename2doi(filename)
-
-    paperfile = PaperCorpus().get_one(db, {'doi': doistr})
     if paperfile is not None:
-        log.trace(f"Paper file in PostGres: {doistr}. Skipped.")
+        log.trace(f"Paper file in PostGres: {relpath}. Skipped.")
         return False
 
     # Add the file to database.
+    filename = os.path.basename(abspath)
+    doistr = filename2doi(filename)
     doctype = os.path.splitext(abspath)[1][1:]
     directory = os.path.basename(os.path.dirname(abspath))
-    relpath = abspath.lstrip(rootdir)
 
     try:
         stats = os.stat(abspath)
@@ -49,6 +48,7 @@ def _add_to_postgres(db, abspath : str, rootdir : str = ''):
 
     paperfile = PaperCorpus()
     paperfile.doi = doistr
+    paperfile.relpath = relpath
     paperfile.directory = directory
     paperfile.doctype = doctype
     paperfile.filename = filename
@@ -70,7 +70,9 @@ def filename2doi(doi: str):
 
 
 def run(args: ArgumentParser):
-    db = postgres.connect()
+
+    if args.directory.endswith("/"):
+        args.directory = args.directory[:-1]
 
     if not os.path.isdir(args.directory):
         raise ValueError("No such directory", args.directory)
@@ -78,15 +80,17 @@ def run(args: ArgumentParser):
     n = 0
     pg = 0
 
+    db = postgres.connect()
+
     t2 = log.info("Recursively crawling: {}", args.directory)
+    corpus_root = os.path.dirname(args.directory)
 
     for root, subdirs, files in os.walk(args.directory):
-        n = 1
         log.trace("Entering: %s" %root)
 
         for filename in files:
             abs_path = os.path.join(root, filename)
-            if _add_to_postgres(db, abs_path, args.directory):
+            if _add_to_postgres(db, abs_path, corpus_root):
                 pg += 1
 
             n += 1
