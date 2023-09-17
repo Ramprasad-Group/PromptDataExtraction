@@ -42,17 +42,25 @@ def load_settings():
         db.name = sett.PostGres.db_name
 
 
-def connect():
+def connect(database = None):
     global SSH, ENG, SES
+
+    if database is not None:
+        db.name = database
+
     if SSH is None:
         SSH = conn.ssh_tunnel(
             ssh.host, ssh.port, ssh.user, ssh.pswd, db.host, db.port)
+
     if ENG is None:
         ENG = conn.setup_engine(
             db.host, db.port, db.user, db.pswd, db.name, proxy=SSH)
+
     if SES is None:
         SES = conn.new_session(ENG)
+
     return SES
+
 
 def disconnect():
     global SSH, ENG, SES
