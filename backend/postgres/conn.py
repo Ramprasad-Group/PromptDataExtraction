@@ -35,7 +35,7 @@ def setup_engine(host, port, user, pswd, name,
             db_url = "postgresql+psycopg2://{}:{}@{}:{}/{}".format(
                 user, pswd, proxy.local_bind_host, proxy.local_bind_port, name)
     engine = create_engine(db_url)
-    t2.done("Connected to PostGres DB: {}", name)
+    t2.note("Connected to PostGres DB: {}", name)
     return engine
 
 
