@@ -67,8 +67,8 @@ class PaperCorpus(ORMBase):
 
     doi: Mapped[str] = mapped_column(Text, unique=True, index=True)
     directory: Mapped[str] = mapped_column(Text)
-    doctype: Mapped[str] = mapped_column(VARCHAR(length=6))
     filename: Mapped[str] = mapped_column(Text, index=True)
+    doctype: Mapped[str] = mapped_column(VARCHAR(length=6))
     filebytes: Mapped[int] = mapped_column(Integer, default=-1)
     filemtime: Mapped[datetime] = mapped_column(DateTime(timezone=True),
                                                 nullable=True)

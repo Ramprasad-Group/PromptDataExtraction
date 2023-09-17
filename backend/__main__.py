@@ -12,6 +12,7 @@ from backend.console import (
     ner_filtered,
     filter_by_ner,
     parse_directory,
+    parse_corpus,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -27,6 +28,7 @@ def parse_args() -> argparse.Namespace:
     ner_filtered.add_args(subparsers)
     filter_by_ner.add_args(subparsers)
     parse_directory.add_args(subparsers)
+    parse_corpus.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--dir', default=None,
@@ -101,6 +103,9 @@ def main():
 
     elif args.command == parse_directory.ScriptName:
         parse_directory.run(args)
+
+    elif args.command == parse_corpus.ScriptName:
+        parse_corpus.run(args)
 
     # Finalize.
     postgres.disconnect()
