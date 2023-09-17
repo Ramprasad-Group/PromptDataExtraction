@@ -42,6 +42,40 @@ class Papers(ORMBase):
         super().__init__(**kwargs)
 
 
+
+class PaperCorpus(ORMBase):
+    """
+    PostGres table containing list of all files found in the corpus.
+
+    Attributes:
+
+        doi:        DOI string of the paper.
+
+        directory:  Directory name in corpus where the file can be found.
+
+        doctype:    One of xml, html. (planned: pdf, txt etc.)
+
+        filename:   Basename of the file.
+
+        filebytes:  Size of file in bytes.
+
+        filemtime:  Last modification time of the file reported by Linux.
+
+    """
+
+    __tablename__ = "paper_corpus"
+
+    doi: Mapped[str] = mapped_column(Text, unique=True, index=True)
+    directory: Mapped[str] = mapped_column(Text)
+    doctype: Mapped[str] = mapped_column(VARCHAR(length=6))
+    filename: Mapped[str] = mapped_column(Text, index=True)
+    filebytes: Mapped[int] = mapped_column(Integer)
+    filemtime: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
 class FilteredPapers(ORMBase):
     """
     PostGres table to store the list of DOIs that passed a named filter,
