@@ -29,15 +29,15 @@ def parse_args() -> argparse.Namespace:
     parse_directory.add_args(subparsers)
 
     # Additional arguments for the current run.
-    parser.add_argument('--debug', type=int, default=0,
-                        help="Debug count, override settings.yaml.")
-    parser.add_argument('--log', type=int, default=0,
-                        help="Log level. Optional, override settings.yaml.")
-    parser.add_argument('--db', default=None,
-                        help="Database name. Optional, override settings.yaml.")
     parser.add_argument('--dir', default=None,
                         required=True,
-                        help="Output directory. Required.")
+                        help="Output directory. Required, overrides settings.")
+    parser.add_argument('--debug', type=int, default=0,
+                        help="Debug count. Optional, overrides settings.")
+    parser.add_argument('--log', type=int, default=0,
+                        help="Log level. Optional, overrides settings.")
+    parser.add_argument('--db', default=None,
+                        help="Database name. Optional, overrides settings.")
     
     # Parse arguments.
     args = parser.parse_args()
