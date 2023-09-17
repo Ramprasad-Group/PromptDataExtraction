@@ -1,5 +1,6 @@
 import os
 import pylogg
+from tqdm import tqdm
 from argparse import ArgumentParser, _SubParsersAction
 
 from backend import postgres, sett
@@ -139,7 +140,7 @@ def run(args: ArgumentParser):
     pg = 0
     total_pg = 0
 
-    for row in records:
+    for row in tqdm(records):
         n += 1
         doi = row.doi
         doctype = row.doctype
