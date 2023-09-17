@@ -30,13 +30,14 @@ def parse_args() -> argparse.Namespace:
 
     # Additional arguments for the current run.
     parser.add_argument('--debug', type=int, default=0,
-                        help="Debug count, override settings.yaml, default 0")
+                        help="Debug count, override settings.yaml.")
     parser.add_argument('--log', type=int, default=0,
                         help="Log level. Optional, override settings.yaml.")
     parser.add_argument('--db', default=None,
                         help="Database name. Optional, override settings.yaml.")
     parser.add_argument('--dir', default=None,
-                        help="Run directory. Optional, override settings.yaml.")
+                        required=True,
+                        help="Output directory. Required.")
     
     # Parse arguments.
     args = parser.parse_args()
