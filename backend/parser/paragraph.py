@@ -47,9 +47,12 @@ class ParagraphParser(object):
         cleanedtail = self._clean_text(element.tail)
 
         if cleanedtext:
-            if element.tag == 'sup':
+            localname = etree.QName(element).localname
+            if localname == 'sup':
                 text += "^{" + cleanedtext + "} "
-            elif element.tag == 'sub':
+            elif localname == 'sub':
+                text += "_{" + cleanedtext + "} "
+            elif localname == 'inf':
                 text += "_{" + cleanedtext + "} "
             else:
                 text += cleanedtext + " "
