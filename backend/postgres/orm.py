@@ -423,18 +423,17 @@ class APIRequests(ORMBase):
     model: Mapped[str] = mapped_column(Text)
     api: Mapped[str] = mapped_column(Text)
     request: Mapped[str] = mapped_column(Text)
-    response: Mapped[str] = mapped_column(Text)
+    response: Mapped[str] = mapped_column(Text, nullable=True)
     status: Mapped[Optional[str]] = mapped_column(Text)
-    details: Mapped[Dict] = mapped_column(JSON)
+    details: Mapped[Dict] = mapped_column(JSON, default={})
 
-    para_id: Mapped[int] = mapped_column(
-            ForeignKey("paper_texts.id", ondelete='CASCADE'),
+    para_id: Mapped[int] = mapped_column(ForeignKey("paper_texts.id"),
             unique=False, index=True)
 
     request_obj: Mapped[Dict] = mapped_column(JSON)
-    response_obj: Mapped[Dict] = mapped_column(JSON)
-    request_tokens: Mapped[int] = mapped_column(Integer, default=-1)
-    response_tokens: Mapped[int] = mapped_column(Integer, default=-1)
+    response_obj: Mapped[Dict] = mapped_column(JSON, nullable=True)
+    request_tokens: Mapped[int] = mapped_column(Integer, nullable=True)
+    response_tokens: Mapped[int] = mapped_column(Integer, nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
