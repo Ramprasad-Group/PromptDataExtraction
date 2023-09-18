@@ -1,6 +1,7 @@
 import os
 import sys
 import pylogg as log
+from tqdm import tqdm
 
 from collections import defaultdict
 
@@ -20,24 +21,23 @@ filtration_dict = defaultdict(int)
 
 
 
-def add_to_filtered_paragrahs(para, filter_name):
-	paragraph = FilteredParagraphs().get_one(db, {'para_id': para.id, 'filter_name': filter_name})
+def add_to_filtered_paragrahs(para_id, filter_name):
+	paragraph = FilteredParagraphs().get_one(db, {'para_id': para_id, 'filter_name': filter_name})
 	if paragraph is not None:
-		log.trace(f"Paragraph in PostGres: {para.id}. Skipped.")
+		log.trace(f"Paragraph in PostGres: {para_id}. Skipped.")
 		return False
 	
 	else:
 		obj = FilteredParagraphs()
-		obj.para_id = para.id
+		obj.para_id = para_id
 		obj.filter_name = filter_name
 		obj.insert(db)
 
-		log.trace(f"Added to PostGres: {para.id}")
+		log.trace(f"Added to PostGres: {para_id}")
 
 		return True
 			
 
-	
 def heuristic_filter_check(property:str, publisher_directory:str, filter_name:str):
 	mode = property.replace(" ", "_")
 	filter_name = filter_name
@@ -45,82 +45,72 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 	prop_metadata = PropertyMetadata().get_one(db, {"name": property})
 	keyword_list = prop_metadata.other_names
 
-	#extract all paragraphs from polymer DOIs belonging to a particular publisher 
-	poly_entries =  (db.query(FilteredPapers)
-							.join(Papers, FilteredPapers.doi == Papers.doi)
-							.filter(Papers.directory == publisher_directory)
-							.order_by(FilteredPapers.id)
-							.all())
-
-	poly_dois = [entry.doi for entry in poly_entries]
-
-	log.info(f'Number of documents belonging to publisher {publisher_directory}: {len(poly_dois)}')
-
 	last_processed_id = checkpoint.get_last(db, name= filter_name, table= PaperTexts.__tablename__)
+	log.info("Last run row ID: {}", last_processed_id)
+
+	query= '''
+	SELECT pt.id AS para_id FROM paper_texts pt
+	JOIN filtered_papers fp ON fp.doi = pt.doi
+	WHERE pt.id > :last_processed_id ORDER BY pt.id LIMIT :limit;
+	'''
+
+	log.info("Querying list of non-processed paragraphs.")
+	records = postgres.raw_sql(query, {'last_processed_id': last_processed_id, 'limit': 10000000})
+	log.note("Found {} paragraphs not processed.", len(records))
+
+	if len(records) == 0:
+		return
+	else:
+		log.note("Unprocessed Row IDs: {} to {}",
+							records[0].para_id, records[-1].para_id)
 	
 	relevant_paras = 0
-	for doi in poly_dois:
+	
+	for row in tqdm(records):
+		if row.para_id < last_processed_id:
+			continue
 
-		if sett.Run.debugCount >0:
-			if filtration_dict['total_dois'] > sett.Run.debugCount:
-				break
-			
-		log.trace(f"Processing {doi}")
-		filtration_dict['total_dois'] +=1
+		if sett.Run.debugCount >0 and filtration_dict['total_paragraphs'] > sett.Run.debugCount:
+			break
 
-		#ordering paragraphs by pid
-		paragraphs = db.query(PaperTexts).filter_by(doi = doi).order_by(PaperTexts.id).all()
-		# paragraphs = PaperTexts().get_all(db, {'doi': doi})
-		log.trace(f'Number of paragraphs found: {len(paragraphs)}')
+		filtration_dict['total_paragraphs'] +=1
 
-		relevant_doi_paras = 0
+		# Fetch the paragraph texts.
+		para = PaperTexts().get_one(db, {'id': row.para_id})
 
-		#para entry has correspondinf id and text
-		for para in paragraphs:
-			if para.id <= last_processed_id:
-				continue
-
-			filtration_dict['total_paragraphs'] +=1
-			found = process_property(mode= mode,keyword_list=keyword_list, para= para, 
+		found = process_property(mode= mode,keyword_list=keyword_list, para= para, 
 														prop_metadata=prop_metadata, ner_filter=False, heuristic_filter=True)
 			
-			if found:
-				log.note(f"{para.id} passed the heuristic filter ")
-				relevant_paras +=1
-				relevant_doi_paras +=1
+		if found:
+			log.note(f"{para.id} passed the heuristic filter ")
+			relevant_paras +=1
 
-				if add_to_filtered_paragrahs(para=para, filter_name = filter_name):
-					if relevant_paras % 20 == 0:
-						db.commit()
-					
+			if add_to_filtered_paragrahs(para_id= row.para_id, filter_name = filter_name):
+				if relevant_paras % 20 == 0:
+					db.commit()
+				
 
-			else:
-				log.info(f"{para.id} did not pass the heuristic filter")
-				# log.trace(para.text)
-		
-		if relevant_doi_paras>0:
-			filtration_dict[f"{mode}_documents"] +=1
-			log.note(f'DOI: {doi} contains paragraphs for property: {mode}.')
+		else:
+			log.info(f"{para.id} did not pass the heuristic filter")
+			# log.trace(para.text)
 
-
-		if filtration_dict['total_dois']% 100 == 0 or filtration_dict['total_dois']== len(poly_dois):
-			log.info(f'Number of total documents: {filtration_dict["total_dois"]}')
+		if filtration_dict['total_paragraphs']% 100 == 0 or filtration_dict['total_paragraphs']== len(records):
 			log.info(f'Number of total paragraphs: {filtration_dict["total_paragraphs"]}')
-			log.info(f'Number of documents with {property} information: {filtration_dict[f"{mode}_documents"]}')
+			# log.info(f'Number of documents with {property} information: {filtration_dict[f"{mode}_documents"]}')
 			log.info(f'Number of paragraphs with {property} keywords: {filtration_dict[f"{mode}_keyword_paragraphs"]}')
 	
-	checkpoint.add_new(db, name = filter_name, table = PaperTexts.__tablename__, row = para.id, 
-										comment = {'user': 'sonakshi', 'filter': filter_name, 'publisher': publisher_directory,
+	log.info(f'Last processed para_id: {row.para_id}')
+
+	checkpoint.add_new(db, name = filter_name, table = PaperTexts.__tablename__, row = row.para_id, 
+										comment = {'user': 'sonakshi', 'filter': filter_name,
 										'debug': True if sett.Run.debugCount > 0 else False})
 	
-	log.info(f'Last processed para_id: {para.id}')
 	db.commit()
 
 
 def keyword_filter(keyword_list, para):
 	"""Pass a filter to only pass paragraphs with relevant information to the LLM"""
 	if any([keyword in para.text or keyword in para.text.lower() for keyword in keyword_list]):
-		# log.note(f'{para.id} passed the heuristic filter check.')
 		return True
 	
 	return False
@@ -132,12 +122,12 @@ def process_property(mode, keyword_list, para, prop_metadata, ner_filter= False,
 			return True
 
 
-def log_run_info(property, publisher_directory):
+def log_run_info(property, publisher_directory, filter_name):
     """
         Log run information for reference purposes.
         Returns a log Timer.
     """
-    t1 = log.note(f"Heuristic Filter Run for property: {property} and publisher: {publisher_directory}")
+    t1 = log.note(f"Heuristic Filter ({filter_name}) Run for property: {property} and publisher: {publisher_directory}")
     log.info("CWD: {}", os.getcwd())
     log.info("Host: {}", os.uname())
 
@@ -154,18 +144,20 @@ def log_run_info(property, publisher_directory):
 
 if __name__ == '__main__':
 	
-	publisher_directory = 'acs'
-	property = "thermal decomposition temperature"
+	publisher_directory = 'All'
+	property = "thermal conductivity"
+	filter_name = 'property_thermal_conductivity'
+
 	filename = property.replace(" ", "_")
-	filter_name = 'property_td'
 	
 	os.makedirs(sett.Run.directory, exist_ok=True)
-	log.setFile(open(sett.Run.directory+f"/hf_{publisher_directory}_{filename}.log", "w+"))
+	# log.setFile(open(sett.Run.directory+f"/hf_{publisher_directory}_{filename}.log", "w+"))
+	log.setFile(open(sett.Run.directory+f"/hf_{filename}.log", "w+"))
 	log.setLevel(sett.Run.logLevel)
 	log.setFileTimes(show=True)
 	log.setConsoleTimes(show=True)
 		
-	t1 = log_run_info(property, publisher_directory)
+	t1 = log_run_info(property, publisher_directory, filter_name)
 	
 	heuristic_filter_check(property= property, publisher_directory= publisher_directory, filter_name=filter_name)
 		

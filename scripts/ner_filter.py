@@ -1,6 +1,7 @@
 import os
 import sys
 import pylogg as log
+from tqdm import tqdm
 
 from collections import defaultdict
 
@@ -71,53 +72,77 @@ def ner_filter_check(property: str, publisher_directory: str, prop_filter_name: 
 	prop_metadata = PropertyMetadata().get_one(db, {"name": property})
 	
 	#selecting paragraphs that have passed the heuristic filter check for property
-	paragraphs = (db.query(FilteredParagraphs.para_id, PaperTexts.text)
-							 .join(PaperTexts, FilteredParagraphs.para_id == PaperTexts.id)
-							 .filter(FilteredParagraphs.filter_name == prop_filter_name)
-							 .order_by(PaperTexts.id)
-							 .all())
+	# paragraphs = (db.query(FilteredParagraphs.para_id, PaperTexts.text)
+	# 						 .join(PaperTexts, FilteredParagraphs.para_id == PaperTexts.id)
+	# 						 .filter(FilteredParagraphs.filter_name == prop_filter_name)
+	# 						 .order_by(PaperTexts.id)
+	# 						 .all())
+	
+	last_processed_id = checkpoint.get_last(db, name= ner_filter_name, table= FilteredParagraphs.__tablename__)
+	log.info("Last run row ID: {}", last_processed_id)
 
-	last_processed_id = checkpoint.get_last(db, name= ner_filter_name, table= PaperTexts.__tablename__)
+	query = '''
+	SELECT fp.para_id, pt.text
+	FROM filtered_paragraphs fp
+	JOIN paper_texts pt ON fp.para_id = pt.id
+	WHERE fp.filter_name = :prop_filter_name
+	AND fp.para_id > :last_processed_id ORDER BY fp.para_id LIMIT :limit;
+	'''
+
+	log.info("Querying list of non-processed paragraphs.")
+	records = postgres.raw_sql(query, {'prop_filter_name': prop_filter_name, 'last_processed_id': last_processed_id, 'limit': 10000000})
+	log.note("Found {} paragraphs not processed.", len(records))
+
+	if len(records) == 0:
+		return
+	else:
+		log.note("Unprocessed Row IDs: {} to {}",
+							records[0].para_id, records[-1].para_id)
 
 	relevant_paras = 0
 	#para_id has corresponding id and text
-	for para in paragraphs:
+	# for para in paragraphs:
 
-		para_id = para[0]
-		para_text = para[1]
+	for row in tqdm(records):
 
-		if para_id <= last_processed_id:
+		if row.para_id < last_processed_id:
 			continue
 
-		if sett.Run.debugCount >0:
-			if filtration_dict['total_paragraphs'] > sett.Run.debugCount:
+		# para_id = para[0]
+		# para_text = para[1]
+		# if para_id <= last_processed_id:
+		# 	continue
+
+		if sett.Run.debugCount >0 and filtration_dict['total_paragraphs'] > sett.Run.debugCount:
 				break
 
 		filtration_dict['total_paragraphs'] +=1
 
-		ner_output, ner_filter_output = ner_filter(para_text, unit_list= prop_metadata.units, ner_output=None)
+		para = PaperTexts().get_one(db, {'id': row.para_id})
+
+		ner_output, ner_filter_output = ner_filter(para_text=para.text, unit_list= prop_metadata.units, ner_output=None)
 		if ner_filter_output:
-			log.note(f'Paragraph: {para_id} passed {ner_filter_name}.')
+			log.note(f'Paragraph: {row.para_id} passed {ner_filter_name}.')
 			filtration_dict[f'{mode}_keyword_paragraphs_ner']+=1
-			if add_to_filtered_paragrahs(para_id, ner_filter_name):
+			if add_to_filtered_paragrahs(row.para_id, ner_filter_name):
 				relevant_paras +=1
 
 				if relevant_paras % 50 == 0:
 					db.commit()
 
 		else:
-			log.info(f"{para_id} did not pass {ner_filter_name}")
+			log.info(f"{row.para_id} did not pass {ner_filter_name}")
 
-		if filtration_dict['total_paragraphs']% 100 == 0 or filtration_dict['total_paragraphs']== len(paragraphs):
+		if filtration_dict['total_paragraphs']% 100 == 0 or filtration_dict['total_paragraphs']== len(records):
 			log.info(f'Number of total paragraphs: {filtration_dict["total_paragraphs"]}')
-			log.info(f'Number of paragraphs with {property} information after heuristic filter: {len(paragraphs)}')
+			log.info(f'Number of paragraphs with {property} information after heuristic filter: {len(records)}')
 			log.info(f'Number of paragraphs with {property} information after NER filter ({ner_filter_name}) : {filtration_dict[f"{mode}_keyword_paragraphs_ner"]}')
 
 
-	checkpoint.add_new(db, name = ner_filter_name, table = PaperTexts.__tablename__, row = para_id, 
-										comment = {'user': 'sonakshi', 'filter': ner_filter_name, 'publisher': publisher_directory,
+	checkpoint.add_new(db, name = ner_filter_name, table = FilteredParagraphs.__tablename__, row = row.para_id, 
+										comment = {'user': 'sonakshi', 'filter': ner_filter_name, 
 										'debug': True if sett.Run.debugCount > 0 else False })
-	log.note(f'Last processed para_id: {para_id}')
+	log.note(f'Last processed para_id: {row.para_id}')
 	db.commit()
 
 
@@ -142,12 +167,12 @@ def ner_filter(para_text, unit_list, ner_output=None):
 	return ner_output, output_flag
 
 
-def log_run_info(property, publisher_directory):
+def log_run_info(property, publisher_directory, ner_filter_name):
 		"""
 				Log run information for reference purposes.
 				Returns a log Timer.
 		"""
-		t1 = log.note(f"NER Filter Run for property: {property} and publisher: {publisher_directory}")
+		t1 = log.note(f"NER Filter Run ({ner_filter_name}) for property: {property} and publisher: {publisher_directory}")
 		log.info("CWD: {}", os.getcwd())
 		log.info("Host: {}", os.uname())
 
@@ -164,7 +189,7 @@ def log_run_info(property, publisher_directory):
 
 if __name__ == '__main__':
 	
-	publisher_directory = 'acs'
+	publisher_directory = 'All'
 	property = "thermal decomposition temperature"
 	filename = property.replace(" ", "_")
 	prop_filter_name = 'property_td'
@@ -172,12 +197,12 @@ if __name__ == '__main__':
 	
 	#set the reqd directory in settings.yaml
 	os.makedirs(sett.Run.directory, exist_ok=True)
-	log.setFile(open(sett.Run.directory+f"/ner_{publisher_directory}_{filename}.log", "w+"))
+	log.setFile(open(sett.Run.directory+f"/ner_{filename}.log", "w+"))
 	log.setLevel(sett.Run.logLevel)
 	log.setFileTimes(show=True)
 	log.setConsoleTimes(show=True)
 		
-	t1 = log_run_info(property, publisher_directory)
+	t1 = log_run_info(property, publisher_directory, ner_filter_name)
 	
 	ner_filter_check(property= property, publisher_directory= publisher_directory, 
 									prop_filter_name=prop_filter_name, ner_filter_name= ner_filter_name)
