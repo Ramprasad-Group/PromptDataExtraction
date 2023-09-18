@@ -209,7 +209,7 @@ def add_property_to_postgres(
     propobj.extraction_info = extraction_info
 
     propobj.conditions = {}
-    tcond = property.get('', None)
+    tcond = property.get('temperature_condition', None)
     if tcond:
         propobj.conditions.update({'temperature_condition': tcond})
 
