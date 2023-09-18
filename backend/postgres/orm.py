@@ -31,7 +31,7 @@ class Papers(ORMBase):
     """
     __tablename__ = "papers"
 
-    doi: Mapped[str] = mapped_column(Text, unique=True)
+    doi: Mapped[str] = mapped_column(Text, unique=True, index=True)
     publisher: Mapped[str] = mapped_column(Text)
     title: Mapped[Optional[str]] = mapped_column(Text)
     abstract: Mapped[Optional[str]] = mapped_column(Text)
