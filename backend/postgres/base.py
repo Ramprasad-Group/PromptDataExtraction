@@ -63,7 +63,8 @@ class ORMBase(DeclarativeBase):
         return ops.upsert_row(self, session, which, payload, name,
                              do_update=update, test=test)
 
-    def commit(self, session):
+    @staticmethod
+    def commit(session):
         """ Commits and closes the database session. """
         session.commit()
         session.close()
