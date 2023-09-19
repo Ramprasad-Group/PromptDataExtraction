@@ -22,7 +22,7 @@ class LLMExtraction:
         
         self.db = db    # postgres db session handle.
         self.debug = debug
-        self.shot_selector = None
+        self.shot_selector : ShotSelector = None
 
         #@Todo: move these two to use database IO.
         self.normdata = normdataset
@@ -82,10 +82,7 @@ class LLMExtraction:
         records = []
         messages = []
         if self.shot_selector:
-            for i in range(self.shots):
-                record = self.shot_selector.get_best_shot(text)
-                log.trace("Best example: {}", record)
-                records.append(record)
+            records = self.shot_selector.get_best_shots(text, self.shots)
 
         for example in records:
             messages.append({

@@ -63,12 +63,14 @@ class ShotSelector:
 
 
     def _filter_min_records(self, dataset : dict):
+        log.info("Filtering curated data with min {} records.",
+                 self.min_records)
         return {
             k : v for k,v in dataset.items()
             if len(v['records']) > self.min_records
         }
-        
-    def get_best_shot(self, text):
+    
+    def get_best_shots(self, text : str, n : int = 1):
         raise NotImplementedError()
     
 
@@ -76,8 +78,22 @@ class RandomShotSelector(ShotSelector):
     def __init__(self, min_records : int = 2) -> None:
         super().__init__(min_records)
     
-    def get_best_shot(self, text : str = None) -> dict:
-        """ Return a random choice from the curated data. """
-        choice = random.choice(list(self.curated.keys()))
-        return self.curated[choice]
+    def get_best_shots(self, text: str, n: int = 1):
+        choices = random.sample(list(self.curated.keys()), n)
+        return [ self.curated[c] for c in choices ]
+    
+
+class DiverseShotSelector(ShotSelector):
+    def __init__(self, ner_model : str, device : int, prop_meta_json : str,
+                 min_records : int = 2) -> None:
+        from backend.record_extraction import bert_model, utils
+        from backend.prompt_extraction import embeddings
+
+        super().__init__(min_records)
+        prop_metadata = utils.load_property_metadata(prop_meta_json)
+
+        bert = bert_model.MaterialsBERT(ner_model)
+        bert.init_local_model(device)
+        self.embed = embeddings.Embeddings(bert, prop_metadata)
+
     
