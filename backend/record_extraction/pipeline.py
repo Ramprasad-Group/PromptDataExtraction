@@ -58,6 +58,7 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
             add_property_to_postgres(
                 db, extraction_info, paragraph, material, prop)
 
+    db.close()
     t2.done("Paragraph processed: {} records.", len(records))
 
 
