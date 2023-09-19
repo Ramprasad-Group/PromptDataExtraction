@@ -2,6 +2,7 @@
 
 import pylogg
 from backend.prompt_extraction import prompt_extractor
+from backend.prompt_extraction.shot_selection import ShotSelector
 from backend.record_extraction import utils
 from backend.postgres.orm import (
     PaperTexts, ExtractedMaterials, ExtractedProperties,
@@ -30,18 +31,23 @@ class LLMPipeline:
         """ Run the LLM pipeline on a given paragraph.
             Returns the number of records found.
         """
+        records = []
+
         try:
             t2 = log.trace("Processing paragraph: {}", paragraph.id)
-            output = self.llm.process_paragraph(paragraph)
-            t2.done("LLM output: {}", output)
+            records = self.llm.process_paragraph(paragraph)
+            t2.done("LLM extracted records: {}", records)
+
         except Exception as err:
             log.error("Failed to run the LLM pipeline: {}", err)
-
             if self.debug: raise err
-            else: return 0
         
-        return 1
+        return len(records)
 
+    def set_shot_selector(self, selector : ShotSelector):       
+        self.extraction_info['shot_selector'] = str(selector)
+        self.llm.shot_selector = selector
+        self.llm.extraction_info = self.extraction_info
 
 
 def process_output(db, paragraph: PaperTexts,

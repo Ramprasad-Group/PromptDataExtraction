@@ -28,6 +28,7 @@ def run(args: ArgumentParser):
     from backend import postgres, sett
     from backend.postgres.orm import CuratedData, PaperTexts
     from backend.prompt_extraction.pipeline import LLMPipeline
+    from backend.prompt_extraction.shot_selection import RandomShotSelector
 
     pylogg.setConsoleStack(show=True)
     pylogg._conf.line_width = 200
@@ -70,6 +71,15 @@ def run(args: ArgumentParser):
     pipeline = LLMPipeline(db, sett.DataFiles.polymer_nen_json,
                            sett.DataFiles.properties_json, extraction_info,
                            debug = sett.Run.debugCount > 0)
+    
+    shotselector = RandomShotSelector(min_records=2)
+    try:
+        shotselector.load_curated_dataset("shot_data.json")
+    except:
+        shotselector.build_curated_dataset(db, criteria={})
+        shotselector.save_curated_dataset("shot_data.json")
+
+    pipeline.set_shot_selector(shotselector)
 
     n = 0
     # Process each paragraph linked to the curated data.
@@ -86,3 +96,4 @@ def run(args: ArgumentParser):
             print(paragraph.text)
 
         pipeline.run(paragraph)
+

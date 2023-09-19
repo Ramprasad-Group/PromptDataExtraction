@@ -12,6 +12,7 @@ except:
     polyai_ok = False
 
 from backend.postgres.orm import APIRequests, PaperTexts
+from backend.prompt_extraction.shot_selection import ShotSelector
 
 log = pylogg.New('llm')
 
@@ -21,8 +22,9 @@ class LLMExtraction:
         
         self.db = db    # postgres db session handle.
         self.debug = debug
+        self.shot_selector = None
 
-        #@Todo: move these two to database IO.
+        #@Todo: move these two to use database IO.
         self.normdata = normdataset
         self.propmeta = propmetadata
 
@@ -45,8 +47,8 @@ class LLMExtraction:
             Returns [{material: '', property: '', value: ''}]
         """
         text = self._preprocess_text(para.text)
-        prompt = self._choose_prompt(text, self.prompt_id)
-        messages = self._get_example_messages(text, prompt)
+        prompt = self._add_prompt(text)
+        messages = self._get_example_messages(text)
         response = self._ask_llm(para, prompt, messages)
 
         if response is None:
@@ -69,15 +71,33 @@ class LLMExtraction:
     def _preprocess_text(self, text : str) -> str:
         return text
     
-    def _choose_prompt(self, text : str, prompt_id : int = None) -> str:
+    def _add_prompt(self, text : str) -> str:
         prompt_list = [
             "Extract all 'material', 'property', 'value' data in JSONL format."
         ]
-        prompt = prompt_list[prompt_id]
+        prompt = prompt_list[self.prompt_id]
         return f"{text}\n\n{prompt}"
 
-    def _get_example_messages(self, text : str, prompt : str) -> list[dict]:
-        return []
+    def _get_example_messages(self, text : str) -> list[dict]:
+        records = []
+        messages = []
+        if self.shot_selector:
+            for i in range(self.shots):
+                record = self.shot_selector.get_best_shot(text)
+                log.trace("Best example: {}", record)
+                records.append(record)
+
+        for example in records:
+            messages.append({
+                "role": "user",
+                "content": self._add_prompt(example['text'])
+            })
+            messages.append({
+                "role": "assistant",
+                "content": json.dumps(example['records'])
+            })
+
+        return messages
     
     def _ask_llm(self, para : PaperTexts, prompt : str,
                  messages : dict) -> dict:
@@ -189,9 +209,18 @@ class LLMExtraction:
 
         #@todo: check for valid json string.
 
-        json_items = json.loads(str_output)
+        records = json.loads(str_output)
+        breakpoint()
 
-        for material, prop, value in json_items:
-            data.append({'material': material, 'property': prop, 'value': value})
+        for record in records:
+            material = record.get("material", None)
+            if material:
+                prop = record.get("property", None)
+                if prop:
+                    value = record.get("value", None)
+            if material and prop and value:
+                data.append(
+                    {'material': material, 'property': prop, 'value': value}
+                )
 
         return data
