@@ -92,7 +92,8 @@ def _parse_file(db, filepath, root="") -> DocumentParser | None:
         elif _add_to_postgres(db, paper, directory, doc.doctype, para):
             pg += 1
 
-    db.commit()
+    PaperTexts.commit(db)
+
     t2.done("Parse done ({} paragraphs found). {}",
             len(doc.paragraphs), filepath)
     return doc, pg

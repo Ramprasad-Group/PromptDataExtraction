@@ -167,6 +167,8 @@ def compute_metrics(db, property_names : list[str], extraction_method : str,
 
         t2.done("Paragraph {} processed.", para.id)
 
+    db.close()
+
     mat_scores = _calc_scores(tp_mat, fp_mat, fn_mat)
     val_scores = _calc_scores(tp_val, fp_val, fn_val)
     prop_scores = _calc_scores(tp_prop, fp_prop, fn_prop)

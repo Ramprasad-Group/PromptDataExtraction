@@ -97,7 +97,7 @@ def run(args: ArgumentParser):
 
             if not (n % 1000):
                 log.info("Processed {} files. Added {} files to DB.", n, pg)
-                db.commit()
+                PaperCorpus.commit(db)
 
             # Not more than debugCount per directory
             # Use -1 for no limit.
@@ -105,5 +105,5 @@ def run(args: ArgumentParser):
                 log.note("Processed maximum {} files.", n)
                 break
 
-    db.commit()
+    PaperCorpus.commit(db)
     t2.done("Added {} files to Postgres.", pg)
