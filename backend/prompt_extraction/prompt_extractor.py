@@ -207,10 +207,11 @@ class LLMExtraction:
         str_output = response["choices"][0]["message"]["content"]
         log.trace("Parsing LLM output: {}", str_output)
 
-        #@todo: check for valid json string.
-
-        records = json.loads(str_output)
-        breakpoint()
+        try:
+            records = json.loads(str_output)
+        except:
+            log.error("Failed to parse LLM output as JSON.")
+            return data
 
         for record in records:
             material = record.get("material", None)
