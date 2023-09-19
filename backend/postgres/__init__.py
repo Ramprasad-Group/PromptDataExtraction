@@ -65,7 +65,9 @@ def connect(database = None):
 def disconnect():
     global SSH, ENG, SES
     if SES is not None:
-        SES.close()
+        SES.close_all()
+        SES.remove()
+
     if SSH is not None:
         SSH.stop()
 
@@ -82,6 +84,7 @@ def raw_sql(query : str, params = {}) -> list[namedtuple]:
         Returns a list of rows.
     """
     results= SES.execute(text(query), params)
+    SES.close()
 
     Row = namedtuple('Row', results.keys())
     return [Row(*r) for r in results.fetchall()]
