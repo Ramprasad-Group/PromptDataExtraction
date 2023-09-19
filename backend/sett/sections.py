@@ -49,16 +49,16 @@ class full_text_parse:
 
 @dataclass
 class llm_pipeline:
-    # Settings for LLM based extraction from abstracts.
+    # Settings for LLM based extraction.
     openai_key : str = None
     polyai_key : str = 'pl-test'
-    llm : str = 'openai'
-    n_shots : int = 1
-    prompt : int = 5
+    openai_model: str = 'gpt-3.5-turbo'
+    polyai_model: str = 'polyai'
+    n_shots : int = 0
+    prompt : int = 0
     property : str = 'Tg'
     doi_error_list_file : str = 'doi_error_list.json'
-    shot_sampling : str = 'baseline_diversity'
-    mongodb_collection : str = 'modular_run_4'
+    shot_sampling : str = 'random_sampling'
 
 
 @dataclass
