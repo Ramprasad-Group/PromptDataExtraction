@@ -127,15 +127,16 @@ def run(args: ArgumentParser):
     # Get the list of DOIs that are polymer papers and not found in the
     # paper_texts table, for a specific publisher directory.
     query = """
-    SELECT * FROM (
-	    SELECT p.doi, p.doctype FROM filtered_papers fp
-        JOIN papers p ON p.doi = fp.doi
-        WHERE p.directory = :dirname
-    ) AS poly WHERE poly.doi NOT IN (
-	    SELECT pt.doi FROM paper_texts pt
-        WHERE pt.directory = :dirname
-        AND pt."section" IS DISTINCT FROM 'abstract'
-    );
+        SELECT * FROM (
+            SELECT p.doi, p.doctype FROM filtered_papers fp
+            JOIN papers p ON p.doi = fp.doi
+            WHERE p.directory = 'rsc'
+        ) AS poly WHERE NOT EXISTS (
+            SELECT 1 FROM paper_texts pt
+            WHERE poly.doi = pt.doi
+            AND pt.directory = 'rsc' 
+            AND pt."section" IS DISTINCT FROM 'abstract'
+        );
     """
 
     dirname = os.path.basename(args.directory)
