@@ -95,7 +95,7 @@ class LLMExtraction:
             })
             messages.append({
                 "role": "assistant",
-                "content": json.dumps(example['records'])
+                "content": json.dumps(example['records']) + "\n"
             })
 
         return messages
@@ -114,7 +114,7 @@ class LLMExtraction:
         reqinfo.response_obj = None
 
         reqinfo.details = {}
-        reqinfo.details['n_shots'] = len(messages)
+        reqinfo.details['n_shots'] = len(messages) // 2
         reqinfo.details['user'] = self.user
 
         messages.append({"role": "user", "content": prompt})
