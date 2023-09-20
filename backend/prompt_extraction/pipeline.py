@@ -2,8 +2,8 @@
 
 import pylogg
 from backend.prompt_extraction import prompt_extractor
+from backend.prompt_extraction.material_extractor import MaterialNameExtractor
 from backend.prompt_extraction.shot_selection import ShotSelector
-from backend.record_extraction import base_classes, utils
 from backend.postgres.orm import (
     PaperTexts, ExtractedMaterials, ExtractedProperties,
 )
@@ -12,19 +12,14 @@ log = pylogg.New('llm')
 
 
 class LLMPipeline:
-    def __init__(self, db, nen_json : str, prop_meta_json : str,
+    def __init__(self, db, namelist_jsonl : str,
                  extraction_info : dict, debug : bool = False) -> None:
         self.db = db
         self.debug = debug
         self.extraction_info = extraction_info
+        self.material_extractor = MaterialNameExtractor(namelist_jsonl)
 
-        # Load NEN dataset and property metadata.
-        nd = utils.LoadNormalizationDataset(nen_json)
-        norm_dataset = nd.process_normalization_files()
-        prop_metadata = utils.load_property_metadata(prop_meta_json)
-
-        self.llm = prompt_extractor.LLMExtraction(
-            db, norm_dataset, prop_metadata, self.extraction_info)
+        self.llm = prompt_extractor.LLMExtraction(db, self.extraction_info)
         log.done("Initialized LLM extraction pipeline.")
         
     def run(self, paragraph : PaperTexts) -> int:
@@ -49,13 +44,24 @@ class LLMPipeline:
         
         return len(records)
 
+
     def set_shot_selector(self, selector : ShotSelector):       
         self.extraction_info['shot_selector'] = str(selector)
         self.llm.shot_selector = selector
         self.llm.extraction_info = self.extraction_info
 
-    def _parse_records(self, records : list):
-        return records
+
+    def _parse_records(self, records : list) -> list:
+        processed = []
+
+        for record in records:
+            record['material'] = \
+                self.material_extractor.parse_material(record['material'])
+            record['property'] = self._parse_property(
+                record['property'], record['value'])           
+            processed.append(record)
+
+        return processed
 
 
 def process_output(db, paragraph: PaperTexts,
