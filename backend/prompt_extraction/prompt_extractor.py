@@ -77,7 +77,7 @@ class LLMExtraction:
     
     def _add_prompt(self, text : str) -> str:
         prompt_list = [
-            "Extract all 'material', 'property', 'value' data in JSONL format."
+            "Extract all 'material', 'property', 'numeric value' data in JSONL format."
         ]
         prompt = prompt_list[self.prompt_id]
         return f"{text}\n\n{prompt}"
@@ -221,6 +221,9 @@ class LLMExtraction:
                 prop = record.get("property", None)
                 if prop:
                     value = record.get("value", None)
+                if not value:
+                    value = record.get("numeric value", None)
+
             if material and prop and value:
                 data.append(
                     {'material': material, 'property': prop, 'value': value}
