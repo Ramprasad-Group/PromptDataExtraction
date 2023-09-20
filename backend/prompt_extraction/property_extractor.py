@@ -7,7 +7,7 @@ from backend.record_extraction.base_classes import (
     EntityList, PropertyValuePair
 )
 
-class PropertyExtractor:
+class PropertyDataExtractor:
     def __init__(self,
                  property_metadata: dict,
                  grouped_spans=None, text=None, property_mentions=None,
@@ -31,6 +31,11 @@ class PropertyExtractor:
             v['property_list'] for k, v in self.prop_records_metadata.items()
             if v['unit_list'][0] == '%'
         ]
+
+    def parse_property(self, property_name : str,
+                       property_value : str) -> PropertyValuePair:
+        prop = PropertyValuePair(entity_name=property_name)
+        return prop
 
     def property_extraction(self, sentence, labels):
         # Can use the code/logic for processing single sentences that we tried last year

@@ -9,7 +9,7 @@ from backend.record_extraction.base_classes import (
 log = pylogg.New('llm')
 
 
-class MaterialNameExtractor:
+class MaterialExtractor:
     def __init__(self, namelist_jsonl : str) -> None:
         self.polymers = {
             line['polymer'] : line for line in jsonl.read_file(namelist_jsonl)
