@@ -3,7 +3,6 @@ from .base_classes import EntityList, PropertyValuePair, RecordProcessor
 from collections import Counter, deque
 import itertools
 import re
-import json
 
 
 class PropertyExtractor(RecordProcessor):
@@ -48,8 +47,10 @@ class PropertyExtractor(RecordProcessor):
     def property_extraction(self, sentence, labels):
         # Can use the code/logic for processing single sentences that we tried last year
         # Examine single sentence analysis code/dependency parsing from last year
-        # Might also feed in all sentences to this code so that information from adjacent sentences can be utilized if necessary
+        # Might also feed in all sentences to this code so that information
+        # from adjacent sentences can be utilized if necessary.
         category_counts = Counter(labels)
+
         # Sentence may have more than 2 values reported and respectively might occur more than once
         # The below condition takes care of cases like 'polymer has Tg and Tm of 23 deg. C and 50 deg. C respectively'
         if category_counts.get('PROP_VALUE', 0) >= 2 and category_counts.get('PROP_NAME', 0) >= 2 and any([span.text == 'respectively' for span in sentence]):
@@ -76,6 +77,7 @@ class PropertyExtractor(RecordProcessor):
                     if not prop_value_queue and self.logger:
                         self.logger.warning(
                             f'For {" ".join([sent.text for sent in sentence])} the queue is non-empty')
+
         else:
             for i, span in enumerate(sentence):
                 if self.print_spans:
@@ -150,11 +152,13 @@ class PropertyExtractor(RecordProcessor):
                     if property_dict.entity_name in sentence_str:
                         property_dict.temperature_condition = temperature_value
                 break
+
         # Can repeat this for frequency for dielectric constant
         frequency_list = re.findall('\d+ \w?Hz', sentence_str)
         frequency_list += re.findall('10\^{\d\s?} Hz', sentence_str)
         dielectric_properties = ['dielectric loss',
                                  'dielectric constant', 'relative permittivity']
+
         for frequency_value in frequency_list:
             # Using exact equal might cause issues. There might be temperature ranges reported for conditions we might miss
             if not any([property_dict.property_value == frequency_value for property_dict in self.property_value_pairs.entity_list]):
@@ -250,7 +254,10 @@ class PropertyExtractor(RecordProcessor):
                         i+1].property_unit
 
     def single_property_entity_postprocessing(self, property_entity):
-        """Process a single property_entity. Split out in this manner so that it can be exposed to other classes"""
+        """
+            Process a single property_entity.
+            Split out in this manner so that it can be exposed to other classes.
+        """
         property_value = property_entity.property_value
         # Property value needs some pre-processing to replace exponents in units that could match a number
         # Might also have to split on - to capture the negative sign
@@ -280,7 +287,8 @@ class PropertyExtractor(RecordProcessor):
             else:
                 property_entity.property_numeric_value = ''
 
-        # Deal with cases like 10^{7} not covered by our regular expressions.. Hack solution, find a way to integrate this with our regular expression
+        # Deal with cases like 10^{7} not covered by our regular expressions..
+        # Hack solution, find a way to integrate this with our regular expression
         if '10^{' in property_value and not any(['10^{' in value for value in numeric_values]):
             numeric_values = re.findall(self.RE_EXP, property_value)
             if numeric_values:
