@@ -1,3 +1,4 @@
+import os
 import pylogg
 from argparse import ArgumentParser, _SubParsersAction
 
@@ -30,11 +31,13 @@ def run(args: ArgumentParser):
     from backend.prompt_extraction.pipeline import LLMPipeline
     from backend.prompt_extraction.shot_selection import RandomShotSelector
 
-    pylogg.setConsoleStack(show=True)
-    pylogg._conf.line_width = 200
+    # Debugging
+    # pylogg.setConsoleStack(show=True)
+    # pylogg._conf.line_width = 150
 
     if args.api == 'openai':
-        assert sett.LLMPipeline.openai_key is not None
+        assert sett.LLMPipeline.openai_key is not None, \
+            "openai_key is not set in the settings file."
         openai.api_key = sett.LLMPipeline.openai_key
 
     elif args.api == 'polyai':
@@ -43,7 +46,8 @@ def run(args: ArgumentParser):
         except:
             log.critical("Failed to import polyai, make sure it's installed.")
             exit(1)
-        assert sett.LLMPipeline.polyai_key
+        assert sett.LLMPipeline.polyai_key, \
+            "polyai_key is not set in the settings file."
         polyai.api.api_key = sett.LLMPipeline.polyai_key
 
     db = postgres.connect()
@@ -63,21 +67,23 @@ def run(args: ArgumentParser):
         'runname': args.runname,
     }
 
-
     log.info("Running LLM pipeline on curated dataset.")
     log.info("Extraction info = {}", extraction_info)
 
     # Initialize the LLM extractor
-    pipeline = LLMPipeline(db, sett.DataFiles.polymer_nen_json,
-                           sett.DataFiles.properties_json, extraction_info,
-                           debug = sett.Run.debugCount > 0)
+    pipeline = LLMPipeline(
+        db, sett.DataFiles.polymer_nen_json, sett.DataFiles.properties_json,
+        extraction_info, debug = sett.Run.debugCount > 0)
     
     shotselector = RandomShotSelector(min_records=2)
+    shot_curated_dataset = os.path.join(
+        sett.Run.directory, "curated_shot_data.json")
+    
     try:
-        shotselector.load_curated_dataset("shot_data.json")
+        shotselector.load_curated_dataset(shot_curated_dataset)
     except:
         shotselector.build_curated_dataset(db, criteria={})
-        shotselector.save_curated_dataset("shot_data.json")
+        shotselector.save_curated_dataset(shot_curated_dataset)
 
     pipeline.set_shot_selector(shotselector)
 
@@ -95,5 +101,6 @@ def run(args: ArgumentParser):
         if sett.Run.debugCount > 0:
             print(paragraph.text)
 
+        # Run the pipeline on the paragraph.
         pipeline.run(paragraph)
 
