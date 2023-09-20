@@ -23,11 +23,12 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
     ner_output = extract_data(bert, norm_dataset, prop_metadata, text)
 
     if ner_output is False:
-        log.trace("Text is not relevant, not output.")
+        log.trace("Text is not relevant, no output.")
         return
 
-    polymer_families = ner_output.get("polymer_family", [])
-    monomers = ner_output.get("monomers", [])
+    # polymer_families = ner_output.get("polymer_family", [])
+    # monomers = ner_output.get("monomers", [])
+
     records = ner_output.get("material_records", [])
 
     log.trace("Found {} records.", len(records))
@@ -53,12 +54,11 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
         prop = rec.get('property_record', {})
 
         # Generally we expect to have only one material for a property dict.
-        # But there can be multiple in the materials list sometimes.
+        # But there can be multiple in the materials in the list sometimes.
         for material in materials_list:
             add_property_to_postgres(
                 db, extraction_info, paragraph, material, prop)
-
-    
+   
     t2.done("Paragraph processed: {} records.", len(records))
 
 
