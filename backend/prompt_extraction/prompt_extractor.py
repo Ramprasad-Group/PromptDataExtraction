@@ -12,6 +12,7 @@ except:
     polyai_ok = False
 
 from backend.postgres.orm import APIRequests, PaperTexts
+from backend.text.normalize import TextNormalizer
 from backend.prompt_extraction.shot_selection import ShotSelector
 
 log = pylogg.New('llm')
@@ -23,6 +24,7 @@ class LLMExtraction:
         self.db = db    # postgres db session handle.
         self.debug = debug
         self.shot_selector : ShotSelector = None
+        self.normalizer = TextNormalizer()
 
         #@Todo: move these two to use database IO.
         self.normdata = normdataset
@@ -70,6 +72,7 @@ class LLMExtraction:
             return self.extraction_info.get(name, default)
 
     def _preprocess_text(self, text : str) -> str:
+        text = self.normalizer.normalize(text)
         return text
     
     def _add_prompt(self, text : str) -> str:
