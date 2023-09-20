@@ -131,11 +131,11 @@ def run(args: ArgumentParser):
         SELECT * FROM (
             SELECT p.doi, p.doctype FROM filtered_papers fp
             JOIN papers p ON p.doi = fp.doi
-            WHERE p.directory = 'rsc'
+            WHERE p.directory = :dirname
         ) AS poly WHERE NOT EXISTS (
             SELECT 1 FROM paper_texts pt
             WHERE poly.doi = pt.doi
-            AND pt.directory = 'rsc' 
+            AND pt.directory = :dirname 
             AND pt."section" IS DISTINCT FROM 'abstract'
         );
     """
