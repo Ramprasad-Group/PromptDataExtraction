@@ -9,7 +9,7 @@ log = pylogg.New(ScriptName)
 def add_args(subparsers: _SubParsersAction):
     parser: ArgumentParser = subparsers.add_parser(
         ScriptName,
-        help='Run NER pipeline on curated data rows.')
+        help='Run LLM pipeline on curated data rows.')
     parser.add_argument(
         'runname',
         help="Name of the run, e.g., test-llm-pipeline.")
