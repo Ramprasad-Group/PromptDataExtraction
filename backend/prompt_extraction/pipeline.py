@@ -3,7 +3,7 @@
 import pylogg
 from backend.prompt_extraction import prompt_extractor
 from backend.prompt_extraction.shot_selection import ShotSelector
-from backend.record_extraction import utils
+from backend.record_extraction import base_classes, utils
 from backend.postgres.orm import (
     PaperTexts, ExtractedMaterials, ExtractedProperties,
 )
@@ -42,12 +42,20 @@ class LLMPipeline:
             log.error("Failed to run the LLM pipeline: {}", err)
             if self.debug: raise err
         
+        if records is None:
+            return 0
+        else:
+            records = self._parse_records(records)
+        
         return len(records)
 
     def set_shot_selector(self, selector : ShotSelector):       
         self.extraction_info['shot_selector'] = str(selector)
         self.llm.shot_selector = selector
         self.llm.extraction_info = self.extraction_info
+
+    def _parse_records(self, records : list):
+        return records
 
 
 def process_output(db, paragraph: PaperTexts,
