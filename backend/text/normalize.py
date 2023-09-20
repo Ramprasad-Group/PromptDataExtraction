@@ -156,25 +156,25 @@ def normText(text : str):
         elif c == 'ö':
             ntext += "o"
         elif c == 'ü':
-            ntext += "o"
-        elif c == 'ö':
-            ntext += "o"
-        elif c == 'ö':
-            ntext += "o"
-        elif c == 'ö':
-            ntext += "o"
-        elif c == 'ö':
-            ntext += "o"
-        elif c == 'ö':
-            ntext += "o"
-        elif c == 'ö':
-            ntext += "o"
-        elif c == 'ö':
-            ntext += "o"
-        elif c == 'ö':
-            ntext += "o"
-        elif c == 'ö':
-            ntext += "o"
+            ntext += "u"
+        # elif c == 'ö':
+        #     ntext += "o"
+        # elif c == 'ö':
+        #     ntext += "o"
+        # elif c == 'ö':
+        #     ntext += "o"
+        # elif c == 'ö':
+        #     ntext += "o"
+        # elif c == 'ö':
+        #     ntext += "o"
+        # elif c == 'ö':
+        #     ntext += "o"
+        # elif c == 'ö':
+        #     ntext += "o"
+        # elif c == 'ö':
+        #     ntext += "o"
+        # elif c == 'ö':
+        #     ntext += "o"
         else:
             try:
                 c = c.encode('utf-8').decode('utf-8')

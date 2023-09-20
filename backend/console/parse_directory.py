@@ -92,7 +92,8 @@ def _parse_file(db, filepath, root="") -> DocumentParser | None:
         elif _add_to_postgres(db, paper, directory, doc.doctype, para):
             pg += 1
 
-    db.commit()
+    PaperTexts.commit(db)
+
     t2.done("Parse done ({} paragraphs found). {}",
             len(doc.paragraphs), filepath)
     return doc, pg
@@ -127,15 +128,16 @@ def run(args: ArgumentParser):
     # Get the list of DOIs that are polymer papers and not found in the
     # paper_texts table, for a specific publisher directory.
     query = """
-    SELECT * FROM (
-	    SELECT p.doi, p.doctype FROM filtered_papers fp
-        JOIN papers p ON p.doi = fp.doi
-        WHERE p.directory = :dirname
-    ) AS poly WHERE poly.doi NOT IN (
-	    SELECT pt.doi FROM paper_texts pt
-        WHERE pt.directory = :dirname
-        AND pt."section" IS DISTINCT FROM 'abstract'
-    );
+        SELECT * FROM (
+            SELECT p.doi, p.doctype FROM filtered_papers fp
+            JOIN papers p ON p.doi = fp.doi
+            WHERE p.directory = :dirname
+        ) AS poly WHERE NOT EXISTS (
+            SELECT 1 FROM paper_texts pt
+            WHERE poly.doi = pt.doi
+            AND pt.directory = :dirname 
+            AND pt."section" IS DISTINCT FROM 'abstract'
+        );
     """
 
     dirname = os.path.basename(args.directory)

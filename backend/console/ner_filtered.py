@@ -51,11 +51,14 @@ def run(args: ArgumentParser):
         WHERE fp.id > :last AND fp.filter_name = 'ner_filter'
         ORDER BY fp.id LIMIT :limit
     ) AS ft
-        --Ingore previously processed ones.
-        WHERE ft.para_id NOT IN (
-            SELECT em.para_id FROM extracted_materials em)
-        AND ft.para_id NOT IN (
-            SELECT ema.para_id FROM extracted_material_amounts ema);
+    --Ingore previously processed ones.
+    WHERE NOT EXISTS (
+        SELECT 1 FROM extracted_materials em
+        WHERE em.para_id = ft.para_id
+    ) AND NOT EXISTS (
+        SELECT 1 FROM extracted_material_amounts ema
+        WHERE ema.para_id = ft.para_id
+    );
     """
 
     t2 = log.info("Querying list of non-processed NER filtered paragraphs.")

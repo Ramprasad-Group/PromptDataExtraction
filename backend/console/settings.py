@@ -1,7 +1,5 @@
-import argparse
 import pylogg
-
-from backend import postgres
+import argparse
 from backend import sett
 
 ScriptName = 'sett'

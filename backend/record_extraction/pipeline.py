@@ -23,11 +23,12 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
     ner_output = extract_data(bert, norm_dataset, prop_metadata, text)
 
     if ner_output is False:
-        log.trace("Text is not relevant, not output.")
+        log.trace("Text is not relevant, no output.")
         return
 
-    polymer_families = ner_output.get("polymer_family", [])
-    monomers = ner_output.get("monomers", [])
+    # polymer_families = ner_output.get("polymer_family", [])
+    # monomers = ner_output.get("monomers", [])
+
     records = ner_output.get("material_records", [])
 
     log.trace("Found {} records.", len(records))
@@ -39,7 +40,7 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
         for material in materials_list:
             add_material_to_postgres(db, extraction_info, paragraph, material)
 
-    db.commit()
+    ExtractedMaterials.commit(db)
 
     for rec in records:
         # list of dicts
@@ -53,11 +54,11 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
         prop = rec.get('property_record', {})
 
         # Generally we expect to have only one material for a property dict.
-        # But there can be multiple in the materials list sometimes.
+        # But there can be multiple in the materials in the list sometimes.
         for material in materials_list:
             add_property_to_postgres(
                 db, extraction_info, paragraph, material, prop)
-
+   
     t2.done("Paragraph processed: {} records.", len(records))
 
 
@@ -209,7 +210,7 @@ def add_property_to_postgres(
     propobj.extraction_info = extraction_info
 
     propobj.conditions = {}
-    tcond = property.get('', None)
+    tcond = property.get('temperature_condition', None)
     if tcond:
         propobj.conditions.update({'temperature_condition': tcond})
 

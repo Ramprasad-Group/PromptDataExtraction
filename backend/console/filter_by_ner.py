@@ -128,7 +128,7 @@ def run(args: ArgumentParser):
             if not (p+1) % 50:
                 log.note("NER filter passed: {} / {} paragraphs ({:.02f} %)",
                          p, n, 100 * p / n)
-                db.commit()
+                FilteredParagraphs.commit(db)
         
         last = row.para_id
 
