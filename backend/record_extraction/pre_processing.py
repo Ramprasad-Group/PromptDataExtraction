@@ -25,7 +25,7 @@ class GroupTokens(RecordProcessor):
         self.spans = spans
         self.logger = logger
 
-    def group_tokens(self):
+    def group_tokens(self, material_mentions = EntityList(), property_mentions = EntityList()):
         """Group all consecutive tokens that have the same entity label"""
         span_length = len(self.spans)
         grouped_spans = []
@@ -34,8 +34,8 @@ class GroupTokens(RecordProcessor):
         i = 0
         material_names = []
         property_names = []
-        material_mentions = EntityList()
-        property_mentions = EntityList()
+        # material_mentions = EntityList()
+        # property_mentions = EntityList()
         string_numbers = [str(i) for i in range(10)]
         offset = 0
         while i < span_length:
