@@ -98,8 +98,9 @@ def run(args: ArgumentParser):
                  records[0].para_id, records[-1].para_id)
 
     # Load Materials bert to GPU
-    bert = bert_model.MaterialsBERT(sett.NERPipeline.model)
-    bert.init_local_model(device=sett.NERPipeline.pytorch_device)
+    bert = bert_model.MaterialsBERT()
+    bert.init_local_model(
+        sett.NERPipeline.model, sett.NERPipeline.pytorch_device)
 
     log.info("Running NER filter on selected paragraphs.")
     log.info("Run info = {}", runinfo)
