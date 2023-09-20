@@ -34,6 +34,7 @@ class LLMExtraction:
         self.extraction_info = extraction_info
         self.prompt_id = self._get_param('prompt_id', False, 0)
         self.api = self._get_param('api', True)
+        self.user = self._get_param('user', True)
         self.model = self._get_param('model', True)
         self.temperature = self._get_param('temperature', False, 0.001)
         self.shots = self._get_param('shots', False, 0)
@@ -111,6 +112,7 @@ class LLMExtraction:
 
         reqinfo.details = {}
         reqinfo.details['n_shots'] = len(messages)
+        reqinfo.details['user'] = self.user
 
         messages.append({"role": "user", "content": prompt})
         reqinfo.request_obj = messages

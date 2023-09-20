@@ -20,13 +20,13 @@ class MaterialsBERT:
     def init_local_model(self, model, device=0):
         # Load model and tokenizer
         t1 = logger.trace("Loading bert model to device = {}.", device)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model,
-                                                       model_max_length=512)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model, model_max_length=512)
         self.model = AutoModelForTokenClassification.from_pretrained(model)
         self.pipeline = pipeline(
             task="ner", model=model, tokenizer=self.tokenizer,
             aggregation_strategy="simple", device=device)
-        t1.done("Loaded bert model.")
+        t1.done("Loaded bert model to device {}", device)
 
     def get_tags(self, text: str):
         """ Return NER labels for a text. """
@@ -48,7 +48,7 @@ class MaterialsBERT:
         # can use the CLS token embedding as well.
         with torch.no_grad():
             outputs = self.model(**encoded_inputs)
-            embeddings = outputs.last_hidden_state.mean(dim=1).squeeze(0)
+            embeddings = outputs[0].mean(dim=1).squeeze(0)
 
         return embeddings.numpy()
 

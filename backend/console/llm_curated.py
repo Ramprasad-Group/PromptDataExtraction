@@ -29,7 +29,9 @@ def run(args: ArgumentParser):
     from backend import postgres, sett
     from backend.postgres.orm import CuratedData, PaperTexts
     from backend.prompt_extraction.pipeline import LLMPipeline
-    from backend.prompt_extraction.shot_selection import RandomShotSelector
+    from backend.prompt_extraction.shot_selection import (
+        RandomShotSelector, DiverseShotSelector
+    )
 
     # Debugging
     # pylogg.setConsoleStack(show=True)
@@ -65,6 +67,7 @@ def run(args: ArgumentParser):
         'method': 'llm-pipeline',
         'dataset': 'curated',
         'runname': args.runname,
+        'user': sett.Run.userName,
     }
 
     log.info("Running LLM pipeline on curated dataset.")
@@ -75,15 +78,21 @@ def run(args: ArgumentParser):
         db, sett.DataFiles.polymer_nen_json, sett.DataFiles.properties_json,
         extraction_info, debug = sett.Run.debugCount > 0)
     
-    shotselector = RandomShotSelector(min_records=2)
+    # shotselector = RandomShotSelector(min_records=2)
+    shotselector = DiverseShotSelector(min_records=2)
+
+    # Load or build the curated dataset for shot selection.
     shot_curated_dataset = os.path.join(
         sett.Run.directory, "curated_shot_data.json")
     
     try:
         shotselector.load_curated_dataset(shot_curated_dataset)
     except:
-        shotselector.build_curated_dataset(db, criteria={})
-        shotselector.save_curated_dataset(shot_curated_dataset)
+        shotselector.build_curated_dataset(
+            db, shot_curated_dataset, criteria={})
+
+    shotselector.compute_embeddings(
+        sett.NERPipeline.model, sett.NERPipeline.pytorch_device)
 
     pipeline.set_shot_selector(shotselector)
 
