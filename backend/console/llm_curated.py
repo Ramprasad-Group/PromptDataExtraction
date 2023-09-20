@@ -83,16 +83,17 @@ def run(args: ArgumentParser):
 
     # Load or build the curated dataset for shot selection.
     shot_curated_dataset = os.path.join(
-        sett.Run.directory, "curated_shot_data.json")
-    
-    try:
-        shotselector.load_curated_dataset(shot_curated_dataset)
-    except:
-        shotselector.build_curated_dataset(
-            db, shot_curated_dataset, criteria={})
+        sett.Run.directory, "curated_shot_data.json")    
+    shotselector.build_curated_dataset(
+        db, shot_curated_dataset, criteria={})
 
+    # Load or calculate embeddings for the curated data texts.
+    shot_embeddings_file = os.path.join(
+        sett.Run.directory, "curated_shot_embeddings.json")
     shotselector.compute_embeddings(
-        sett.NERPipeline.model, sett.NERPipeline.pytorch_device)
+        sett.NERPipeline.model, sett.NERPipeline.pytorch_device,
+        shot_embeddings_file
+    )
 
     pipeline.set_shot_selector(shotselector)
 
