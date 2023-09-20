@@ -98,6 +98,9 @@ class data_files:
     polymer_nen_json: str = "data/normalized_polymer_dictionary.json"
     """ Path to JSON file containing normalized polymer names. """
 
+    polymer_namelist_jsonl: str = "data/polymer_names.jsonl"
+    """ Path to JSONL file containing polymer names. """
+
     properties_json: str = "data/property_metadata.json"
     """ Path to JSON file containing property metadata. """
 

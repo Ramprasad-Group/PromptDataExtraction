@@ -18,17 +18,13 @@ from backend.prompt_extraction.shot_selection import ShotSelector
 log = pylogg.New('llm')
 
 class LLMExtraction:
-    def __init__(self, db, normdataset : dict, propmetadata : dict,
-                 extraction_info : dict, debug : bool = False) -> None:
-        
+    def __init__(self, db, extraction_info : dict,
+                 debug : bool = False) -> None:
+
         self.db = db    # postgres db session handle.
         self.debug = debug
         self.shot_selector : ShotSelector = None
         self.normalizer = TextNormalizer()
-
-        #@Todo: move these two to use database IO.
-        self.normdata = normdataset
-        self.propmeta = propmetadata
 
         self.max_api_retries = 1
         self.api_retry_delay = 2 # seconds

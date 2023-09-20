@@ -75,8 +75,8 @@ def run(args: ArgumentParser):
 
     # Initialize the LLM extractor
     pipeline = LLMPipeline(
-        db, sett.DataFiles.polymer_nen_json, sett.DataFiles.properties_json,
-        extraction_info, debug = sett.Run.debugCount > 0)
+        db, sett.DataFiles.polymer_namelist_jsonl, extraction_info,
+        debug = sett.Run.debugCount > 0)
     
     # shotselector = RandomShotSelector(min_records=2)
     shotselector = DiverseShotSelector(min_records=2)

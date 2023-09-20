@@ -126,8 +126,8 @@ class ShotSelector:
             if len(v['records']) > self.min_records
         }
 
-    def compute_embeddings(self, ner_model: str, device: int = 0,
-                           save_file : str = None):
+    def compute_embeddings(
+            self, ner_model: str, device: int = 0, save_file : str = None):
         pass
 
     def get_best_shots(self, text: str, n: int = 1):
