@@ -8,8 +8,8 @@ def add_crossref(db, para : orm.PaperTexts, name : str, othername : str,
     """ Add a cross reference to the database.
         Returns false if already exists.
     """
-    log.trace("Adding {} cross-ref for paper {}: {} = {}",
-              reftype, para.pid, name, othername)
+    # log.debug("Adding {} cross-ref for paper {}: {} = {}",
+    #           reftype, para.pid, name, othername)
     
     ref = orm.ExtractedCrossrefs().get_one(
         db, {'name': name, 'reftype': reftype})
