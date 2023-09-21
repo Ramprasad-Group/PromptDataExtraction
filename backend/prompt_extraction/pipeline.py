@@ -11,13 +11,13 @@ log = pylogg.New('llm')
 
 
 class LLMPipeline:
-    def __init__(self, db, namelist_jsonl : str,
+    def __init__(self, db, namelist_jsonl : str, prop_metadata_file : str,
                  extraction_info : dict, debug : bool = False) -> None:
         self.db = db
         self.debug = debug
         self.extraction_info = extraction_info
         self.material_extractor = MaterialExtractor(namelist_jsonl)
-        self.property_extractor = PropertyDataExtractor()
+        self.property_extractor = PropertyDataExtractor(prop_metadata_file)
 
         self.llm = LLMExtraction(db, self.extraction_info)
         log.done("Initialized LLM extraction pipeline.")
@@ -41,6 +41,7 @@ class LLMPipeline:
             return 0
         else:
             extracted_records = self._parse_records(records)
+            breakpoint()
 
         # Save to database.
         return 1
@@ -56,11 +57,18 @@ class LLMPipeline:
         processed = []
 
         for record in records:
-            record['material'] = \
-                self.material_extractor.parse_material(record['material'])
-            record['property'] = self.property_extractor.parse_property(
+            material = self.material_extractor.parse_material(
+                record['material'])
+
+            value = self.property_extractor.parse_property(
                 record['property'], record['value'])
-            processed.append(record)
+
+            if material and value:
+                processed.append({
+                    'material': material,
+                    'property': value,
+                    'conditions': record['conditions']
+                })
 
         return processed
 

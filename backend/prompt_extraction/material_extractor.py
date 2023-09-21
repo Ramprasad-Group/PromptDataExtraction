@@ -19,7 +19,9 @@ class MaterialExtractor:
         material = MaterialMention()
 
         # Check against the list of known polymers.
-        match = process.extractOne(matstr, self.polymers, score_cutoff=90)
+        match = process.extractOne(
+            matstr, list(self.polymers.keys()), score_cutoff=96)
+
         if match:
             name = match[0]
             material.material_class = "POLYMER"

@@ -86,6 +86,7 @@ class ShotSelector:
                     'material': data.material,
                     'property': data.property_name,
                     'value': data.property_value,
+                    'conditions': data.conditions if data.conditions else "None",
                 }
                 self.curated[data.para_id]['keywords'].add(data.property_name)
                 self.curated[data.para_id]['keywords'].add(data.material)

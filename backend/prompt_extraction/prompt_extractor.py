@@ -73,7 +73,7 @@ class LLMExtraction:
     
     def _add_prompt(self, text : str) -> str:
         prompt_list = [
-            "Extract all 'material', 'property', 'numeric value' data in JSONL format."
+            "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns."
         ]
         prompt = prompt_list[self.prompt_id]
         return f"{text}\n\n{prompt}"
@@ -184,7 +184,7 @@ class LLMExtraction:
                 temperature = self.temperature,
                 messages = messages
             )
-        if self.api == 'polyai':
+        elif self.api == 'polyai':
             if not polyai_ok:
                 log.critical("PolyAI is not available.")
                 return response
@@ -222,7 +222,10 @@ class LLMExtraction:
 
             if material and prop and value:
                 data.append(
-                    {'material': material, 'property': prop, 'value': value}
+                    {
+                        'material': material, 'property': prop, 'value': value,
+                        'conditions': record.get('conditions')
+                    }
                 )
 
         return data

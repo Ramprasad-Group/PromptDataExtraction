@@ -74,18 +74,17 @@ def run(args: ArgumentParser):
     log.info("Extraction info = {}", extraction_info)
 
     # Initialize the LLM extractor
-    pipeline = LLMPipeline(
-        db, sett.DataFiles.polymer_namelist_jsonl, extraction_info,
-        debug = sett.Run.debugCount > 0)
+    pipeline = LLMPipeline(db,
+        sett.DataFiles.polymer_namelist_jsonl, sett.DataFiles.properties_json,
+        extraction_info, debug = sett.Run.debugCount > 0)
     
-    # shotselector = RandomShotSelector(min_records=2)
-    shotselector = DiverseShotSelector(min_records=2)
+    shotselector = RandomShotSelector(min_records=2)
+    # shotselector = DiverseShotSelector(min_records=2)
 
     # Load or build the curated dataset for shot selection.
     shot_curated_dataset = os.path.join(
         sett.Run.directory, "curated_shot_data.json")    
-    shotselector.build_curated_dataset(
-        db, shot_curated_dataset, criteria={})
+    shotselector.build_curated_dataset(db, shot_curated_dataset)
 
     # Load or calculate embeddings for the curated data texts.
     shot_embeddings_file = os.path.join(
