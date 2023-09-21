@@ -1,22 +1,32 @@
 """ Extract property value pairs and post process them to obtain a single property record """
 import re
 import pylogg
-from backend.record_extraction.base_classes import PropertyValuePair
 from backend.record_extraction import utils
+from backend.postgres.orm import PropertyMetadata
+from backend.record_extraction.base_classes import PropertyValuePair
+
 
 log = pylogg.New('llm')
 
-class PropertyDataExtractor:
-    def __init__(self, prop_metadata_file : str):
-        self.RE_NUMBER = r'[+-]?\d+[.]?\d*(?:\s?±\s?\d+[.]?\d*)?(?:x10\^{[-]?\d*})?'
-        self.RE_EXP = r'10\^{[-]?\d*}'
-        self.RE_EXP_UNIT = r'([a-zA-Z]+\^{[-]?\d*})'
-        self.property_value_descriptor_list = [
-            '<', '>', '~', '=', 'and', '≈', 'to', '-']
+ADDITIONAL_UNITS = [
+    "° C", "°C", " ° C", " °C", " %", " S cm^{-1}", " MPa", " mm^{2}/s",
+    " mol %", " wt %", " K", " kcal mol^{-1}", " nm"
+]
 
+class PropertyDataExtractor:
+    RE_NUMBER = r'[+-]?\d+[.]?\d*(?:\s?±\s?\d+[.]?\d*)?(?:x10\^{[-]?\d*})?'
+    RE_EXP = r'10\^{[-]?\d*}'
+    RE_EXP_UNIT = r'([a-zA-Z]+\^{[-]?\d*})'
+    property_value_descriptor_list = [
+        '<', '>', '~', '=', 'and', '≈', 'to', '-'
+    ]
+
+    def __init__(self, db, prop_metadata_file : str):
+        self.db = db
         self.prop_records_metadata = \
             utils.load_property_metadata(prop_metadata_file)
-
+        
+        self.unitlist = self._load_unit_list(db) + ADDITIONAL_UNITS
         self.convert_fraction_to_percentage = [
             v['property_list'] for k, v in self.prop_records_metadata.items()
             if v['unit_list'][0] == '%'
@@ -25,6 +35,7 @@ class PropertyDataExtractor:
 
     def parse_property(self, property_name : str,
                        property_value : str) -> PropertyValuePair:
+        assert type(property_value) == str
         prop = PropertyValuePair(
             entity_name=property_name, property_value=property_value)
         self._process_entity(prop)
@@ -108,18 +119,24 @@ class PropertyDataExtractor:
 
     def _find_unit(self, prop : PropertyValuePair):
         # Try to detect the unit.
-        unit = ''
-
         property_value = prop.property_value
         property_value = property_value.replace("° C", "°C")
 
+        # Match against the list of known units
+        for item in self.unitlist:
+            if property_value.lower().endswith(item.lower()):
+                prop.property_unit = item
+                return
+
+        unit = ''
         numbers = list(re.finditer(self.RE_NUMBER, property_value))
 
         if len(numbers) == 1:
             # single value, assume unit is the first word after the value.
             rightstr = property_value[numbers[0].span()[1]:]
             words = rightstr.split()
-            if len(words): unit = words[0]
+            if len(words):
+                unit = words[0]
 
         elif len(numbers) == 2:
             # double numbers. Unit can be present after the first number.
@@ -132,7 +149,20 @@ class PropertyDataExtractor:
                 # after the last number.
                 rightstr = property_value[numbers[-1].span()[1]:]
                 words = rightstr.split()
-                if len(words): unit = words[0]
+                if len(words):
+                    unit = words[0]
+
+            elif " at " in middlestr:
+                # Second number is condition
+                # Unit should be the first word after the first number.
+                rightstr = property_value[numbers[0].span()[1]:]
+                words = rightstr.split()
+                if len(words):
+                    unit = words[0]
+
+                # Override previous calculations
+                prop.property_numeric_value = self._get_numeric(numbers[0])
+                prop.property_value_descriptor = property_value.split(" at ")[1]
 
             elif len(middlewords) == 1 and \
                 middlestr in self.property_value_descriptor_list:
@@ -143,7 +173,8 @@ class PropertyDataExtractor:
                 # Unit should be the first word after the last number.
                 rightstr = property_value[numbers[-1].span()[1]:]
                 words = rightstr.split()
-                if len(words): unit = words[0]
+                if len(words):
+                    unit = words[0]
 
             # If two or more words in the middle, take the first one.
             elif len(middlewords) >= 2:
@@ -153,10 +184,16 @@ class PropertyDataExtractor:
             # Unit should be the first word after the last number.
             rightstr = property_value[numbers[-1].span()[1]:]
             words = rightstr.split()
-            if len(words): unit = words[0]
+            if len(words):
+                unit = words[0]
 
         prop.property_unit = unit
 
+    def _load_unit_list(self, db) -> list[str]:
+        units = []
+        for prop in PropertyMetadata().get_all(db):
+            units += prop.other_names
+        return units
 
     def _get_numeric(self, value : str) -> float:
         """ Convert string to float. Handle scientific notations. """
@@ -183,7 +220,7 @@ class PropertyDataExtractor:
         if prop.property_numeric_value:
             if prop.property_unit == 'K':
                 prop.property_numeric_value -= 273
-                prop.property_unit = '° C'
+                prop.property_unit = '°C'
             elif prop.property_unit in ['kPa', 'KPa']:
                 prop.property_numeric_value /= 1000
                 prop.property_numeric_error /= 1000

@@ -25,6 +25,11 @@ class MaterialExtractor:
     def parse_material(self, matstr : str) -> MaterialMention:
         material = MaterialMention()
 
+        # Check if any abbreviation matches.
+        for match in self.crossref_extractor.\
+            list_all(matstr, fuzzy_cutoff=self.FUZZY_MATCH):
+            material.coreferents.append(match)
+
         # Check against the list of known polymers.
         match = process.extractOne(
             matstr, list(self.polymers.keys()), score_cutoff=self.FUZZY_MATCH)
@@ -36,6 +41,16 @@ class MaterialExtractor:
             material.normalized_material_name = \
                 self.polymers[name].get('normalized_name', '')
             material.polymer_type = self._detect_polymer_type(matstr.lower())
+
+        elif "poly" in matstr.lower():
+            material.material_class = "POLYMER"
+            material.entity_name = matstr
+            material.polymer_type = self._detect_polymer_type(matstr.lower())
+
+        elif any(["poly" in item for item in material.coreferents]):
+            material.material_class = "POLYMER"
+            material.entity_name = matstr
+
         # Check against the list of known solvents.
         elif matstr.lower() in SOLVENTS:
             material.entity_name = matstr
@@ -50,11 +65,6 @@ class MaterialExtractor:
                 material.role = category
                 break
 
-        # Check if any abbreviation matches.
-        for match in self.crossref_extractor.\
-            list_all(matstr, fuzzy_cutoff=self.FUZZY_MATCH):
-            material.coreferents.append(match)
-
         return material
     
     
@@ -62,6 +72,7 @@ class MaterialExtractor:
         """Based on cues in the polymer name, detect the type of the polymer """
         copoly_criteria = [
             material_name.count('poly') > 1,
+            "copoly" in material_name,
             any([
                 subword in material_name for subword in COPOLYMER_INDICATORS
             ]),

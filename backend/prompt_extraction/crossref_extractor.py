@@ -38,15 +38,24 @@ class CrossrefExtractor:
         """ Return the list of all fuzzy matches with the text.
             Includes source (abbr) and destination (full form) matches.
         """
+        found = []
+        log.trace("Checking abbreviations for {}", text)
+
         # Check against the list of known abbreviations.
         matches = process.extract(
             text, list(self.abbr2full.keys()), score_cutoff=fuzzy_cutoff)
+        
+        for match in matches:
+            found.append(self.abbr2full[match[0]])
 
         # Check against the list of known full forms.
         matches = process.extract(
             text, list(self.full2abbr.keys()), score_cutoff=fuzzy_cutoff)
         
-        return [match[0] for match in matches]
+        for match in matches:
+            found.append(self.full2abbr[match[0]])
+
+        return list(set(found))
 
 
     def _load_crossrefs(self, para : PaperTexts):
@@ -90,6 +99,7 @@ class CrossrefExtractor:
             else:
                 j = match.span()[0]
                 preceding_words = text[i:j].split()
+                # consider only a max number of preceeding words.
                 nchars = min(len(abbr), self.MAX_PRECEEDING)
                 full = " ".join(preceding_words[-nchars:]).strip()
                 self.full2abbr[full] = abbr

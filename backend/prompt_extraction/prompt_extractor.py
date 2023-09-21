@@ -103,7 +103,9 @@ class LLMExtractor:
     
     def _ask_llm(self, para : PaperTexts, prompt : str,
                  messages : dict) -> dict:
-        """ Try to get a response from the API by making repeated requests. """
+        """ Try to get a response from the API by making repeated requests
+            until successful.
+        """
         # Store request info to database.
         reqinfo = APIRequests()
         reqinfo.model = self.model 
@@ -210,6 +212,9 @@ class LLMExtractor:
         str_output = response["choices"][0]["message"]["content"]
         log.trace("Parsing LLM output: {}", str_output)
 
+        if self.api == "polyai":
+            str_output = str_output.split("###")[0].strip()
+
         try:
             records = json.loads(str_output)
         except Exception as err:
@@ -226,11 +231,15 @@ class LLMExtractor:
                 if not value:
                     value = record.get("numeric value", None)
 
+            conditions = record.get("conditions")
+            if conditions == "None" or conditions is None:
+                conditions = ""
+
             if material and prop and value:
                 data.append(
                     {
                         'material': material, 'property': prop, 'value': value,
-                        'conditions': record.get('conditions')
+                        'conditions': conditions
                     }
                 )
 

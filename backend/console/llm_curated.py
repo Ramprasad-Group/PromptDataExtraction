@@ -96,8 +96,11 @@ def run(args: ArgumentParser):
 
     pipeline.set_shot_selector(shotselector)
 
+
     n = 0
     new = 0
+    processed_para = []
+
     # Process each paragraph linked to the curated data.
     for data in next(CuratedData().iter(db, size=100)):
         n += 1
@@ -105,6 +108,11 @@ def run(args: ArgumentParser):
 
         if sett.Run.debugCount > 0 and n > sett.Run.debugCount:
             break
+
+        if data.para_id in processed_para:
+            continue
+        else:
+            processed_para.append(data.para_id)
 
         paragraph = PaperTexts().get_one(db, {'id': data.para_id})
 
@@ -114,6 +122,5 @@ def run(args: ArgumentParser):
         # Run the pipeline on the paragraph.
         t1 = log.trace("Running LLM Pipeline on paragraph.")
         new += pipeline.run(paragraph)
-        t1.done("LLM Pipeline finished.")
-        log.info("Cumulative total new records: {}", new)
+        t1.info("LLM Pipeline finished. Cumulative total new records: {}", new)
 

@@ -23,7 +23,7 @@ class LLMPipeline:
         self.crossref_extractor = CrossrefExtractor(db)
         self.material_extractor = MaterialExtractor(self.crossref_extractor,
                                                     namelist_jsonl)
-        self.property_extractor = PropertyDataExtractor(prop_metadata_file)
+        self.property_extractor = PropertyDataExtractor(db, prop_metadata_file)
 
         self.llm = LLMExtractor(db, self.extraction_info)
         self.extraction_info['prompt'] = self.llm.get_prompt()
