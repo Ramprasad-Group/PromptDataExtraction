@@ -1,17 +1,17 @@
+import sqlalchemy as sa
 from collections import namedtuple
-from sqlalchemy import text
+from sqlalchemy.orm import scoped_session
 
 from . import conn
-from .base import ORMBase
-from .ops import Operation
-from .utils import new_unique_key
+
+
 
 __version__ = "0.0.1"
 __author__ = "Akhlak Mahmood"
 
-ENG = None
 SSH = None
-SES = None
+ENG : sa.Engine = None
+CON : sa.Connection = None
 
 class ssh:
     host = ''
@@ -42,8 +42,8 @@ def load_settings():
         db.name = sett.PostGres.db_name
 
 
-def connect(database = None):
-    global SSH, ENG, SES
+def connect(database = None) -> scoped_session:
+    global SSH, ENG, CON
 
     if database is not None:
         db.name = database
@@ -55,21 +55,23 @@ def connect(database = None):
     if ENG is None:
         ENG = conn.setup_engine(
             db.host, db.port, db.user, db.pswd, db.name, proxy=SSH)
+        
+    if CON is None or CON.closed:
+        CON = ENG.connect()
 
-    if SES is None:
-        SES = conn.new_session(ENG)
-
-    return SES
+    return conn.new_session(CON)
 
 
 def disconnect():
-    global SSH, ENG, SES
-    if SES is not None:
-        SES.close_all()
-        SES.remove()
+    global SSH, CON
+    if CON is not None:
+        CON.close()
 
     if SSH is not None:
         SSH.stop()
+
+def session() -> scoped_session:
+    return conn.new_session(CON)
 
 def engine():
     connect()
@@ -83,8 +85,9 @@ def raw_sql(query : str, params = {}) -> list[namedtuple]:
 
         Returns a list of rows.
     """
-    results= SES.execute(text(query), params)
-    SES.close()
+    session = session()
+    results= session.execute(sa.text(query), params)
+    session.close()
 
     Row = namedtuple('Row', results.keys())
     return [Row(*r) for r in results.fetchall()]
