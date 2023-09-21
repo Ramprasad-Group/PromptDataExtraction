@@ -20,6 +20,7 @@ class MaterialExtractor:
         self.polymers = {
             line['polymer'] : line for line in jsonl.read_file(namelist_jsonl)
         }
+        log.trace("Initialized {}", self.__class__.__name__)
 
     def parse_material(self, matstr : str) -> MaterialMention:
         material = MaterialMention()

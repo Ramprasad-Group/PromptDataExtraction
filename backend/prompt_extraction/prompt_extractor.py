@@ -17,7 +17,11 @@ from backend.prompt_extraction.shot_selection import ShotSelector
 
 log = pylogg.New('llm')
 
-class LLMExtraction:
+class LLMExtractor:
+    PROMPTS = [
+        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
+    ]
+
     def __init__(self, db, extraction_info : dict,
                  debug : bool = False) -> None:
 
@@ -36,6 +40,7 @@ class LLMExtraction:
         self.model = self._get_param('model', True)
         self.temperature = self._get_param('temperature', False, 0.001)
         self.shots = self._get_param('shots', False, 0)
+        log.trace("Initialized {}", self.__class__.__name__)
 
     def process_paragraph(self, para : PaperTexts) -> list[dict]:
         """ Run the steps to send request to LLM, get response and parse the
@@ -51,10 +56,13 @@ class LLMExtraction:
         response = self._ask_llm(para, prompt, messages)
 
         if response is None:
-            return None
+            return []
 
         data = self._extract_data(response)
         return data
+    
+    def get_prompt(self) -> str:
+        return self.PROMPTS[self.prompt_id]
     
     def _get_param(self, name : str, required : bool, default = None):
         """ Returns the value of a parameter or it's default.
@@ -72,10 +80,7 @@ class LLMExtraction:
         return text
     
     def _add_prompt(self, text : str) -> str:
-        prompt_list = [
-            "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns."
-        ]
-        prompt = prompt_list[self.prompt_id]
+        prompt = self.PROMPTS[self.prompt_id]
         return f"{text}\n\n{prompt}"
 
     def _get_example_messages(self, text : str) -> list[dict]:
@@ -207,8 +212,9 @@ class LLMExtraction:
 
         try:
             records = json.loads(str_output)
-        except:
-            log.error("Failed to parse LLM output as JSON.")
+        except Exception as err:
+            log.error("Failed to parse LLM output as JSON: {}", err)
+            log.info("Original output: {}", str_output)
             return data
 
         for record in records:

@@ -97,6 +97,7 @@ def run(args: ArgumentParser):
     pipeline.set_shot_selector(shotselector)
 
     n = 0
+    new = 0
     # Process each paragraph linked to the curated data.
     for data in next(CuratedData().iter(db, size=100)):
         n += 1
@@ -111,5 +112,8 @@ def run(args: ArgumentParser):
             print(paragraph.text)
 
         # Run the pipeline on the paragraph.
-        pipeline.run(paragraph)
+        t1 = log.trace("Running LLM Pipeline on paragraph.")
+        new += pipeline.run(paragraph)
+        t1.done("LLM Pipeline finished.")
+        log.info("Cumulative total new records: {}", new)
 

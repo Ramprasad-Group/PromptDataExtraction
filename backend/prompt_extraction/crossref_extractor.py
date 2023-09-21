@@ -19,6 +19,7 @@ class CrossrefExtractor:
         self.normalizer = TextNormalizer()
         self.abbr2full = {} # Can be any reference, not just abbreviations.
         self.full2abbr = {} # Can be any reference, not just abbreviations.
+        log.trace("Initialized {}", self.__class__.__name__)
 
 
     def process_paragraph(self, para : PaperTexts):
@@ -56,7 +57,7 @@ class CrossrefExtractor:
              self.abbr2full[ref.name] = ref.othername
 
         self.db.close()
-        log.trace("Added {} cross-refs from database.", len(refs))
+        log.trace("Found {} cross-refs in database.", len(refs))
 
 
     def _find_abbr(self, text : str):

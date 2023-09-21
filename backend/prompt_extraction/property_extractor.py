@@ -1,7 +1,10 @@
 """ Extract property value pairs and post process them to obtain a single property record """
 import re
+import pylogg
 from backend.record_extraction.base_classes import PropertyValuePair
 from backend.record_extraction import utils
+
+log = pylogg.New('llm')
 
 class PropertyDataExtractor:
     def __init__(self, prop_metadata_file : str):
@@ -18,6 +21,7 @@ class PropertyDataExtractor:
             v['property_list'] for k, v in self.prop_records_metadata.items()
             if v['unit_list'][0] == '%'
         ]
+        log.trace("Initialized {}", self.__class__.__name__)
 
     def parse_property(self, property_name : str,
                        property_value : str) -> PropertyValuePair:
@@ -28,6 +32,9 @@ class PropertyDataExtractor:
 
     def _process_entity(self, prop : PropertyValuePair):
         property_value = prop.property_value
+
+        if not property_value:
+            return
 
         # If there is no number, return
         if re.search(r'\d+', property_value) is None:
