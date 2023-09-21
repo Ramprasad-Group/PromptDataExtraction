@@ -59,7 +59,7 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
             add_property_to_postgres(
                 db, extraction_info, paragraph, material, prop)
    
-    t2.done("Paragraph processed: {} records.", len(records))
+    t2.done("Paragraph {} processed: {} records.", paragraph.id, len(records))
 
 
 def extract_data(bert, norm_dataset, prop_metadata, text) -> dict:
