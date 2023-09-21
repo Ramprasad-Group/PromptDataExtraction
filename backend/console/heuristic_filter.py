@@ -1,5 +1,7 @@
 import pylogg
 from tqdm import tqdm
+
+import argcomplete
 from argparse import ArgumentParser, _SubParsersAction
 from backend.postgres.orm import FilteredParagraphs, PaperTexts, PropertyMetadata
 
@@ -32,8 +34,9 @@ def add_args(subparsers: _SubParsersAction):
 			ScriptName,
 			help= 'Run Heuristic filter pipeline on unprocessed paragraph rows.')
 	parser.add_argument(
-			"-r", "--filter", default='', completions=FilterPropertyName.__dict__.keys(), 
-			help= "Name of the property filter.")
+			"-r", "--filter", default='', choices=list(FilterPropertyName.__dict__.keys()), 
+			help= "Name of the property filter. Should look like property_*")
+	argcomplete.autocomplete(parser)
 
 	## add property argument 
 	parser.add_argument(
