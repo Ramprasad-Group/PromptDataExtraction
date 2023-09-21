@@ -11,6 +11,8 @@ log = pylogg.New('llm')
 
 
 class MaterialExtractor:
+    FUZZY_MATCH = 96    # pct
+
     def __init__(self, crossref_extractor : CrossrefExtractor,
                  namelist_jsonl : str) -> None:
 
@@ -24,7 +26,7 @@ class MaterialExtractor:
 
         # Check against the list of known polymers.
         match = process.extractOne(
-            matstr, list(self.polymers.keys()), score_cutoff=96)
+            matstr, list(self.polymers.keys()), score_cutoff=self.FUZZY_MATCH)
 
         if match:
             name = match[0]
@@ -48,7 +50,8 @@ class MaterialExtractor:
                 break
 
         # Check if any abbreviation matches.
-        for match in self.crossref_extractor.list_all(matstr):
+        for match in self.crossref_extractor.\
+            list_all(matstr, fuzzy_cutoff=self.FUZZY_MATCH):
             material.coreferents.append(match)
 
         return material
