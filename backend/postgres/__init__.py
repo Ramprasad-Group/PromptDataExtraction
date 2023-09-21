@@ -71,11 +71,16 @@ def disconnect():
         SSH.stop()
 
 def session() -> scoped_session:
+    """ Connect and return a new SQLAlchemy session. """
+    if CON is None:
+        return connect()
     return conn.new_session(CON)
+
 
 def engine():
     connect()
     return ENG
+
 
 def raw_sql(query : str, params = {}) -> list[namedtuple]:
     """
