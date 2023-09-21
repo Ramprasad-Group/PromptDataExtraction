@@ -1,16 +1,20 @@
 import pylogg
 from rapidfuzz import process
+
 from backend.utils import jsonl
+from backend.prompt_extraction.crossref_extractor import CrossrefExtractor
 from backend.record_extraction.base_classes import (
-    MaterialMention,
-    MATERIAL_CATEGORIES, COPOLYMER_INDICATORS, SOLVENTS,
+    MaterialMention, MATERIAL_CATEGORIES, COPOLYMER_INDICATORS, SOLVENTS,
 )
 
 log = pylogg.New('llm')
 
 
 class MaterialExtractor:
-    def __init__(self, namelist_jsonl : str) -> None:
+    def __init__(self, crossref_extractor : CrossrefExtractor,
+                 namelist_jsonl : str) -> None:
+
+        self.crossref_extractor : CrossrefExtractor = crossref_extractor
         self.polymers = {
             line['polymer'] : line for line in jsonl.read_file(namelist_jsonl)
         }
@@ -43,7 +47,12 @@ class MaterialExtractor:
                 material.role = category
                 break
 
+        # Check if any abbreviation matches.
+        for match in self.crossref_extractor.list_all(matstr):
+            material.coreferents.append(match)
+
         return material
+    
     
     def _detect_polymer_type(self, material_name : str) -> str:
         """Based on cues in the polymer name, detect the type of the polymer """

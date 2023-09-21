@@ -107,7 +107,6 @@ class PropertyDataExtractor:
         property_value = property_value.replace("° C", "°C")
 
         numbers = list(re.finditer(self.RE_NUMBER, property_value))
-        breakpoint()
 
         if len(numbers) == 1:
             # single value, assume unit is the first word after the value.
@@ -144,9 +143,6 @@ class PropertyDataExtractor:
                 unit = middlewords[0]
         else:
             # is_scientific = "^{" in property_value and "}" in property_value
-            # More than two numbers: Two decimals.
-            # One number in scientific notation.
-            # Two numbers in scientific notations.
             # Unit should be the first word after the last number.
             rightstr = property_value[numbers[-1].span()[1]:]
             words = rightstr.split()
