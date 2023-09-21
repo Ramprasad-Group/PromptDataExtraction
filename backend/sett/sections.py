@@ -56,9 +56,9 @@ class llm_pipeline:
     polyai_model: str = 'polyai'
     n_shots : int = 0
     prompt : int = 0
-    property : str = 'Tg'
-    doi_error_list_file : str = 'doi_error_list.json'
-    shot_sampling : str = 'random_sampling'
+    max_api_retries : int = 0
+    api_retry_delay : int = 2 # seconds
+    shot_sampling : str = 'random'  # random, diverse
 
 
 @dataclass

@@ -67,8 +67,8 @@ class LLMPipeline:
             extracted_records = self._parse_records(records)
             newfound = self._save_records(paragraph, extracted_records)
 
-            t4.done("Post-processing paragraph {}, found {} valid records.",
-                    paragraph.id, len(extracted_records))
+            t4.done("Post-processing found {} valid records.",
+                    len(extracted_records))
 
         except Exception as err:
             log.error("Failed to post-process LLM extracted records: {}", err)

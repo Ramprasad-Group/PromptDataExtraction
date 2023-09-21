@@ -18,7 +18,8 @@ class MaterialExtractor:
 
         self.crossref_extractor : CrossrefExtractor = crossref_extractor
         self.polymers = {
-            line['polymer'] : line for line in jsonl.read_file(namelist_jsonl)
+            line['polymer'] : line
+            for line in jsonl.read_file(namelist_jsonl)
         }
         log.trace("Initialized {}", self.__class__.__name__)
 

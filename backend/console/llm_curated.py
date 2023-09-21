@@ -19,9 +19,9 @@ def add_args(subparsers: _SubParsersAction):
         choices=['openai', 'polyai'],
         help="API endpoint, openai or polyai. Defaults to polyai.")
     parser.add_argument(
-        '--prop', default='Tg',
-        choices=['Tg', 'bandgap'],
-        help="Property to process. Defaults to Tg.")
+        '--rebuild', default=False,
+        action='store_true',
+        help="Rebuild the curated dataset and recompute the embeddings.")
 
 
 def run(args: ArgumentParser):
@@ -54,8 +54,8 @@ def run(args: ArgumentParser):
 
     db = postgres.connect()
 
-    model = sett.LLMPipeline.openai_model if args.api == 'openai' \
-        else sett.LLMPipeline.polyai_model
+    model = sett.LLMPipeline.openai_model \
+        if args.api == 'openai' else sett.LLMPipeline.polyai_model
 
     extraction_info = {
         'prompt_id': sett.LLMPipeline.prompt,
@@ -64,6 +64,8 @@ def run(args: ArgumentParser):
         'temperature': 0.001,
         'shots': sett.LLMPipeline.n_shots,
         'shot_sampling': sett.LLMPipeline.shot_sampling,
+        'max_api_retries': sett.LLMPipeline.max_api_retries,
+        'api_retry_delay': sett.LLMPipeline.api_retry_delay,
         'method': 'llm-pipeline',
         'dataset': 'curated',
         'runname': args.runname,
@@ -73,29 +75,32 @@ def run(args: ArgumentParser):
     log.info("Running LLM pipeline on curated dataset.")
     log.info("Extraction info = {}", extraction_info)
 
-    # Initialize the LLM extractor
+    # Initialize shot sampler.
+    shot_curated_dataset = os.path.join(sett.Run.directory, "shots.json")
+    shot_embeddings_file = os.path.join(sett.Run.directory, "embeddings.json")
+
+    if sett.LLMPipeline.shot_sampling == 'random':
+        shotselector = RandomShotSelector(min_records=2)
+    elif sett.LLMPipeline.shot_sampling == 'diverse':
+        shotselector = DiverseShotSelector(min_records=2)
+    else:
+        log.critical("Invalid shot_sampling: {}", sett.LLMPipeline.shot_sampling)
+        raise ValueError("Invalid shot sampling.")
+
+    # Load or build the curated dataset for shot selection.
+    shotselector.build_curated_dataset(db, shot_curated_dataset, args.rebuild)
+
+    # Load or calculate embeddings for the curated data texts.
+    shotselector.compute_embeddings(
+        sett.NERPipeline.model, sett.NERPipeline.pytorch_device,
+        shot_embeddings_file, args.rebuild,
+    )
+
+    # Initialize the LLM extractor.
     pipeline = LLMPipeline(db,
         sett.DataFiles.polymer_namelist_jsonl, sett.DataFiles.properties_json,
         extraction_info, debug = sett.Run.debugCount > 0)
-    
-    shotselector = RandomShotSelector(min_records=2)
-    # shotselector = DiverseShotSelector(min_records=2)
-
-    # Load or build the curated dataset for shot selection.
-    shot_curated_dataset = os.path.join(
-        sett.Run.directory, "curated_shot_data.json")    
-    shotselector.build_curated_dataset(db, shot_curated_dataset)
-
-    # Load or calculate embeddings for the curated data texts.
-    shot_embeddings_file = os.path.join(
-        sett.Run.directory, "curated_shot_embeddings.json")
-    shotselector.compute_embeddings(
-        sett.NERPipeline.model, sett.NERPipeline.pytorch_device,
-        shot_embeddings_file
-    )
-
     pipeline.set_shot_selector(shotselector)
-
 
     n = 0
     new = 0

@@ -111,7 +111,6 @@ class CrossrefExtractor:
         """
             Save parsed abbreviations and cross references to database.
         """
-        t3 = log.trace("Saving cross-references.")
         n = 0
         for k, v in self.abbr2full.items():
             if persist.add_crossref(self.db, para, k, v, 'abbr'):
@@ -123,4 +122,4 @@ class CrossrefExtractor:
 
         self.db.commit()
         self.db.close()
-        t3.done("Saved {} cross-references for paragraph: {}", n, para.id)
+        log.trace("Saved {} cross-references for paragraph: {}", n, para.id)

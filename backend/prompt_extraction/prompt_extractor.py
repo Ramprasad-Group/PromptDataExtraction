@@ -30,12 +30,14 @@ class LLMExtractor:
         self.shot_selector : ShotSelector = None
         self.normalizer = TextNormalizer()
 
-        self.max_api_retries = 1
-        self.api_retry_delay = 2 # seconds
-
+        # All settings should be in the extraction_info dictionary.
+        # The extraction_info will be saved to database as well.
+        # These helps us have a single source of truth.
         self.extraction_info = extraction_info
         self.prompt_id = self._get_param('prompt_id', False, 0)
         self.api = self._get_param('api', True)
+        self.max_api_retries = self._get_param('max_api_retries', False, 1)
+        self.api_retry_delay = self._get_param('api_retry_delay', False, 2)
         self.user = self._get_param('user', True)
         self.model = self._get_param('model', True)
         self.temperature = self._get_param('temperature', False, 0.001)
@@ -131,7 +133,7 @@ class LLMExtractor:
         t2 = log.info("Making API request to {}.", self.api)
         output = None
 
-        for retry in range(self.max_api_retries):
+        for retry in range(self.max_api_retries+1):
             if retry > 0:
                 log.info("Retry: {} / {}", retry, self.max_api_retries)
 

@@ -48,7 +48,8 @@ class ShotSelector:
             "Embedings and dataset doesnot match, please recompute."
         log.done("Load embeddings: {}", filename)
 
-    def build_curated_dataset(self, db, save_file: str, criteria: dict = {}):
+    def build_curated_dataset(self, db, save_file: str, rebuild : bool = False,
+                              criteria: dict = {}):
         """ Build the curated dataset for shot selection.
             dataset = {
                 para_id : {
@@ -61,6 +62,8 @@ class ShotSelector:
         """
         t2 = log.info("Building curated dataset.")
         try:
+            if rebuild:
+                raise RuntimeError
             self.load_curated_dataset(save_file)
         except:
             # Retrive the curated data from database.
@@ -128,7 +131,8 @@ class ShotSelector:
         }
 
     def compute_embeddings(
-            self, ner_model: str, device: int = 0, save_file : str = None):
+            self, ner_model: str, device: int = 0, save_file : str = None,
+            recompute : bool = False):
         pass
 
     def get_best_shots(self, text: str, n: int = 1):
@@ -174,12 +178,14 @@ class DiverseShotSelector(ShotSelector):
         return [self.curated[para_id] for para_id in diverse_paras]
 
     def compute_embeddings(self, ner_model: str, device: int = 0,
-                           save_file : str = None):
+                           save_file : str = None, recompute : bool = False):
         """ Compute embeddings of the curated texts using the BERT model. """
         if not self.curated:
             raise RuntimeError("Curated dataset not loaded.")
         
         try:
+            if recompute:
+                raise RuntimeError
             self.load_embeddings(save_file)
         except:
             self.bert.init_local_model(ner_model, device)
