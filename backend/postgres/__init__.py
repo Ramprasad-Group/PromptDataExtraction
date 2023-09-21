@@ -90,9 +90,9 @@ def raw_sql(query : str, params = {}) -> list[namedtuple]:
 
         Returns a list of rows.
     """
-    session = session()
-    results= session.execute(sa.text(query), params)
-    session.close()
+    sess = session()
+    results = sess.execute(sa.text(query), params)
+    sess.close()
 
     Row = namedtuple('Row', results.keys())
     return [Row(*r) for r in results.fetchall()]
