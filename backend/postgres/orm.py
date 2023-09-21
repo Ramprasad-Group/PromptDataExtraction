@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Optional, Dict, Literal, List
 
-from backend.postgres import ORMBase
+from backend.postgres.base import ORMBase
 from sqlalchemy import (
     Text, JSON, ForeignKey, Integer, DateTime, Float,
     ARRAY, VARCHAR, Boolean, String
