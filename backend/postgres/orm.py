@@ -473,6 +473,7 @@ class CuratedData(ORMBase):
     property_name: Mapped[str] = mapped_column(Text)
     property_value: Mapped[str] = mapped_column(Text)
     material_coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
+    conditions: Mapped[str] = mapped_column(Text, nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
