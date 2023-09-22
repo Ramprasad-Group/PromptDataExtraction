@@ -15,11 +15,45 @@ tg_corefs = [
     'glass transition temperature T_{g}',
     'the glass transition temperature',
     'glass transition', 'glass transition temperatures',
+    # LLM
+    'Tg',
+    'T g',
+    'T_g',
+    'T_{g}',
+    'TGA onset temperature',
+    'T_{g} attributed to silicone part',
+    'T_{g} (°C)',
+    'T_g (cross-linked)',
+    'T_g (dry)',
+    'T_g (dynamic)',
+    'T_g (high molecular weight polymer)',
+    'T_g (low molecular weight prepolymer)',
+    'T_{g} of PIC',
+    'T_{g} of PTMO segments',
+    'T_g (PIB)',
+    'T_g (PLLA)',
+    'T_g (poly[(4-MSt)-co-(4-BrMSt)])',
+    'T_g range',
+    'T_g (static)',
+    'T_{g} values',
+    'T_g (with H2O)',
+    'apparent T g', 'average T_{g}',
+    'glass-transition temperature',
+    'glass transition temperature (°C)',
+    'glass transition temperatures (T_{g}s)',
+    'glass transition temperature (T_{g})',
+    'glass transition temperature (T_g)',
+    'glass transition temperature (Tg)',
+    'glass transition (T_{g})',
+    'glass transition (T_g)',
 ]
 
 eg_corefs = [
-    'bandgap', 'band gap', 'band gaps', 'E_{g}',
+    'bandgap', 'band gap', 'band gaps', 'E_{g}', 'E_g',
     'optical band gap', 'optical bandgap',
+    # LLM
+    'band gap energy', 'optical bandgap', 'optical band gap',
+    'optical band gap energy', 'optical energy gap',
 ]
 
 def add_args(subparsers : argparse._SubParsersAction):
