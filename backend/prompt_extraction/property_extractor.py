@@ -10,7 +10,10 @@ log = pylogg.New('llm')
 
 ADDITIONAL_UNITS = [
     "° C", "°C", " ° C", " °C", " %", " S cm^{-1}", " MPa", " mm^{2}/s",
-    " mol %", " wt %", " K", " kcal mol^{-1}", " nm"
+    " mol %", " wt %", " K", " kcal mol^{-1}", " nm", " g/mol", " g/m^2/day",
+    " g mol^{-1}", " dL/g", " g/dL", " kg mol^{-1}", " mg mL^{-1}",
+    " erg/cm^2", " nm^3", " g/cm^3", " m^2/g", " cm²/s", " cm^{3} g^{-1}",
+    " kg mol^{-1}", " J g^{-1}",
 ]
 
 class PropertyDataExtractor:
@@ -124,7 +127,7 @@ class PropertyDataExtractor:
 
         # Match against the list of known units
         for item in self.unitlist:
-            if property_value.lower().endswith(item.lower()):
+            if property_value.endswith(item):
                 prop.property_unit = item
                 return
 
