@@ -52,6 +52,8 @@ def parse_args() -> argparse.Namespace:
                         help="Log level. Optional, overrides settings.")
     parser.add_argument('--db', default=None,
                         help="Database name. Optional, overrides settings.")
+    parser.add_argument('--logfile', default=None,
+                        help="Optional logfile name.")
     
     # Parse arguments.
     args = parser.parse_args()
@@ -81,7 +83,7 @@ def main():
     t1 = log.init(
         log_level=sett.Run.logLevel,
         output_directory=sett.Run.directory,
-        logfile_name=args.command + ".log",
+        logfile_name=args.logfile if args.logfile else args.command + ".log",
     )
     log.setMaxLength(1000)
 
