@@ -225,7 +225,9 @@ def _property_match(val0 : str, val1 : str):
 
         # fuzzy match
         val1 in val0,
-        val0 in val1
+        val0 in val1,
+        val1 in val0.split(),
+        val0 in val1.split(),
     ]
     return any(criteria)
 
