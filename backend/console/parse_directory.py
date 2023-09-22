@@ -75,6 +75,8 @@ def _parse_file(db, filepath, root="") -> DocumentParser | None:
         log.trace("Found {} paragraphs", len(doc.paragraphs))
     except Exception as err:
         log.error("Failed to parse: {} ({})", filepath, err)
+        if sett.Run.debugCount > 0:
+            raise err
         return None, pg
 
     if sett.Run.debugCount > 0:
