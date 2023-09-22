@@ -145,8 +145,8 @@ def log_run_info(property, publisher_directory, filter_name):
 if __name__ == '__main__':
 	
 	publisher_directory = 'All'
-	property = "thermal conductivity"
-	filter_name = 'property_thermal_conductivity'
+	property = 'tensile strength'
+	filter_name = 'property_ts' 
 
 	filename = property.replace(" ", "_")
 	

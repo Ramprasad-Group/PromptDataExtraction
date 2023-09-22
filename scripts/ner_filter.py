@@ -8,6 +8,7 @@ from collections import defaultdict
 from backend import postgres, sett
 from backend.postgres.orm import Papers, FilteredPapers, PaperTexts, FilteredParagraphs, PropertyMetadata
 from backend.utils import checkpoint
+from backend.console.heuristic_filter import FilterPropertyName
 
 import pranav.prompt_extraction.config
 from pranav.prompt_extraction.run_inference import RunInformationExtraction
@@ -190,10 +191,12 @@ def log_run_info(property, publisher_directory, ner_filter_name):
 if __name__ == '__main__':
 	
 	publisher_directory = 'All'
-	property = "thermal decomposition temperature"
+	prop_filter_name = 'property_tm'
+	ner_filter_name = 'ner_tm'
+
+	# property = "thermal decomposition temperature"
+	property = getattr(FilterPropertyName, prop_filter_name)
 	filename = property.replace(" ", "_")
-	prop_filter_name = 'property_td'
-	ner_filter_name = 'ner_td'
 	
 	#set the reqd directory in settings.yaml
 	os.makedirs(sett.Run.directory, exist_ok=True)
