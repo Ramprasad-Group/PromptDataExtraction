@@ -19,6 +19,7 @@ from backend.console import (
     parse_directory,
     parse_corpus,
     llm_curated,
+    heuristic_filter
 )
 
 def parse_args() -> argparse.Namespace:
@@ -36,6 +37,7 @@ def parse_args() -> argparse.Namespace:
     parse_directory.add_args(subparsers)
     parse_corpus.add_args(subparsers)
     llm_curated.add_args(subparsers)
+    heuristic_filter.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--dir', default=None,
@@ -115,6 +117,9 @@ def main():
 
     elif args.command == llm_curated.ScriptName:
         llm_curated.run(args)
+
+    elif args.command == heuristic_filter.ScriptName:
+        heuristic_filter.run(args)
 
     # Finalize.
     postgres.disconnect()
