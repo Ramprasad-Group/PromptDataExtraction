@@ -63,13 +63,10 @@ class LLMPipeline:
         # Post-process and persist.
         try:
             t4 = log.trace("Post-processing LLM extracted records.")
-
             extracted_records = self._parse_records(records)
             newfound = self._save_records(paragraph, extracted_records)
-
             t4.done("Post-processing found {} valid records.",
                     len(extracted_records))
-
         except Exception as err:
             log.error("Failed to post-process LLM extracted records: {}", err)
             if self.debug: raise err

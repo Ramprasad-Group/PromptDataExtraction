@@ -1,7 +1,6 @@
 import time
 import json
 import random
-
 import openai
 import pylogg
 
