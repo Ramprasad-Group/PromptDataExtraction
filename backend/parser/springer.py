@@ -66,7 +66,7 @@ class SpringerParser(HTMLDocumentParser):
             self.body = self.xpath_to_string(self.body_xpath)
     
     def parse_paragraphs(self):
-        self.para_xpaths = ['']
+        self.para_xpaths = ['//p', '//span']
         return super().parse_paragraphs()
 
 

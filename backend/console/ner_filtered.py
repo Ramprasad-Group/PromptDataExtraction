@@ -78,8 +78,9 @@ def run(args: ArgumentParser):
         sett.DataFiles.properties_json)
 
     # Load Materials bert to GPU
-    bert = bert_model.MaterialsBERT(sett.NERPipeline.model)
-    bert.init_local_model(device=sett.NERPipeline.pytorch_device)
+    bert = bert_model.MaterialsBERT()
+    bert.init_local_model(
+        sett.NERPipeline.model, sett.NERPipeline.pytorch_device)
 
     log.info("Running NER pipeline on filtered paragraphs.")
     log.info("Extraction info = {}", extraction_info)

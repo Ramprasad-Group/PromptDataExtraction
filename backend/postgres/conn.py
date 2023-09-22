@@ -1,3 +1,4 @@
+import sqlalchemy as sa
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sshtunnel import SSHTunnelForwarder
@@ -25,7 +26,7 @@ def ssh_tunnel(host, port, user, pswd,
 
 
 def setup_engine(host, port, user, pswd, name,
-        *, proxy : SSHTunnelForwarder = None, db_url = None):
+        *, proxy : SSHTunnelForwarder = None, db_url = None) -> sa.Engine:
     t2 = log.trace("Connecting to PostGres.")
     if db_url is None:
         if proxy is None:
@@ -39,8 +40,7 @@ def setup_engine(host, port, user, pswd, name,
     return engine
 
 
-def new_session(engine) -> scoped_session:
-    connection = engine.connect()
+def new_session(connection) -> scoped_session:
     session = scoped_session(
         sessionmaker(
             autocommit=False, autoflush=False, expire_on_commit=False,

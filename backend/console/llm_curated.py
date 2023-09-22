@@ -19,9 +19,9 @@ def add_args(subparsers: _SubParsersAction):
         choices=['openai', 'polyai'],
         help="API endpoint, openai or polyai. Defaults to polyai.")
     parser.add_argument(
-        '--prop', default='Tg',
-        choices=['Tg', 'bandgap'],
-        help="Property to process. Defaults to Tg.")
+        '--rebuild', default=False,
+        action='store_true',
+        help="Rebuild the curated dataset and recompute the embeddings.")
 
 
 def run(args: ArgumentParser):
@@ -29,7 +29,9 @@ def run(args: ArgumentParser):
     from backend import postgres, sett
     from backend.postgres.orm import CuratedData, PaperTexts
     from backend.prompt_extraction.pipeline import LLMPipeline
-    from backend.prompt_extraction.shot_selection import RandomShotSelector
+    from backend.prompt_extraction.shot_selection import (
+        RandomShotSelector, DiverseShotSelector
+    )
 
     # Debugging
     # pylogg.setConsoleStack(show=True)
@@ -52,8 +54,8 @@ def run(args: ArgumentParser):
 
     db = postgres.connect()
 
-    model = sett.LLMPipeline.openai_model if args.api == 'openai' \
-        else sett.LLMPipeline.polyai_model
+    model = sett.LLMPipeline.openai_model \
+        if args.api == 'openai' else sett.LLMPipeline.polyai_model
 
     extraction_info = {
         'prompt_id': sett.LLMPipeline.prompt,
@@ -62,32 +64,48 @@ def run(args: ArgumentParser):
         'temperature': 0.001,
         'shots': sett.LLMPipeline.n_shots,
         'shot_sampling': sett.LLMPipeline.shot_sampling,
+        'max_api_retries': sett.LLMPipeline.max_api_retries,
+        'api_retry_delay': sett.LLMPipeline.api_retry_delay,
         'method': 'llm-pipeline',
         'dataset': 'curated',
         'runname': args.runname,
+        'user': sett.Run.userName,
     }
 
     log.info("Running LLM pipeline on curated dataset.")
     log.info("Extraction info = {}", extraction_info)
 
-    # Initialize the LLM extractor
-    pipeline = LLMPipeline(
-        db, sett.DataFiles.polymer_nen_json, sett.DataFiles.properties_json,
-        extraction_info, debug = sett.Run.debugCount > 0)
-    
-    shotselector = RandomShotSelector(min_records=2)
-    shot_curated_dataset = os.path.join(
-        sett.Run.directory, "curated_shot_data.json")
-    
-    try:
-        shotselector.load_curated_dataset(shot_curated_dataset)
-    except:
-        shotselector.build_curated_dataset(db, criteria={})
-        shotselector.save_curated_dataset(shot_curated_dataset)
+    # Initialize shot sampler.
+    shot_curated_dataset = os.path.join(sett.Run.directory, "shots.json")
+    shot_embeddings_file = os.path.join(sett.Run.directory, "embeddings.json")
 
+    if sett.LLMPipeline.shot_sampling == 'random':
+        shotselector = RandomShotSelector(min_records=2)
+    elif sett.LLMPipeline.shot_sampling == 'diverse':
+        shotselector = DiverseShotSelector(min_records=2)
+    else:
+        log.critical("Invalid shot_sampling: {}", sett.LLMPipeline.shot_sampling)
+        raise ValueError("Invalid shot sampling.")
+
+    # Load or build the curated dataset for shot selection.
+    shotselector.build_curated_dataset(db, shot_curated_dataset, args.rebuild)
+
+    # Load or calculate embeddings for the curated data texts.
+    shotselector.compute_embeddings(
+        sett.NERPipeline.model, sett.NERPipeline.pytorch_device,
+        shot_embeddings_file, args.rebuild,
+    )
+
+    # Initialize the LLM extractor.
+    pipeline = LLMPipeline(db,
+        sett.DataFiles.polymer_namelist_jsonl, sett.DataFiles.properties_json,
+        extraction_info, debug = sett.Run.debugCount > 0)
     pipeline.set_shot_selector(shotselector)
 
     n = 0
+    new = 0
+    processed_para = []
+
     # Process each paragraph linked to the curated data.
     for data in next(CuratedData().iter(db, size=100)):
         n += 1
@@ -96,11 +114,18 @@ def run(args: ArgumentParser):
         if sett.Run.debugCount > 0 and n > sett.Run.debugCount:
             break
 
+        if data.para_id in processed_para:
+            continue
+        else:
+            processed_para.append(data.para_id)
+
         paragraph = PaperTexts().get_one(db, {'id': data.para_id})
 
         if sett.Run.debugCount > 0:
             print(paragraph.text)
 
         # Run the pipeline on the paragraph.
-        pipeline.run(paragraph)
+        t1 = log.trace("Running LLM Pipeline on paragraph.")
+        new += pipeline.run(paragraph)
+        t1.info("LLM Pipeline finished. Cumulative total new records: {}", new)
 

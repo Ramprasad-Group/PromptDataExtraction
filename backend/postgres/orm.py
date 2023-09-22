@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Optional, Dict, Literal, List
 
-from backend.postgres import ORMBase
+from backend.postgres.base import ORMBase
 from sqlalchemy import (
     Text, JSON, ForeignKey, Integer, DateTime, Float,
     ARRAY, VARCHAR, Boolean, String
@@ -290,6 +290,35 @@ class ExtractedProperties(ORMBase):
         super().__init__(**kwargs)
 
 
+class ExtractedCrossrefs(ORMBase):
+    '''
+    Table to store the cross-references, synonyms, abbreviations etc.
+
+    Attributes:
+        name :      Name of the reference (e.g., abbr.)
+
+        othername:  Other name of the reference (e.g., full form)
+
+        reftype:    Cross-reference type (e.g., abbreviation, citation etc.)
+
+    '''
+
+    __tablename__ = "extracted_crossrefs"
+
+    para_id: Mapped[int] = mapped_column(ForeignKey("paper_texts.id"),
+        unique=False, index=True)
+
+    paper_id: Mapped[int] = mapped_column(ForeignKey("papers.id"),
+        unique=False, index=True)
+    
+    name: Mapped[str] = mapped_column(Text, index=True)
+    othername: Mapped[str] = mapped_column(Text)
+    reftype: Mapped[str] = mapped_column(Text)
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+
+
 PropertyScale = Literal['log', 'normal']
 
 class PropertyMetadata(ORMBase):
@@ -473,6 +502,7 @@ class CuratedData(ORMBase):
     property_name: Mapped[str] = mapped_column(Text)
     property_value: Mapped[str] = mapped_column(Text)
     material_coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
+    conditions: Mapped[str] = mapped_column(Text, nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

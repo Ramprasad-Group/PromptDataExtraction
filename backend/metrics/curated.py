@@ -220,6 +220,8 @@ def _property_match(val0 : str, val1 : str):
     criteria = [
         # exact match
         val1 == val0,
+        val1.replace(" to ", "-") == val0,
+        val0.replace(" to ", "-") == val1,
 
         # fuzzy match
         val1 in val0,
@@ -239,6 +241,10 @@ def _material_match(
         # exact match
         mat1 == mat0,
 
+        # fuzzy match
+        len(mat1) > 2 and mat1 in mat0,
+        len(mat0) > 2 and mat0 in mat1,
+
         # curated material name in extracted corefs
         any([mat0 == m.lower() for m in corefs1]),
 
@@ -250,11 +256,13 @@ def _material_match(
 
 def _norm_value(val : str):
     val = val.lower()
+    val = val.strip()
     val = val.replace(" ", '')
-    val = val.replace('° C', '°C')
+    val = val.replace('° C', '°C') # NER
     return val
 
 def _norm_name(val : str):
     val = val.lower()
+    val = val.strip()
     val = val.replace(" ", '')
     return val

@@ -9,23 +9,24 @@ from transformers import (
 
 logger = pylogg.New('bert')
 
+
 class MaterialsBERT:
-    def __init__(self, model) -> None:
+    def __init__(self) -> None:
         self.nlp = spacy.load("en_core_web_sm")
-        self.model = model
+        self.model = None
         self.tokenizer = None
         self.pipeline = None
 
-    def init_local_model(self, device=0):
+    def init_local_model(self, model, device=0):
         # Load model and tokenizer
         t1 = logger.trace("Loading bert model to device = {}.", device)
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model,
-                                                  model_max_length=512)
-        model = AutoModelForTokenClassification.from_pretrained(self.model)
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model, model_max_length=512)
+        self.model = AutoModelForTokenClassification.from_pretrained(model)
         self.pipeline = pipeline(
             task="ner", model=model, tokenizer=self.tokenizer,
             aggregation_strategy="simple", device=device)
-        t1.done("Loaded bert model.")
+        t1.done("Loaded bert model to device {}", device)
 
     def get_tags(self, text: str):
         """ Return NER labels for a text. """
@@ -33,7 +34,7 @@ class MaterialsBERT:
         return self._ner_feed(tokens, text)
         # return ner_feed(tokens, text)
 
-    def get_text_embeddings(self, text : str):
+    def get_text_embeddings(self, text: str):
         """ Compute the embeddings for the given text.
             Returns a numpy array containing the text embeddings.
         """
@@ -47,10 +48,9 @@ class MaterialsBERT:
         # can use the CLS token embedding as well.
         with torch.no_grad():
             outputs = self.model(**encoded_inputs)
-            embeddings = outputs.last_hidden_state.mean(dim=1).squeeze(0)
+            embeddings = outputs[0].mean(dim=1).squeeze(0)
 
         return embeddings.numpy()
-
 
     def _ner_feed(self, seq_pred, text) -> list:
         """ Convert outputs of the NER to a form usable by record extraction

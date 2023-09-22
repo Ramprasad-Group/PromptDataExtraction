@@ -1,7 +1,6 @@
 import time
 import json
 import random
-
 import openai
 import pylogg
 
@@ -12,31 +11,37 @@ except:
     polyai_ok = False
 
 from backend.postgres.orm import APIRequests, PaperTexts
+from backend.text.normalize import TextNormalizer
 from backend.prompt_extraction.shot_selection import ShotSelector
 
 log = pylogg.New('llm')
 
-class LLMExtraction:
-    def __init__(self, db, normdataset : dict, propmetadata : dict,
-                 extraction_info : dict, debug : bool = False) -> None:
-        
+class LLMExtractor:
+    PROMPTS = [
+        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
+    ]
+
+    def __init__(self, db, extraction_info : dict,
+                 debug : bool = False) -> None:
+
         self.db = db    # postgres db session handle.
         self.debug = debug
         self.shot_selector : ShotSelector = None
+        self.normalizer = TextNormalizer()
 
-        #@Todo: move these two to use database IO.
-        self.normdata = normdataset
-        self.propmeta = propmetadata
-
-        self.max_api_retries = 1
-        self.api_retry_delay = 2 # seconds
-
+        # All settings should be in the extraction_info dictionary.
+        # The extraction_info will be saved to database as well.
+        # These helps us have a single source of truth.
         self.extraction_info = extraction_info
         self.prompt_id = self._get_param('prompt_id', False, 0)
         self.api = self._get_param('api', True)
+        self.max_api_retries = self._get_param('max_api_retries', False, 1)
+        self.api_retry_delay = self._get_param('api_retry_delay', False, 2)
+        self.user = self._get_param('user', True)
         self.model = self._get_param('model', True)
         self.temperature = self._get_param('temperature', False, 0.001)
         self.shots = self._get_param('shots', False, 0)
+        log.trace("Initialized {}", self.__class__.__name__)
 
     def process_paragraph(self, para : PaperTexts) -> list[dict]:
         """ Run the steps to send request to LLM, get response and parse the
@@ -52,10 +57,13 @@ class LLMExtraction:
         response = self._ask_llm(para, prompt, messages)
 
         if response is None:
-            return None
+            return []
 
         data = self._extract_data(response)
         return data
+    
+    def get_prompt(self) -> str:
+        return self.PROMPTS[self.prompt_id]
     
     def _get_param(self, name : str, required : bool, default = None):
         """ Returns the value of a parameter or it's default.
@@ -69,13 +77,11 @@ class LLMExtraction:
             return self.extraction_info.get(name, default)
 
     def _preprocess_text(self, text : str) -> str:
+        text = self.normalizer.normalize(text)
         return text
     
     def _add_prompt(self, text : str) -> str:
-        prompt_list = [
-            "Extract all 'material', 'property', 'value' data in JSONL format."
-        ]
-        prompt = prompt_list[self.prompt_id]
+        prompt = self.PROMPTS[self.prompt_id]
         return f"{text}\n\n{prompt}"
 
     def _get_example_messages(self, text : str) -> list[dict]:
@@ -91,14 +97,16 @@ class LLMExtraction:
             })
             messages.append({
                 "role": "assistant",
-                "content": json.dumps(example['records'])
+                "content": json.dumps(example['records']) + "\n"
             })
 
         return messages
     
     def _ask_llm(self, para : PaperTexts, prompt : str,
                  messages : dict) -> dict:
-        """ Try to get a response from the API by making repeated requests. """
+        """ Try to get a response from the API by making repeated requests
+            until successful.
+        """
         # Store request info to database.
         reqinfo = APIRequests()
         reqinfo.model = self.model 
@@ -110,7 +118,8 @@ class LLMExtraction:
         reqinfo.response_obj = None
 
         reqinfo.details = {}
-        reqinfo.details['n_shots'] = len(messages)
+        reqinfo.details['n_shots'] = len(messages) // 2
+        reqinfo.details['user'] = self.user
 
         messages.append({"role": "user", "content": prompt})
         reqinfo.request_obj = messages
@@ -123,7 +132,7 @@ class LLMExtraction:
         t2 = log.info("Making API request to {}.", self.api)
         output = None
 
-        for retry in range(self.max_api_retries):
+        for retry in range(self.max_api_retries+1):
             if retry > 0:
                 log.info("Retry: {} / {}", retry, self.max_api_retries)
 
@@ -183,7 +192,7 @@ class LLMExtraction:
                 temperature = self.temperature,
                 messages = messages
             )
-        if self.api == 'polyai':
+        elif self.api == 'polyai':
             if not polyai_ok:
                 log.critical("PolyAI is not available.")
                 return response
@@ -204,10 +213,14 @@ class LLMExtraction:
         str_output = response["choices"][0]["message"]["content"]
         log.trace("Parsing LLM output: {}", str_output)
 
+        if self.api == "polyai":
+            str_output = str_output.split("###")[0].strip()
+
         try:
             records = json.loads(str_output)
-        except:
-            log.error("Failed to parse LLM output as JSON.")
+        except Exception as err:
+            log.error("Failed to parse LLM output as JSON: {}", err)
+            log.info("Original output: {}", str_output)
             return data
 
         for record in records:
@@ -216,9 +229,19 @@ class LLMExtraction:
                 prop = record.get("property", None)
                 if prop:
                     value = record.get("value", None)
+                if not value:
+                    value = record.get("numeric value", None)
+
+            conditions = record.get("conditions")
+            if conditions == "None" or conditions is None:
+                conditions = ""
+
             if material and prop and value:
                 data.append(
-                    {'material': material, 'property': prop, 'value': value}
+                    {
+                        'material': material, 'property': prop, 'value': value,
+                        'conditions': conditions
+                    }
                 )
 
         return data

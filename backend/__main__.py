@@ -9,6 +9,7 @@ import pylogg as log
 from backend import postgres, sett
 
 from backend.console import (
+    debugger,
     calculate_metrics,
     checkpoint,
     db_tables,
@@ -19,7 +20,8 @@ from backend.console import (
     parse_directory,
     parse_corpus,
     llm_curated,
-    heuristic_filter
+    heuristic_filter,
+    add_conditions,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -27,6 +29,7 @@ def parse_args() -> argparse.Namespace:
     subparsers = parser.add_subparsers(dest='command', required=True)
 
     # Register the scripts with argparse.
+    debugger.add_args(subparsers)
     calculate_metrics.add_args(subparsers)
     checkpoint.add_args(subparsers)
     db_tables.add_args(subparsers)
@@ -38,6 +41,7 @@ def parse_args() -> argparse.Namespace:
     parse_corpus.add_args(subparsers)
     llm_curated.add_args(subparsers)
     heuristic_filter.add_args(subparsers)
+    add_conditions.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--dir', default=None,
@@ -88,7 +92,10 @@ def main():
     postgres.load_settings()
 
     # Check and run the command against the registered scripts.
-    if args.command == calculate_metrics.ScriptName:
+    if args.command == debugger.ScriptName:
+        debugger.run(args)
+
+    elif args.command == calculate_metrics.ScriptName:
         calculate_metrics.run(args)
 
     elif args.command == checkpoint.ScriptName:
@@ -120,6 +127,8 @@ def main():
 
     elif args.command == heuristic_filter.ScriptName:
         heuristic_filter.run(args)
+    elif args.command == add_conditions.ScriptName:
+        add_conditions.run(args)
 
     # Finalize.
     postgres.disconnect()

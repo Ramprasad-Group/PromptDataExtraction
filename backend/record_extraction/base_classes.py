@@ -5,6 +5,23 @@ from typing import List
 
 GROUPED_SPAN_COLUMNS = ["text", "label", "token_start", "token_end"]
 
+SOLVENTS = [
+    'NMP', 'DMAc', 'toluene', 'DMF', 'N-methyl-2-pyrrolidone',
+    'dimethylformamide', 'dimethyl formamide', 'dimethylacetamide',
+    'dimethyl acetamide', 'm-xylene' 'ethanol'
+]
+MATERIAL_CATEGORIES = [
+    'composite', 'additive', 'plasticiz', 'quaterni', 'crosslink',
+    'cross-link', 'graft', 'doping', 'doped', 'dopant', 'hydrogel',
+    'oligomer', 'star', 'filler', 'initia', 'catalys', 'inhib',
+    'oxidiz', 'solven', 'ligan'
+]
+COPOLYMER_INDICATORS = [
+    'g-', 'g‐', 'co‐', 'co-', '(co)', 'copoly', 'b-', 'b‐', 'star-',
+    '-stat-', 'stat‐', 'block', 'ipn-', '-ran'
+]
+
+
 
 class RecordProcessor:
     def __init__(self):
@@ -112,6 +129,7 @@ class PropertyValuePair:
     property_value_avg: bool = False
     property_value_descriptor: str = ''
     property_unit: str = ''
+    condition_str : str = ''
     temperature_condition: str = ''
     frequency_condition: str = ''
 
