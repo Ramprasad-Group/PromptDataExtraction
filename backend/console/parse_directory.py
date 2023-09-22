@@ -170,8 +170,6 @@ def run(args: ArgumentParser):
                 continue
         except Exception as err:
             log.error(f"Parse error: {abs_path} ({err})")
-            if sett.Run.debugCount > 0:
-                raise err
             continue
 
         total_pg += pg
