@@ -129,6 +129,7 @@ class PropertyValuePair:
     property_value_avg: bool = False
     property_value_descriptor: str = ''
     property_unit: str = ''
+    condition_str : str = ''
     temperature_condition: str = ''
     frequency_condition: str = ''
 

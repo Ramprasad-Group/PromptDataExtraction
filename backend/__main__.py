@@ -9,6 +9,7 @@ import pylogg as log
 from backend import postgres, sett
 
 from backend.console import (
+    debugger,
     calculate_metrics,
     checkpoint,
     db_tables,
@@ -27,6 +28,7 @@ def parse_args() -> argparse.Namespace:
     subparsers = parser.add_subparsers(dest='command', required=True)
 
     # Register the scripts with argparse.
+    debugger.add_args(subparsers)
     calculate_metrics.add_args(subparsers)
     checkpoint.add_args(subparsers)
     db_tables.add_args(subparsers)
@@ -88,7 +90,10 @@ def main():
     postgres.load_settings()
 
     # Check and run the command against the registered scripts.
-    if args.command == calculate_metrics.ScriptName:
+    if args.command == debugger.ScriptName:
+        debugger.run(args)
+
+    elif args.command == calculate_metrics.ScriptName:
         calculate_metrics.run(args)
 
     elif args.command == checkpoint.ScriptName:

@@ -136,5 +136,8 @@ def add_property(db, para : orm.PaperTexts, extraction_info : dict,
     if conditions:
         propobj.conditions['extracted_info'] = conditions
 
+    if prop.condition_str:
+        propobj.conditions['measurement_condition'] = prop.condition_str
+
     propobj.insert(db)
     return True

@@ -9,12 +9,26 @@ from backend.record_extraction.base_classes import PropertyValuePair
 log = pylogg.New('llm')
 
 ADDITIONAL_UNITS = [
-    "° C", "°C", " ° C", " °C", " %", " S cm^{-1}", " MPa", " mm^{2}/s",
-    " mol %", " wt %", " K", " kcal mol^{-1}", " nm", " g/mol", " g/m^2/day",
-    " g mol^{-1}", " dL/g", " g/dL", " kg mol^{-1}", " mg mL^{-1}",
-    " erg/cm^2", " nm^3", " g/cm^3", " m^2/g", " cm²/s", " cm^{3} g^{-1}",
-    " kg mol^{-1}", " J g^{-1}",
+    # Order matters. Keep the longer ones first.
+    "° C", "°C", " ° C", " °C", " S cm^{-1}",
+    " Pa s", " mPa s", " MPa",
+    " cm²/s", " mm^{2}/s",
+    " vol %", " mol %", " wt %", " %", " K", " kcal mol^{-1}",
+    " nm^3", " nm",
+    " kg mol^{-1}", " g mol^{-1}", " g/mol", " g mol^-1", " g/m^2/day",
+    " mmol/g", " dL/g", " g/dL", " mg mL^{-1}",
+    " erg/cm^2", " g/cm^3", " m^2/g", " cm^{3} g^{-1}",
+    " kJ mol^{-1}", " kcal mol^{-1}", " J g^{-1}", 
+    " cd A^{-1}", 
 ]
+
+
+REGEX_MATCHES = {
+    "for-and-for": (
+        r"(\d+.+)\sfor\s.+and\s(.+\d+.+)\sfor\s",
+    )
+}
+
 
 class PropertyDataExtractor:
     RE_NUMBER = r'[+-]?\d+[.]?\d*(?:\s?±\s?\d+[.]?\d*)?(?:x10\^{[-]?\d*})?'
@@ -39,12 +53,95 @@ class PropertyDataExtractor:
     def parse_property(self, property_name : str,
                        property_value : str) -> PropertyValuePair:
         assert type(property_value) == str
+
         prop = PropertyValuePair(
             entity_name=property_name, property_value=property_value)
+
         self._process_entity(prop)
+        self._normalize_unit(prop)
+
         return None if prop.property_numeric_value is None else prop
 
+
     def _process_entity(self, prop : PropertyValuePair):
+        name = prop.entity_name
+        value = prop.property_value
+
+        if not value or not name:
+            return
+
+        # for and for
+        match = re.search(r"(.*\d+.+)\sfor\s(.+)\sand\s(.*\d+.+)\sfor\s(.+)",
+                          value)
+        if match:
+            self._parse_double_values(prop, match.group(1), match.group(3))
+            prop.condition_str = f"avg for {match.group(2)} and {match.group(4)}"
+            return
+
+        # Fallback to original NER type parsing.
+        return self._process_entity_ner(prop)
+
+
+    def _parse_double_values(self, prop : PropertyValuePair,
+                             val1 : str, val2 : str):
+        """ Parse and set the average number, error and unit
+        from two property value strings. """
+        n1, u1, e1 = self._parse_num_unit(val1)
+        n2, u2, e2 = self._parse_num_unit(val2)
+
+        prop.property_numeric_value = None
+        if n1 is not None:
+            prop.property_numeric_value = n1
+
+        if n2 is not None:
+            prop.property_numeric_value += n2
+            prop.property_numeric_value /= 2
+            prop.property_value_avg = True
+
+        if e1 is not None:
+            prop.property_numeric_error = e1
+
+        if e2 is not None:
+            prop.property_numeric_error += e2
+            prop.property_numeric_error /= 2
+
+        if (u1 == u2) or (u1 is None and u2):
+            prop.property_unit = u2
+
+
+    def _parse_num_unit(self, value : str) -> tuple:
+        """ Given a value string with single number, try to parse
+            the number, error and unit.
+        """
+        num, err, unit = None, None, None
+        unit = self._get_unit(value)
+        if unit:
+            value = value.rstrip(unit)
+
+        if '±' in value:
+            values = value.split('±')
+            num = self._get_numeric(values[0].strip())
+            err = self._get_numeric(values[-1].strip())
+        elif '+/-' in value:
+            values = value.split('+/-')
+            num = self._get_numeric(values[0].strip())
+            err = self._get_numeric(values[-1].strip())
+        else:
+            try:
+                num = self._get_numeric(value)
+            except:
+                num = None
+        return num, unit, err
+
+    def _get_unit(self, text : str) -> str | None:
+        # Match against the list of known units
+        for item in self.unitlist:
+            if text.endswith(item):
+                return item
+        return None
+
+
+    def _process_entity_ner(self, prop : PropertyValuePair):
         property_value = prop.property_value
 
         if not property_value:
@@ -117,8 +214,6 @@ class PropertyDataExtractor:
                 leftover_str = leftover_str.replace(str_item, '')
 
         self._find_unit(prop)
-        self._normalize_unit(prop)
-
 
     def _find_unit(self, prop : PropertyValuePair):
         # Try to detect the unit.
