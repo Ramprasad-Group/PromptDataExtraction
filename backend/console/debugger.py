@@ -21,33 +21,37 @@ def run(args: ArgumentParser):
     # Debugging
     pylogg.setConsoleStack(show=True)
     pylogg._conf.line_width = 150
+    pylogg.setLevel(pylogg.Level.DEBUG)
 
     db = postgres.connect()
 
     exct = PropertyDataExtractor(db, sett.DataFiles.properties_json)
 
-    p = exct.parse_property('test', '131 °C for P1 and 152 °C for P2')
+    p = exct.parse_property('test', 'ranged from 333 up to 400 °C under air')
     print(p)
 
+    props : list[ExtractedProperties] = ExtractedProperties().get_all(db)
 
-    # props : list[ExtractedProperties] = ExtractedProperties().get_all(db)
+    print("Fetched %d properties from db" %len(props))
 
-    # print("Fetched %d properties from db" %len(props))
+    missed = [
+    ]
 
-    # missed = [3, 4, 5, 7, 8, 9, 11, 22, 24, 33, 41, 44, 45, 54, 57,
-    #           58, 59, 67, 77, 98, 99, 113, 126, 137, 138, 143, 155,
-    #           156, 159, 160, 167, 185, 199
-    # ]
+    for i, prop in enumerate(props):
+        if missed and i not in missed:
+            continue
 
-    # for i, prop in enumerate(props):
-    #     if i not in missed:
-    #         continue
+        print(i, "name=", prop.entity_name)
+        print("value=", prop.value)
+        exprop = exct.parse_property(prop.entity_name, prop.value)
 
-    #     print(i, "name=", prop.entity_name)
-    #     exprop = exct.parse_property(prop.entity_name, prop.value)
+        if exprop is None:
+            print("!! Not a valid record. !!")
+        else:
+            print("numeric=", exprop.property_numeric_value,
+              "unit=", exprop.property_unit)
+            print("conditions=", exprop.condition_str)
+    
+        print("-" * 80, "\n")
 
-    #     print("value=", prop.value, "numeric=", exprop.property_numeric_value,
-    #           "unit=", exprop.property_unit)
-    #     print("-" * 80, "\n")
-
-    #     # input("Press enter to continue ...")
+        # input("Press enter to continue ...")
