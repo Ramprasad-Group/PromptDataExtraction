@@ -382,7 +382,7 @@ class PropertyDataExtractor:
 
     def _get_numeric(self, value : str) -> float:
         """ Convert string to float. Handle scientific notations. """
-        log.debug("Converting to numeric: {}", value)
+        # log.debug("Converting to numeric: {}", value)
         if " - " in value:
             v = sum([self._get_numeric(x.strip()) for x in value.split(" - ")])
             v /= value.count(" - ") + 1
