@@ -50,7 +50,8 @@ class LLMPipeline:
         try:
             t2 = log.trace("Sending paragraph to LLM extractor: {}",
                            paragraph.id)
-            records = self.llm.process_paragraph(paragraph)
+            records, hashstr = self.llm.process_paragraph(paragraph)
+            self.extraction_info['response_hash'] = hashstr
             t2.done("LLM extraction, found {} records.", len(records))
         except Exception as err:
             log.error("Failed to run the LLM extractor: {}", err)
@@ -69,6 +70,7 @@ class LLMPipeline:
                     len(extracted_records))
         except Exception as err:
             log.error("Failed to post-process LLM extracted records: {}", err)
+            log.info("LLM records: {}", records)
             if self.debug: raise err
             return newfound
 
