@@ -58,6 +58,7 @@ class llm_pipeline:
     prompt : int = 0
     max_api_retries : int = 0
     api_retry_delay : int = 2 # seconds
+    api_request_delay : int = 1 # seconds
     shot_sampling : str = 'random'  # random, diverse
     min_records_in_curated : int = 4 
 

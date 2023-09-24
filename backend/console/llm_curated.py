@@ -66,6 +66,7 @@ def run(args: ArgumentParser):
         'shot_sampling': sett.LLMPipeline.shot_sampling,
         'max_api_retries': sett.LLMPipeline.max_api_retries,
         'api_retry_delay': sett.LLMPipeline.api_retry_delay,
+        'api_request_delay': sett.LLMPipeline.api_request_delay,
         'method': 'llm-pipeline',
         'dataset': 'curated',
         'runname': args.runname,

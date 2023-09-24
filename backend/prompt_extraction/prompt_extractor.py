@@ -38,6 +38,7 @@ class LLMExtractor:
         self.api = self._get_param('api', True)
         self.max_api_retries = self._get_param('max_api_retries', False, 1)
         self.api_retry_delay = self._get_param('api_retry_delay', False, 2)
+        self.api_request_delay = self._get_param('api_request_delay', False, 1)
         self.user = self._get_param('user', True)
         self.model = self._get_param('model', True)
         self.temperature = self._get_param('temperature', False, 0.001)
@@ -131,7 +132,7 @@ class LLMExtractor:
         reqinfo.request_obj = messages
 
         # Make request.
-        delay = self.api_retry_delay
+        retry_delay = self.api_retry_delay
         exponential_base = 2
         jitter = 0.1
 
@@ -142,12 +143,9 @@ class LLMExtractor:
             if retry > 0:
                 log.info("Retry: {} / {}", retry, self.max_api_retries)
 
-            # Wait
-            log.info("Waiting for {:.2f} seconds ...", delay)
-            time.sleep(delay)
-
             try:
                 output = self._make_request(messages)
+                time.sleep(self.api_request_delay)
                 break
             except Exception as err:
                 log.warn("API request error: {}", err)
@@ -157,8 +155,13 @@ class LLMExtractor:
 
                 reqinfo.status = 'error'
 
-                # Increment the delay
-                delay *= exponential_base * (1 + jitter * random.random())
+                # Increment the retry_delay
+                retry_delay *= exponential_base * (1 + jitter * random.random())
+
+                # Wait
+                log.info("Waiting for {:.2f} seconds ...", retry_delay)
+                time.sleep(retry_delay)
+
 
         reqinfo.details['retries'] = retry
 
