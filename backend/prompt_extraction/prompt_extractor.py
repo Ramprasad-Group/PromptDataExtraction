@@ -19,8 +19,8 @@ log = pylogg.New('llm')
 
 class LLMExtractor:
     PROMPTS = [
-        "Extract all numbers in JSON format with 'material', 'property', 'value', 'conditions' columns.",
-        "Extract all {property} values in JSON format with 'material', 'property', 'value', 'conditions' columns.",
+        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
+        "Extract all {property} values in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
     ]
 
     def __init__(self, db, extraction_info : dict,
