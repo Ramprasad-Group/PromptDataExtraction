@@ -172,7 +172,7 @@ class PropertyDataExtractor:
         """ Given a value string with single number, try to parse
             the number, error and unit.
         """
-        log.debug("Parsing number and units: {}", value)
+        # log.debug("Parsing number and units: {}", value)
         num, err, unit = None, None, None
 
         # Get the number part
