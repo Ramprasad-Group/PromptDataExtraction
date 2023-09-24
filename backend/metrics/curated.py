@@ -259,6 +259,10 @@ def _material_match(
 def _norm_value(val : str):
     val = val.lower()
     val = val.strip()
+    val = val.replace(" ± ", "±")
+    val = val.replace(" +/- ", "±")
+    val = val.replace(" +/-", "±")
+    val = val.replace("+/-", "±")
     val = val.replace(" ", '')
     val = val.replace('° C', '°C') # NER
     return val
