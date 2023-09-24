@@ -14,6 +14,15 @@ log = pylogg.New('llm')
 
 Record = namedtuple('Record', ['material', 'property', 'conditions'])
 
+Corefs = {
+    'Tg':   ["glass transition temperature", "Tg"],
+    'bandgap':   ["bandgap", "energy gap", "Eg"],
+    'all':  [
+        "glass transition temperature", "Tg",
+        "bandgap", "energy gap", "Eg"
+    ],
+}
+
 class LLMPipeline:
     def __init__(self, db, namelist_jsonl : str, prop_metadata_file : str,
                  extraction_info : dict, debug : bool = False) -> None:
@@ -25,8 +34,12 @@ class LLMPipeline:
                                                     namelist_jsonl)
         self.property_extractor = PropertyDataExtractor(db, prop_metadata_file)
 
+        property_list = []
+        if 'specific_property' in extraction_info:
+            property_list = Corefs[extraction_info['specific_property']]
+
         # dicts are passed by ref. unless dict() is used.
-        self.llm = LLMExtractor(db, self.extraction_info)
+        self.llm = LLMExtractor(db, self.extraction_info, property_list)
         log.trace("Initialized {}", self.__class__.__name__)
 
     def run(self, paragraph : PaperTexts) -> int:

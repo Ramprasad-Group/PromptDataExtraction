@@ -15,6 +15,9 @@ def add_args(subparsers: _SubParsersAction):
         'runname',
         help="Name of the run, e.g., test-llm-pipeline.")
     parser.add_argument(
+        '--prop', default=None,
+        help="Name of the property, e.g., Tg, bandgap.")
+    parser.add_argument(
         '--api', default='polyai',
         choices=['openai', 'polyai'],
         help="API endpoint, openai or polyai. Defaults to polyai.")
@@ -58,10 +61,11 @@ def run(args: ArgumentParser):
         if args.api == 'openai' else sett.LLMPipeline.polyai_model
 
     extraction_info = {
-        'prompt_id': sett.LLMPipeline.prompt,
+        'prompt_id': 1 if args.prop else 0,
         'api': args.api,
         'model': model,
         'temperature': 0.001,
+        'specific_property': args.prop,
         'shots': sett.LLMPipeline.n_shots,
         'shot_sampling': sett.LLMPipeline.shot_sampling,
         'max_api_retries': sett.LLMPipeline.max_api_retries,
