@@ -124,7 +124,8 @@ def add_property(db, para : orm.PaperTexts, extraction_info : dict,
     propobj.unit = prop.property_unit
     propobj.extraction_info = extraction_info
 
-    propobj.conditions = details
+    # Copy here. Or, dicts and lists params will persist between function calls.
+    propobj.conditions = dict(details)
     tcond = prop.temperature_condition
     if tcond:
         propobj.conditions['temperature_condition'] = tcond
@@ -134,10 +135,10 @@ def add_property(db, para : orm.PaperTexts, extraction_info : dict,
         propobj.conditions['frequency_condition'] = fcond
 
     if conditions:
-        propobj.conditions['extracted_info'] = conditions
+        propobj.conditions['extracted'] = conditions
 
     if prop.condition_str:
-        propobj.conditions['measurement_condition'] = prop.condition_str
+        propobj.conditions['measurement'] = prop.condition_str
 
     propobj.insert(db)
     return True
