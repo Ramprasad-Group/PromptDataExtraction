@@ -494,6 +494,9 @@ class CuratedData(ORMBase):
         material_coreferents:
                     List of material other names.
 
+        conditions:
+                    Measurement or environment conditions about the data.
+
     """
 
     __tablename__ = "curated_data"
