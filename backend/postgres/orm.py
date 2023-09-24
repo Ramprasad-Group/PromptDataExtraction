@@ -445,6 +445,9 @@ class APIRequests(ORMBase):
         response_tokens:
                     Cost or the number of tokens used for response / cost. (int)
 
+        response_hash:
+                    SHA256 HASH of the response for reference purposes.
+
     """
 
     __tablename__ = "api_requests"
@@ -463,6 +466,7 @@ class APIRequests(ORMBase):
     response_obj: Mapped[Dict] = mapped_column(JSON, nullable=True)
     request_tokens: Mapped[int] = mapped_column(Integer, nullable=True)
     response_tokens: Mapped[int] = mapped_column(Integer, nullable=True)
+    response_hash : Mapped[str] = mapped_column(Text, index=True, nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
