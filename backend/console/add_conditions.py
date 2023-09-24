@@ -34,7 +34,7 @@ def run(args: ArgumentParser):
 
     query = """
         SELECT cd.id, cd.para_id FROM curated_data cd 
-        WHERE cd.conditions IS NULL
+        WHERE cd.conditions IS NULL and cd.property_name = 'bandgap'
     """
 
     records = postgres.raw_sql(query)
@@ -59,8 +59,12 @@ def run(args: ArgumentParser):
         print("-"* 80, "\n")
         
         condition = input("Condition string: ").strip()
-        if not condition:
+
+        if condition == 'exit':
             break
+
+        if not condition:
+            continue
 
         if _add_to_postgres(db, curated, condition):
             pg += 1
