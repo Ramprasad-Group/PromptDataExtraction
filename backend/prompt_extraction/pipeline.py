@@ -25,8 +25,8 @@ class LLMPipeline:
                                                     namelist_jsonl)
         self.property_extractor = PropertyDataExtractor(db, prop_metadata_file)
 
+        # dicts are passed by ref. unless dict() is used.
         self.llm = LLMExtractor(db, self.extraction_info)
-        self.extraction_info['prompt'] = self.llm.get_prompt()
         log.trace("Initialized {}", self.__class__.__name__)
 
     def run(self, paragraph : PaperTexts) -> int:
@@ -79,9 +79,8 @@ class LLMPipeline:
 
     def set_shot_selector(self, selector : ShotSelector):
         log.note("Using {} as shot selector.", selector)
-        self.extraction_info['shot_selector'] = str(selector)
         self.llm.shot_selector = selector
-        self.llm.extraction_info = self.extraction_info
+        self.extraction_info['shot_selector'] = str(selector)
 
 
     def _parse_records(self, llm_recs : list) -> list[Record]:

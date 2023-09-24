@@ -19,10 +19,12 @@ log = pylogg.New('llm')
 
 class LLMExtractor:
     PROMPTS = [
-        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
+        "Extract all numbers in JSON format with 'material', 'property', 'value', 'conditions' columns.",
+        "Extract all {property} values in JSON format with 'material', 'property', 'value', 'conditions' columns.",
     ]
 
     def __init__(self, db, extraction_info : dict,
+                 property_corefs : list[str] = [],
                  debug : bool = False) -> None:
 
         self.db = db    # postgres db session handle.
@@ -34,11 +36,20 @@ class LLMExtractor:
         # The extraction_info will be saved to database as well.
         # These helps us have a single source of truth.
         self.extraction_info = extraction_info
-        self.prompt_id = self._get_param('prompt_id', False, 0)
+        prompt_id = self._get_param('prompt_id', False, 0)
+        self.prompt = self.PROMPTS[prompt_id]
+
+        if property_corefs:
+            property_str = ", ".join(property_corefs)
+            self.prompt = self.prompt.format(property=property_str)
+
+        self.extraction_info['prompt'] = self.prompt
+        log.note("Using Prompt: {}", self.prompt)
+
         self.api = self._get_param('api', True)
         self.max_api_retries = self._get_param('max_api_retries', False, 1)
         self.api_retry_delay = self._get_param('api_retry_delay', False, 2)
-        self.api_request_delay = self._get_param('api_request_delay', False, 1)
+        self.api_request_delay = self._get_param('api_request_delay', False, 0)
         self.user = self._get_param('user', True)
         self.model = self._get_param('model', True)
         self.temperature = self._get_param('temperature', False, 0.001)
@@ -68,9 +79,6 @@ class LLMExtractor:
         data = self._extract_data(response)
         return data, resp_hash
     
-    def get_prompt(self) -> str:
-        return self.PROMPTS[self.prompt_id]
-    
     def _get_param(self, name : str, required : bool, default = None):
         """ Returns the value of a parameter or it's default.
             Raises exception if the parameter is required and not provided.
@@ -87,8 +95,7 @@ class LLMExtractor:
         return text
     
     def _add_prompt(self, text : str) -> str:
-        prompt = self.PROMPTS[self.prompt_id]
-        return f"{text}\n\n{prompt}"
+        return f"{text}\n\n{self.prompt}"
 
     def _get_example_messages(self, text : str) -> list[dict]:
         records = []
