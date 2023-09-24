@@ -80,9 +80,13 @@ def run(args: ArgumentParser):
     shot_embeddings_file = os.path.join(sett.Run.directory, "embeddings.json")
 
     if sett.LLMPipeline.shot_sampling == 'random':
-        shotselector = RandomShotSelector(min_records=2)
+        shotselector = RandomShotSelector(
+            min_records=sett.LLMPipeline.min_records_in_curated)
+    
     elif sett.LLMPipeline.shot_sampling == 'diverse':
-        shotselector = DiverseShotSelector(min_records=2)
+        shotselector = DiverseShotSelector(
+            min_records=sett.LLMPipeline.min_records_in_curated)
+    
     else:
         log.critical("Invalid shot_sampling: {}", sett.LLMPipeline.shot_sampling)
         raise ValueError("Invalid shot sampling.")
