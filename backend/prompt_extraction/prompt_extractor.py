@@ -142,6 +142,10 @@ class LLMExtractor:
             if retry > 0:
                 log.info("Retry: {} / {}", retry, self.max_api_retries)
 
+            # Wait
+            log.info("Waiting for {:.2f} seconds ...", delay)
+            time.sleep(delay)
+
             try:
                 output = self._make_request(messages)
                 break
@@ -155,9 +159,6 @@ class LLMExtractor:
 
                 # Increment the delay
                 delay *= exponential_base * (1 + jitter * random.random())
-                # Wait
-                log.info("Waiting for {:.2f} seconds ...", delay)
-                time.sleep(delay)
 
         reqinfo.details['retries'] = retry
 
