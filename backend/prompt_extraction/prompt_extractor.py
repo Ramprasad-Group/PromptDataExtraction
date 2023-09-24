@@ -3,6 +3,7 @@ import json
 import random
 import openai
 import pylogg
+import hashlib
 
 try:
     import polyai.api as polyai
@@ -43,24 +44,28 @@ class LLMExtractor:
         self.shots = self._get_param('shots', False, 0)
         log.trace("Initialized {}", self.__class__.__name__)
 
-    def process_paragraph(self, para : PaperTexts) -> list[dict]:
+    def process_paragraph(self, para : PaperTexts) -> tuple[list[dict], str]:
         """ Run the steps to send request to LLM, get response and parse the
             output.
 
             para:   The reference paragraph which will be processed.
 
-            Returns [{material: '', property: '', value: ''}]
+            Returns (
+                [{material: '', property: '', value: ''}],
+                Response hash for the api request.
+            )
+
         """
         text = self._preprocess_text(para.text)
         prompt = self._add_prompt(text)
         messages = self._get_example_messages(text)
-        response = self._ask_llm(para, prompt, messages)
+        response, resp_hash = self._ask_llm(para, prompt, messages)
 
         if response is None:
             return []
 
         data = self._extract_data(response)
-        return data
+        return data, resp_hash
     
     def get_prompt(self) -> str:
         return self.PROMPTS[self.prompt_id]
@@ -103,7 +108,7 @@ class LLMExtractor:
         return messages
     
     def _ask_llm(self, para : PaperTexts, prompt : str,
-                 messages : dict) -> dict:
+                 messages : dict) -> tuple[dict, str]:
         """ Try to get a response from the API by making repeated requests
             until successful.
         """
@@ -116,6 +121,7 @@ class LLMExtractor:
         reqinfo.request = prompt
         reqinfo.response = None
         reqinfo.response_obj = None
+        reqinfo.response_hash = None
 
         reqinfo.details = {}
         reqinfo.details['n_shots'] = len(messages) // 2
@@ -178,10 +184,19 @@ class LLMExtractor:
                 log.error("Failed to parse API output: {}", err)
                 reqinfo.status = 'output parse error'
 
+        # Calculate response hash
+        if reqinfo.response:
+            hashstr = hashlib.sha256(
+                reqinfo.response.encode('utf-8')).hexdigest()
+            reqinfo.response_hash = hashstr
+
         # Store response info.
         reqinfo.insert(self.db)
+
+        # Commit
         reqinfo.commit(self.db)
-        return output
+
+        return output, reqinfo.response_hash
     
     def _make_request(self, messages : list[dict]) -> dict:
         """ Send the request to the specified API endpoint. """
