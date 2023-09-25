@@ -45,11 +45,13 @@ def test_add_material(db, material, db_paragraph):
     # try adding new material
     ret = persist.add_material(db, db_paragraph, {'info': 'test'}, material)
     assert ret == True
-    db.commit()
 
     # check if added
     ret = persist.get_material(db, db_paragraph.id, material.entity_name)
     assert ret is not None
+    assert ret.id is not None
+    assert type(ret.id) == int
+    print("Added materials ID:", ret.id)
     assert ret.entity_name == material.entity_name
     assert ret.para_id == db_paragraph.id
 
@@ -58,6 +60,10 @@ def test_add_material(db, material, db_paragraph):
         db, {'id': ret.para_id})
     assert fetch_para is not None
     assert fetch_para.text == db_paragraph.text
+
+    # The previous things will work via the ORM without commiting first.
+    # We can commit here to make sure.
+    db.commit()
 
     # delete the added material
     db.delete(ret)
