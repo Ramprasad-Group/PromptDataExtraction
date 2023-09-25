@@ -26,6 +26,7 @@ def prop():
     prop.property_numeric_value = 300
     prop.property_unit = 'K'
     prop.condition_str = 'test_condition'
+    return prop
 
 @pytest.fixture
 def db_paragraph(db):
@@ -65,3 +66,49 @@ def test_add_material(db, material, db_paragraph):
     # check if deleted
     ret = persist.get_material(db, db_paragraph.id, material.entity_name)
     assert ret is None
+
+    db.close()
+
+
+def test_add_property(db, material, prop, db_paragraph):
+    from backend.postgres import persist, orm
+    
+    # we first need to add the material
+    persist.add_material(db, db_paragraph, {'info': 'test'}, material)
+
+    conditions = "condition string"
+    details = {'detail': 'test'}
+
+    # try to add the property
+    ret = persist.add_property(
+        db, db_paragraph, {'info': 'test'}, material, prop, conditions, details)
+
+    assert ret == True
+    db.commit()
+
+    # get the added material
+    mat = persist.get_material(db, db_paragraph.id, material.entity_name)
+    assert mat is not None
+
+    # get the added property
+    ret : orm.ExtractedProperties = orm.ExtractedProperties().get_one(
+        db, {'entity_name': prop.entity_name})
+    assert ret is not None
+    assert ret.material_id == mat.id
+    assert ret.numeric_value == prop.property_numeric_value
+
+    # needs to be removed and commited first due to foreign key.
+    db.delete(ret)
+    db.commit()
+
+    # next the material
+    db.delete(mat)
+    db.commit()
+
+    # Check if deleted
+    ret : orm.ExtractedProperties = orm.ExtractedProperties().get_one(
+        db, {'entity_name': prop.entity_name})
+    assert ret is None
+
+    db.close()
+
