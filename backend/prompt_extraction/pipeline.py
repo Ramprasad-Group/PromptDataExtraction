@@ -35,7 +35,7 @@ class LLMPipeline:
         self.property_extractor = PropertyDataExtractor(db, prop_metadata_file)
 
         property_list = []
-        if 'specific_property' in extraction_info:
+        if extraction_info['specific_property']:
             property_list = Corefs[extraction_info['specific_property']]
 
         # dicts are passed by ref. unless dict() is used.
