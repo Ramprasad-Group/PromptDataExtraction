@@ -40,8 +40,6 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
         for material in materials_list:
             add_material_to_postgres(db, extraction_info, paragraph, material)
 
-    ExtractedMaterials.commit(db)
-
     for rec in records:
         # list of dicts
         materials_list = rec.get("material_name", [])
@@ -58,7 +56,9 @@ def process_paragraph(db, bert, norm_dataset, prop_metadata,
         for material in materials_list:
             add_property_to_postgres(
                 db, extraction_info, paragraph, material, prop)
-   
+
+    db.commit()
+    db.close()
     t2.done("Paragraph {} processed: {} records.", paragraph.id, len(records))
 
 
