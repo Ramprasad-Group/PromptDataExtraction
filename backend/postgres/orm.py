@@ -124,6 +124,34 @@ class TableCursor(ORMBase):
         super().__init__(**kwargs)
 
 
+class ExtractionMethods(ORMBase):
+    """
+    Postgres table to keep track of methods used to extract data.
+
+    Attributes:
+        name:       Name of the extraction method.
+
+        detail:     Additional details/comments about the method.
+
+        model:      Model used for the extraction.
+
+        api:        (Optional) API name.
+
+        subset:     (Optional) Filter name of the sub dataset if any.
+
+        info:       (Optional) Additional info about api, model, username etc.
+
+    """
+
+    __tablename__ = "extraction_methods"
+
+    name : Mapped[str] = mapped_column(Text)
+    detail : Mapped[str] = mapped_column(Text)
+    model : Mapped[str] = mapped_column(Text)
+    api : Mapped[str] = mapped_column(Text, nullable=True)
+    subset : Mapped[str] = mapped_column(Text, nullable=True)
+    info: Mapped[Dict] = mapped_column(JSON, default={})
+
 
 class PaperTexts(ORMBase):
     """
