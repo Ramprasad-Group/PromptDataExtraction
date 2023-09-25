@@ -3,6 +3,7 @@ matplotlib
 pyyaml
 python-dotenv
 pylogg @ git+https://github.com/akhlakm/python-logg.git
+pytest
 
 # -------------- FRONTEND ----------------
 streamlit
