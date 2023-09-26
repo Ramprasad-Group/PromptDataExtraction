@@ -65,7 +65,7 @@ def _ner_filter(ner_tags, polymer_only = False) -> bool:
 
 def run(args: ArgumentParser):
     from backend import postgres, sett
-    from backend.utils import checkpoint
+    from backend.postgres import checkpoint
     from backend.record_extraction import bert_model
 
     db = postgres.connect()

@@ -2,7 +2,7 @@ import argparse
 import pylogg
 
 from backend import postgres
-from backend.utils import checkpoint
+from backend.postgres import checkpoint
 
 ScriptName = 'ckpt'
 

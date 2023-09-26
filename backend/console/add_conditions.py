@@ -6,10 +6,6 @@ from argparse import ArgumentParser, _SubParsersAction
 from backend import postgres, sett
 from backend.postgres.orm import CuratedData, PaperTexts
 
-from backend.parser import PaperParser
-from backend.parser.document import DocumentParser
-from backend.parser.paragraph import ParagraphParser
-
 ScriptName = 'add-condition'
 
 log = pylogg.New(ScriptName)
