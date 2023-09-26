@@ -243,6 +243,11 @@ class ExtractedMaterials(ORMBase):
         ForeignKey("paper_texts.id", ondelete='CASCADE'),
         unique=False, index=True)
     
+    method_id: Mapped[int] = mapped_column(
+        ForeignKey("extraction_methods.id",
+                   ondelete='CASCADE', onupdate='CASCADE'),
+                   unique=False, index=True)
+
     entity_name: Mapped[str] = mapped_column(Text)
     material_class: Mapped[str] = mapped_column(Text)
     polymer_type: Mapped[str] = mapped_column(Text)
@@ -308,6 +313,12 @@ class ExtractedProperties(ORMBase):
     material_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("extracted_materials.id"), nullable= False
     )
+
+    method_id: Mapped[int] = mapped_column(
+        ForeignKey("extraction_methods.id",
+                   ondelete='CASCADE', onupdate='CASCADE'),
+                   unique=False, index=True)
+
     entity_name: Mapped[str] = mapped_column(Text)
     value: Mapped[str] = mapped_column(Text)
     coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
