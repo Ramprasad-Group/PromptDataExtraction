@@ -67,29 +67,23 @@ class RelationExtraction:
                     if material_entity.material_class in ['blend', 'copolymer']:
                         for component in material_entity.components:
                             if property_entity.material_name in component.coreferents:
-                                material_record['material_name'] = [
-                                    component.return_dict()]
+                                material_record['material_name'] = [component]
                                 break
 
                     elif property_entity.material_name in material_entity.coreferents:
-                        material_record['material_name'] = [
-                            material_entity.return_dict()]
+                        material_record['material_name'] = [material_entity]
                         break
 
                 if property_entity.material_amount:
                     material_record['material_amount'] = {}
                     material_record['material_amount']['entity_name'] = property_entity.material_amount_entity
                     material_record['material_amount']['material_amount'] = property_entity.material_amount
-                material_record['property_record'] = property_entity.return_dict(
-                    verbose=self.verbose)  # Convert to dictionary and remove the 2 entries
+                material_record['property_record'] = property_entity
 
             else:
-                material_record['material_name'] = self.material_entity_processor.material_mentions.return_list_dict(
-                )
-                material_record['material_amount'] = self.mat_amount_processor.material_amounts.return_list_dict(
-                )
-                material_record['property_record'] = property_entity.return_dict(
-                    verbose=self.verbose)
+                material_record['material_name'] = self.material_entity_processor.material_mentions
+                material_record['material_amount'] = self.mat_amount_processor.material_amounts
+                material_record['property_record'] = property_entity
             material_records.append(material_record)
         return material_records
 
@@ -130,9 +124,8 @@ class RelationExtraction:
             timer['material_amount'] = time.time()-begin
             begin = time.time()
             material_records = self.link_records()
-            cumulative_output_data = {'polymer_family': self.material_entity_processor.polymer_family.return_list_dict(),  # Convert EntityList to list of dictionaries
-                                      # Convert EntityList to list of dictionaries
-                                      'monomers': self.material_entity_processor.monomers.return_list_dict(),
+            cumulative_output_data = {'polymer_family': self.material_entity_processor.polymer_family,
+                                      'monomers': self.material_entity_processor.monomers,
                                       'material_records': material_records}
             timer['link_records'] = time.time()-begin
             return cumulative_output_data, timer
