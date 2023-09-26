@@ -1,222 +1,122 @@
 import pylogg
-from backend.record_extraction import record_extractor
-from backend.postgres.orm import (
-    PaperTexts, ExtractedMaterials, ExtractedAmount, ExtractedProperties,
-)
+from backend.postgres import persist
+from backend.postgres.orm import PaperTexts, ExtractionMethods
+from backend.record_extraction import record_extractor, bert_model, base_classes
 
 log = pylogg.New('ner')
 
 
-def process_paragraph(db, bert, norm_dataset, prop_metadata,
-                      extraction_info: dict,
-                      paragraph: PaperTexts):
-    """ Extract data from an individual paragraph object. """
-
-    assert 'method' in extraction_info.keys(), \
-        "extraction_info must specify a method field."
-
-    t2 = log.trace("Processing paragraph.")
-    # Get the paragraph text
-    text = paragraph.text
-
-    # Get the output object
-    ner_output = extract_data(bert, norm_dataset, prop_metadata, text)
-
-    if ner_output is False:
-        log.trace("Text is not relevant, no output.")
-        return
-
-    # polymer_families = ner_output.get("polymer_family", [])
-    # monomers = ner_output.get("monomers", [])
-
-    records = ner_output.get("material_records", [])
-
-    log.trace("Found {} records.", len(records))
-
-    # We need to insert and commit the materials first.
-    for rec in records:
-        # list of dicts
-        materials_list = rec.get("material_name", [])
-        for material in materials_list:
-            add_material_to_postgres(db, extraction_info, paragraph, material)
-
-    for rec in records:
-        # list of dicts
-        materials_list = rec.get("material_name", [])
-
-        # list of dicts
-        for amount in rec.get('material_amount', []):
-            add_amount_to_postgres(db, extraction_info, paragraph, amount)
-
-        # dict
-        prop = rec.get('property_record', {})
-
-        # Generally we expect to have only one material for a property dict.
-        # But there can be multiple in the materials in the list sometimes.
-        for material in materials_list:
-            add_property_to_postgres(
-                db, extraction_info, paragraph, material, prop)
-
-    db.commit()
-    db.close()
-    t2.done("Paragraph {} processed: {} records.", paragraph.id, len(records))
+class NERPipeline:
+    def __init__(self, db, method : ExtractionMethods,
+                 bert : bert_model.MaterialsBERT, nendata_json : str,
+                 prop_metadata_file : str, debug : bool = False) -> None:
+        self.db = db
+        self.debug = debug
+        self.method = method
+        self.bert = bert
+        self.norm_dataset = nendata_json
+        self.prop_meta_file = prop_metadata_file
+        log.trace("Initialized {}", self.__class__.__name__)
 
 
-def extract_data(bert, norm_dataset, prop_metadata, text) -> dict:
-    """ Extract data from a text by passing through the materials bert
-        NER pipeline.
+    def run(self, paragraph : PaperTexts) -> int:
+        """ Run the NER pipeline on a given paragraph.
+            Returns the number of records found.
+        """
+        t2 = log.trace("Processing paragraph.")
+        newfound = 0
+        records = []
 
-        Returns the extracted dictionary of polymer family, monomers,
-        and records containing materials, amounts, properties etc.
-    """
-    ner_tags = bert.get_tags(text)
-    relation_extractor = record_extractor.RelationExtraction(
-        text, ner_tags, norm_dataset, prop_metadata)
-    output_para, timings = relation_extractor.process_document()
-    return output_para
+        # Get the output dictionary.
+        ner_output = self._extract_data(paragraph.text)
+        if ner_output is False:
+            log.info("Text is not relevant, no output.")
+            return
 
+        # polymer_families = ner_output.get("polymer_family", [])
+        # monomers = ner_output.get("monomers", [])
 
-def get_material(db, para_id: int, material_name: str) -> ExtractedMaterials:
-    """ Return an extracted material object using a para id and entity name.
-        Returns None if not found.
-    """
-    return ExtractedMaterials().get_one(db, {
-        'para_id': para_id,
-        'entity_name': material_name
-    })
+        records = ner_output.get("material_records", [])
+        log.info("Found {} records.", len(records))
 
-
-def add_material_to_postgres(
-        db, extraction_info: dict,
-        paragraph: PaperTexts, material: dict) -> bool:
-    """ Add an extracted material entry to postgres.
-        Check uniqueness based on para id and material entity name.
-
-        Returns true if the row was added to db.
-    """
-
-    assert type(material) == dict
-
-    entity_name = material.get('entity_name')
-    if not entity_name:
-        return False
-
-    # check if already exists
-    if get_material(db, paragraph.id, entity_name):
-        return False
-
-    if material['components']:
-        log.debug("Components: {}", material['components'])
-
-    matobj = ExtractedMaterials()
-    matobj.para_id = paragraph.id
-    matobj.entity_name = entity_name
-    matobj.material_class = material.get('material_class', '')
-    matobj.polymer_type = material.get('polymer_type')
-    matobj.normalized_material_name = material.get('normalized_material_name')
-    matobj.coreferents = list(material.get('coreferents'))
-    matobj.components = list(material.get('components'))
-    matobj.additional_info = {}
-    matobj.extraction_info = extraction_info
-
-    role = material.get('role')
-    if role:
-        matobj.additional_info.update({
-            'material_role': role
-        })
-
-    matobj.insert(db)
-    return True
+        newfound = self._save_records(paragraph, records)
+        t2.done("Paragraph {} processed: {} records.",
+                paragraph.id, len(records))
+        
+        return newfound
 
 
-def add_amount_to_postgres(
-        db, extraction_info: dict,
-        paragraph: PaperTexts, amount: dict) -> bool:
-    """ Add an extracted material amount entry to postgres.
-        Check uniqueness based on material id and material entity name.
+    def _extract_data(self, text : str) -> dict:
+        """ Extract data from a text by passing through the materials bert
+            NER pipeline.
 
-        Returns true if the row was added to db.
-    """
-    if type(amount) != dict:
-        return False
-
-    name: str = amount.get('entity_name', None)
-    if not name:
-        return False
-
-    # check if already exists
-    if ExtractedAmount().get_one(db, {
-        'para_id': paragraph.id,
-        'entity_name': name
-    }):
-        return False
-
-    amtobj = ExtractedAmount()
-    amtobj.para_id = paragraph.id
-    amtobj.entity_name = name
-    amtobj.material_amount = amount.get('material_amount')
-    amtobj.extraction_info = extraction_info
-
-    amtobj.insert(db)
-    return True
+            Returns the extracted dictionary of polymer family, monomers,
+            and records containing materials, amounts, properties etc.
+        """
+        ner_tags = self.bert.get_tags(text)
+        relation_extractor = record_extractor.RelationExtraction(
+            text, ner_tags, self.norm_dataset, self.prop_meta_file)
+        output_para, timings = relation_extractor.process_document()
+        return output_para
 
 
-def add_property_to_postgres(
-        db, extraction_info: dict,
-        paragraph: PaperTexts, material_map: dict, property: dict) -> bool:
-    """ Add an extracted material property values to postgres.
-        Check uniqueness based on material id and property entity name.
+    def _get_material_list(self, items) -> list:
+        """ Normalize the return data of the NER pipeline. """
+        if items is None:
+            return []
+        elif type(items) == list:
+            return items
+        elif type(items) == dict:
+            return [ base_classes.MaterialMention(**items) ]
+        else:
+            return [i for i in items.entity_list]
 
-        Returns true if the row was added to db.
-    """
-    assert type(property) == dict
 
-    material_name = material_map.get('entity_name')
-    if not material_name:
-        return False
+    def _get_amount_list(self, items) -> list:
+        """ Normalize the return data of the NER pipeline. """
+        if items is None:
+            return []
+        elif type(items) == list:
+            return items
+        elif type(items) == dict:
+            return [ base_classes.MaterialAmount(**items) ]
+        else:
+            return [i for i in items.entity_list]
 
-    # Make sure it's a number or ignore.
-    numeric_value = property.get('property_numeric_value')
-    try:
-        numeric_value = float(numeric_value)
-    except:
-        return False
 
-    material = get_material(db, paragraph.id, material_name)
-    if material is None:
-        log.warn("Material {} not found in extracted_materials "
-                 "to store properties.", material_name)
-        return False
+    def _save_records(self, paragraph : PaperTexts, records : list) -> int:
+        m, p, a = 0, 0, 0
 
-    # check if already exists
-    if ExtractedProperties().get_one(db, {
-        'material_id': material.id,
-        'entity_name': property.get('entity_name', None),
-        'numeric_value': numeric_value,
-    }):
-        return False
+        # Insert the materials first.
+        for rec in records:
+            materials_list = self._get_material_list(rec.get('material_name'))
+            for material in materials_list:
+                if persist.add_material(
+                    self.db, paragraph, self.method, material):
+                    m += 1
 
-    propobj = ExtractedProperties()
-    propobj.material_id = material.id
-    propobj.entity_name = property.get('entity_name')
-    propobj.value = property.get('property_value')
-    propobj.coreferents = list(property.get('coreferents'))
-    propobj.numeric_value = numeric_value
-    propobj.numeric_error = property.get('property_numeric_error')
-    propobj.value_average = property.get('property_value_avg')
-    propobj.value_descriptor = property.get('property_value_descriptor')
-    propobj.unit = property.get('property_unit')
+        for rec in records:
+            materials_list = self._get_material_list(rec.get('material_name'))
+            amount_list = self._get_amount_list(rec.get('material_amount'))
 
-    propobj.extraction_info = extraction_info
+            for amount in amount_list:
+                if persist.add_material_amount(
+                    self.db, paragraph, self.method, amount):
+                    a += 1
 
-    propobj.conditions = {}
-    tcond = property.get('temperature_condition', None)
-    if tcond:
-        propobj.conditions.update({'temperature_condition': tcond})
+            # dict
+            prop = rec.get('property_record', {})
 
-    fcond = property.get('frequency_condition', None)
-    if fcond:
-        propobj.conditions.update({'frequency_condition': fcond})
+            # Generally we expect to have only one material for a property dict.
+            # But there can be multiple in the materials in the list sometimes.
+            for material in materials_list:
+                if persist.add_property(
+                    self.db, paragraph, self.method, material, prop):
+                    p += 1
 
-    propobj.insert(db)
-    return True
+        self.db.commit()
+        self.db.close()
+        log.done("Database new added: {} materials, {} amounts, {} records.",
+                 m, a, p)
+        return p
+

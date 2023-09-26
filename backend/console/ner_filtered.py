@@ -37,6 +37,7 @@ def run(args: ArgumentParser):
 
     runinfo = {
         'user': sett.Run.userName,
+        'method': method.name,
         'filter_name': para_filter_name,
     }
 
@@ -54,7 +55,7 @@ def run(args: ArgumentParser):
         WHERE fp.id > :last AND fp.filter_name = :filter
         ORDER BY fp.id LIMIT :limit
     ) AS ft
-    --Ingore previously processed ones.
+    --Ignore previously processed ones.
     WHERE NOT EXISTS (
         SELECT 1 FROM extracted_materials em
         WHERE em.para_id = ft.para_id
@@ -115,15 +116,12 @@ def run(args: ArgumentParser):
             print(paragraph.text)
 
         try:
-            # pipeline.run(paragraph)
-            breakpoint()
+            pipeline.run(paragraph)
         except Exception as err:
             log.error("Failed to process paragraph {}: {}", row.para_id, err)
-            if sett.Run.debugCount > 0:
-                raise err
+            if sett.Run.debugCount > 0: raise err
         
         last = row.filter_id
-
         if not (n % 50) or n == len(records):
             log.info("Processed {} paragraphs.", n)
 
