@@ -131,13 +131,14 @@ class ExtractionMethods(ORMBase):
     Attributes:
         name:       Name of the extraction method.
 
-        detail:     Additional details/comments about the method.
+        dataset:    Name of the extracted dataset.
 
         model:      Model used for the extraction.
 
         api:        (Optional) API name.
 
-        subset:     (Optional) Filter name of the sub dataset if any.
+        para_subset:
+                    (Optional) Filter name of the sub dataset if any.
 
         info:       (Optional) Additional info about api, model, username etc.
 
@@ -146,10 +147,10 @@ class ExtractionMethods(ORMBase):
     __tablename__ = "extraction_methods"
 
     name : Mapped[str] = mapped_column(Text)
-    detail : Mapped[str] = mapped_column(Text)
+    dataset : Mapped[str] = mapped_column(Text)
     model : Mapped[str] = mapped_column(Text)
     api : Mapped[str] = mapped_column(Text, nullable=True)
-    subset : Mapped[str] = mapped_column(Text, nullable=True)
+    para_subset : Mapped[str] = mapped_column(Text, nullable=True)
     info: Mapped[Dict] = mapped_column(JSON, default={})
 
 
@@ -260,7 +261,6 @@ class ExtractedAmount(ORMBase):
     Table to store the material amount corresponding to an entity if available
 
     Attributes:
-        material_id: Foreign key referencing to material entity
         material_amount
         extraction_info
     '''
@@ -270,7 +270,12 @@ class ExtractedAmount(ORMBase):
     para_id: Mapped[int] = mapped_column(
         ForeignKey("paper_texts.id", ondelete='CASCADE'),
         unique=False, index=True)
-    
+
+    method_id: Mapped[int] = mapped_column(
+        ForeignKey("extraction_methods.id",
+                   ondelete='CASCADE', onupdate='CASCADE'),
+                   unique=False, index=True)
+
     entity_name: Mapped[str] = mapped_column(Text)
     material_amount: Mapped[str] = mapped_column(Text)
     extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
