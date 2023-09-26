@@ -86,8 +86,8 @@ def get_material(db, para_id: int, material_name: str,
         Returns None if not found.
     """
     return orm.ExtractedMaterials().get_one(db, {
-        'para_id': para_id,
         'method_id': method.id,
+        'para_id': para_id,
         'entity_name': material_name
     })
 
@@ -159,8 +159,8 @@ def add_property(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
 
     # check if already exists
     if orm.ExtractedProperties().get_one(db, {
-        'material_id': material.id,
         'method_id': method.id,
+        'material_id': material.id,
         'entity_name': prop.entity_name,
         'numeric_value': numeric_value
     }):
@@ -215,8 +215,9 @@ def add_material_amount(
 
     # check if already exists
     if orm.ExtractedAmount().get_one(db, {
+        'method_id': method.id,
         'para_id': paragraph.id,
-        'entity_name': name
+        'entity_name': name,
     }):
         return False
 
