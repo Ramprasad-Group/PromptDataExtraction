@@ -1,13 +1,14 @@
 import pylogg
 from backend.record_extraction.base_classes import (
-    MaterialMention, PropertyValuePair
+    MaterialMention, PropertyValuePair, MaterialAmount
 )
 from . import orm
 
 log = pylogg.New("persist")
 
+
 def add_crossref(db, para : orm.PaperTexts, name : str, othername : str,
-                   reftype : str) -> bool :
+                 reftype : str) -> bool :
     """ Add a cross reference to the database.
         Returns false if already exists.
     """
@@ -69,6 +70,7 @@ def add_method(db, name : str, dataset : str, model : str,
     db.commit()
     t2.done("New method added: {}", name)
     return True
+
 
 def get_method(db, **kwargs) -> orm.ExtractionMethods:
     """ Return an Extraction Method object using specified column values.
@@ -194,4 +196,35 @@ def add_property(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
         propobj.conditions['measurement'] = prop.condition_str
 
     propobj.insert(db)
+    return True
+
+
+def add_material_amount(
+        db, paragraph: orm.PaperTexts, method : orm.ExtractionMethods,
+        amount: MaterialAmount) -> bool:
+    """ Add an extracted material amount entry to postgres.
+        Check uniqueness based on material id and material entity name.
+
+        Returns true if the row was added to db.
+    """
+    assert type(amount) == MaterialAmount
+
+    name: str = amount.entity_name
+    if not name:
+        return False
+
+    # check if already exists
+    if orm.ExtractedAmount().get_one(db, {
+        'para_id': paragraph.id,
+        'entity_name': name
+    }):
+        return False
+
+    amtobj = orm.ExtractedAmount()
+    amtobj.para_id = paragraph.id
+    amtobj.method_id = method.id
+    amtobj.entity_name = name
+    amtobj.material_amount = amount.material_amount
+
+    amtobj.insert(db)
     return True
