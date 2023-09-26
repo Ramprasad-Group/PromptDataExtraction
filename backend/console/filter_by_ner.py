@@ -87,6 +87,21 @@ def run(args: ArgumentParser):
     WHERE pt.id > :last ORDER BY pt.id LIMIT :limit;
     """
 
+    # # Select 1k
+    # # Query the unprocessed paragraphs from the select-1k papers.
+    # query = """
+    # SELECT pt.id AS para_id FROM paper_texts pt 
+    # JOIN filtered_papers fp ON fp.doi = pt.doi
+    # WHERE fp.filter_name = 'select-1k'
+    # AND pt.id > :last 
+    # AND NOT EXISTS (
+    #     SELECT 1 FROM filtered_paragraphs fp2 
+    #     WHERE fp2.para_id = pt.id
+    #     AND fp2.filter_name = 'ner_filter'
+    # )
+    # ORDER BY pt.id LIMIT :limit;
+    # """
+
     t2 = log.info("Querying list of non-processed paragraphs.")
     records = postgres.raw_sql(query, {'last': last, 'limit': args.limit})
     t2.note("Found {} paragraphs not processed.", len(records))
