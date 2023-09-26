@@ -106,7 +106,10 @@ class EntityList(RecordProcessor):
 
     def delete_entries(self, index_set):
         for index in sorted(index_set, reverse=True):
-            del self.entity_list[index]
+            try:
+                del self.entity_list[index]
+            except:
+                pass
 
     def return_list_dict(self, verbose=False):
         return [item.return_dict(verbose) for item in self.entity_list]
