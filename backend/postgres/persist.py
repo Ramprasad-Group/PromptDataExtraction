@@ -31,6 +31,45 @@ def add_crossref(db, para : orm.PaperTexts, name : str, othername : str,
     return False
 
 
+def add_method(db, name : str, dataset : str, model : str,
+                   api : str = None, para_subset : str = None,
+                   **kwargs) -> bool:
+    """ Add a new method by inserting and committing
+        a new row id to the extraction_methods.
+        
+        db:         PostGres scoped session object.
+        name:       Name of the data extraction method/pipeline.
+        dataset:    Name of the extracted dataset.
+        model:      Model used for data extraction, eg. materials-bert.
+        api:        API used for the data extraction, eg. openai.
+        para_subset:
+                    Name of the paragraph filter (from the filtered_paragraphs)
+                    if any.
+        **kwargs:   Any other additional info, e.g. username etc.
+
+        Returns True if successful, False if name already exists.
+    """
+
+    t2 = log.info(f"New Method. Name: {name}, Dataset: {dataset}, "
+                  f"Model: {model}, API: {api}, Paras: {para_subset}")
+    
+    if get_method(db, name=name):
+        log.error("Method {} already exists.", name)
+        return False
+
+    method = orm.ExtractionMethods()
+    method.name = name
+    method.dataset = dataset
+    method.model = model
+    method.api = api
+    method.para_subset = para_subset
+    method.extraction_info = kwargs
+    
+    method.insert(db)
+    db.commit()
+    t2.done("New method added: {}", name)
+    return True
+
 def get_method(db, **kwargs) -> orm.ExtractionMethods:
     """ Return an Extraction Method object using specified column values.
         Available columns:
