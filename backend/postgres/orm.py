@@ -151,7 +151,7 @@ class ExtractionMethods(ORMBase):
     model : Mapped[str] = mapped_column(Text)
     api : Mapped[str] = mapped_column(Text, nullable=True)
     para_subset : Mapped[str] = mapped_column(Text, nullable=True)
-    info: Mapped[Dict] = mapped_column(JSON, default={})
+    extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
 
 
 class PaperTexts(ORMBase):
