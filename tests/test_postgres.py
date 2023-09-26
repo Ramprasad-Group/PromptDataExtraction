@@ -1,11 +1,18 @@
 # USAGE: pytest tests/test_pipeline.py -s
 
 import pytest
-from backend import postgres, sett
+from backend import postgres
 
 @pytest.fixture
 def db():
-    return postgres.connect('testdb')
+    return postgres.connect('polylet')
+
+@pytest.fixture
+def method(db):
+    from backend.postgres import persist
+    m = persist.get_method(db, name='test')
+    assert m is not None
+    return m
 
 @pytest.fixture
 def material():
@@ -35,19 +42,21 @@ def db_paragraph(db):
     assert paragraph is not None
     return paragraph
 
+
 def test_connection(db):
     assert db is not None
 
 
-def test_add_material(db, material, db_paragraph):
+def test_add_material(db, material, db_paragraph, method):
     from backend.postgres import persist, orm
 
     # try adding new material
-    ret = persist.add_material(db, db_paragraph, {'info': 'test'}, material)
+    ret = persist.add_material(db, db_paragraph, method, material)
     assert ret == True
 
     # check if added
-    ret = persist.get_material(db, db_paragraph.id, material.entity_name)
+    ret = persist.get_material(
+        db, db_paragraph.id, material.entity_name, method)
     assert ret is not None
     assert ret.id is not None
     assert type(ret.id) == int
@@ -70,30 +79,32 @@ def test_add_material(db, material, db_paragraph):
     db.commit()
 
     # check if deleted
-    ret = persist.get_material(db, db_paragraph.id, material.entity_name)
+    ret = persist.get_material(
+        db, db_paragraph.id, material.entity_name, method)
     assert ret is None
 
     db.close()
 
 
-def test_add_property(db, material, prop, db_paragraph):
+def test_add_property(db, material, prop, db_paragraph, method):
     from backend.postgres import persist, orm
     
     # we first need to add the material
-    persist.add_material(db, db_paragraph, {'info': 'test'}, material)
+    persist.add_material(db, db_paragraph, method, material)
 
     conditions = "condition string"
     details = {'detail': 'test'}
 
     # try to add the property
     ret = persist.add_property(
-        db, db_paragraph, {'info': 'test'}, material, prop, conditions, details)
+        db, db_paragraph, method, material, prop, conditions, details)
 
     assert ret == True
     db.commit()
 
     # get the added material
-    mat = persist.get_material(db, db_paragraph.id, material.entity_name)
+    mat = persist.get_material(
+        db, db_paragraph.id, material.entity_name, method)
     assert mat is not None
 
     # get the added property
