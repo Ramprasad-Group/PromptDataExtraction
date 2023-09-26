@@ -10,10 +10,10 @@ log = pylogg.New(ScriptName)
 def add_args(subparsers: _SubParsersAction):
     parser: ArgumentParser = subparsers.add_parser(
         ScriptName,
-        help='Run NER pipeline on the ner-filtered paragraph rows.')
+        help='Run NER pipeline on the filtered paragraph rows.')
     parser.add_argument(
-        "-r", "--runname", default='ner-pipeline',
-        help="Optional name of the run. Default: ner-pipeline")
+        "-m", "--method", required=True,
+        help="Name of the method from the extraction_methods table.")
     parser.add_argument(
         "-l", "--limit", default=100000, type=int,
         help="Number of paragraphs to process. Default: 100000")
@@ -21,48 +21,58 @@ def add_args(subparsers: _SubParsersAction):
 
 def run(args: ArgumentParser):
     from backend import postgres, sett
-    from backend.utils import checkpoint
+    from backend.postgres import checkpoint, persist
+    from backend.record_extraction import bert_model, utils
+    from backend.record_extraction.pipeline import NERPipeline
     from backend.postgres.orm import FilteredParagraphs, PaperTexts
-    from backend.record_extraction import bert_model, pipeline, utils
 
     db = postgres.connect()
 
-    extraction_info = {
-        'method':  'materials-bert',
-        'dataset': 'ner-filter',
-        'runname': args.runname,
-    }
+    method = persist.get_method(db, name=args.method)
+    if method is None:
+        log.critical("No such method defined in DB: {}", args.method)
+        exit(1)
+
+    para_filter_name = method.para_subset
 
     runinfo = {
         'user': sett.Run.userName,
-        'filter_name': 'ner_filter',
+        'filter_name': para_filter_name,
     }
 
     # Last processed row.
     last = checkpoint.get_last(
-        db, args.runname, FilteredParagraphs.__tablename__, runinfo)
+        db, method.name, FilteredParagraphs.__tablename__, runinfo)
     log.info("Last run row ID: {}", last)
 
     query = """
     SELECT * FROM (
         --Get the para ids of the filtered paragraphs.
         SELECT fp.id AS filter_id, pt.id AS para_id
-        FROM filtered_paragraphs fp JOIN paper_texts pt ON fp.para_id = pt.id 
-        WHERE fp.id > :last AND fp.filter_name = 'ner_filter'
+        FROM filtered_paragraphs fp
+        JOIN paper_texts pt ON fp.para_id = pt.id 
+        WHERE fp.id > :last AND fp.filter_name = :filter
         ORDER BY fp.id LIMIT :limit
     ) AS ft
     --Ingore previously processed ones.
     WHERE NOT EXISTS (
         SELECT 1 FROM extracted_materials em
         WHERE em.para_id = ft.para_id
+        AND em.method_id = :mid
     ) AND NOT EXISTS (
         SELECT 1 FROM extracted_material_amounts ema
         WHERE ema.para_id = ft.para_id
+        AND ema.method_id = :mid
     );
     """
 
     t2 = log.info("Querying list of non-processed NER filtered paragraphs.")
-    records = postgres.raw_sql(query, {'last': last, 'limit': args.limit})
+    records = postgres.raw_sql(query, {
+        'filter': para_filter_name,
+        'mid': method.id,
+        'last': last,
+        'limit': args.limit,
+    })
     t2.note("Found {} paragraphs not parsed.", len(records))
 
     if len(records) == 0:
@@ -81,13 +91,15 @@ def run(args: ArgumentParser):
     bert = bert_model.MaterialsBERT()
     bert.init_local_model(
         sett.NERPipeline.model, sett.NERPipeline.pytorch_device)
+    
+    pipeline = NERPipeline(db, method, bert, norm_dataset, prop_metadata)
 
     log.info("Running NER pipeline on filtered paragraphs.")
-    log.info("Extraction info = {}", extraction_info)
+    log.info("Extraction method = {}", method.name)
     log.info("Run info = {}", runinfo)
 
     n = 0
-    # Process each paragraph linked to the curated data.
+    # Process each paragraph.
     for row in tqdm(records):
         n += 1
         if row.filter_id < last:
@@ -103,9 +115,8 @@ def run(args: ArgumentParser):
             print(paragraph.text)
 
         try:
-            pipeline.process_paragraph(
-                db, bert, norm_dataset, prop_metadata,
-                extraction_info, paragraph)
+            # pipeline.run(paragraph)
+            breakpoint()
         except Exception as err:
             log.error("Failed to process paragraph {}: {}", row.para_id, err)
             if sett.Run.debugCount > 0:
@@ -120,4 +131,4 @@ def run(args: ArgumentParser):
     # Store the last processed id.
     log.note("Last processed row ID: {}", last)
     checkpoint.add_new(
-        db, args.runname, FilteredParagraphs.__tablename__, last, runinfo)
+        db, args.method, FilteredParagraphs.__tablename__, last, runinfo)
