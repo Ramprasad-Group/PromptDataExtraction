@@ -146,7 +146,7 @@ class ExtractionMethods(ORMBase):
 
     __tablename__ = "extraction_methods"
 
-    name : Mapped[str] = mapped_column(Text)
+    name : Mapped[str] = mapped_column(Text, unique=True)
     dataset : Mapped[str] = mapped_column(Text)
     model : Mapped[str] = mapped_column(Text)
     api : Mapped[str] = mapped_column(Text, nullable=True)
