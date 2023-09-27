@@ -14,6 +14,15 @@ log = pylogg.New('llm')
 
 Record = namedtuple('Record', ['material', 'property', 'conditions'])
 
+Corefs = {
+    'Tg':   ["glass transition temperature", "Tg"],
+    'bandgap':   ["bandgap", "energy gap", "Eg"],
+    'all':  [
+        "glass transition temperature", "Tg",
+        "bandgap", "energy gap", "Eg"
+    ],
+}
+
 class LLMPipeline:
     def __init__(self, db, namelist_jsonl : str, prop_metadata_file : str,
                  extraction_info : dict, debug : bool = False) -> None:
@@ -25,8 +34,12 @@ class LLMPipeline:
                                                     namelist_jsonl)
         self.property_extractor = PropertyDataExtractor(db, prop_metadata_file)
 
-        self.llm = LLMExtractor(db, self.extraction_info)
-        self.extraction_info['prompt'] = self.llm.get_prompt()
+        property_list = []
+        if extraction_info['specific_property']:
+            property_list = Corefs[extraction_info['specific_property']]
+
+        # dicts are passed by ref. unless dict() is used.
+        self.llm = LLMExtractor(db, self.extraction_info, property_list)
         log.trace("Initialized {}", self.__class__.__name__)
 
     def run(self, paragraph : PaperTexts) -> int:
@@ -50,7 +63,8 @@ class LLMPipeline:
         try:
             t2 = log.trace("Sending paragraph to LLM extractor: {}",
                            paragraph.id)
-            records = self.llm.process_paragraph(paragraph)
+            records, hashstr = self.llm.process_paragraph(paragraph)
+            self.extraction_info['response_hash'] = hashstr
             t2.done("LLM extraction, found {} records.", len(records))
         except Exception as err:
             log.error("Failed to run the LLM extractor: {}", err)
@@ -69,6 +83,7 @@ class LLMPipeline:
                     len(extracted_records))
         except Exception as err:
             log.error("Failed to post-process LLM extracted records: {}", err)
+            log.info("LLM records: {}", records)
             if self.debug: raise err
             return newfound
 
@@ -77,9 +92,8 @@ class LLMPipeline:
 
     def set_shot_selector(self, selector : ShotSelector):
         log.note("Using {} as shot selector.", selector)
-        self.extraction_info['shot_selector'] = str(selector)
         self.llm.shot_selector = selector
-        self.llm.extraction_info = self.extraction_info
+        self.extraction_info['shot_selector'] = str(selector)
 
 
     def _parse_records(self, llm_recs : list) -> list[Record]:

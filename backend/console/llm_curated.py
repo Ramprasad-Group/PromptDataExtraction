@@ -15,6 +15,9 @@ def add_args(subparsers: _SubParsersAction):
         'runname',
         help="Name of the run, e.g., test-llm-pipeline.")
     parser.add_argument(
+        '--prop', default=None,
+        help="Name of the property, e.g., Tg, bandgap.")
+    parser.add_argument(
         '--api', default='polyai',
         choices=['openai', 'polyai'],
         help="API endpoint, openai or polyai. Defaults to polyai.")
@@ -58,14 +61,16 @@ def run(args: ArgumentParser):
         if args.api == 'openai' else sett.LLMPipeline.polyai_model
 
     extraction_info = {
-        'prompt_id': sett.LLMPipeline.prompt,
+        'prompt_id': 1 if args.prop else 0,
         'api': args.api,
         'model': model,
         'temperature': 0.001,
+        'specific_property': args.prop,
         'shots': sett.LLMPipeline.n_shots,
         'shot_sampling': sett.LLMPipeline.shot_sampling,
         'max_api_retries': sett.LLMPipeline.max_api_retries,
         'api_retry_delay': sett.LLMPipeline.api_retry_delay,
+        'api_request_delay': sett.LLMPipeline.api_request_delay,
         'method': 'llm-pipeline',
         'dataset': 'curated',
         'runname': args.runname,
@@ -80,9 +85,13 @@ def run(args: ArgumentParser):
     shot_embeddings_file = os.path.join(sett.Run.directory, "embeddings.json")
 
     if sett.LLMPipeline.shot_sampling == 'random':
-        shotselector = RandomShotSelector(min_records=2)
+        shotselector = RandomShotSelector(
+            min_records=sett.LLMPipeline.min_records_in_curated)
+    
     elif sett.LLMPipeline.shot_sampling == 'diverse':
-        shotselector = DiverseShotSelector(min_records=2)
+        shotselector = DiverseShotSelector(
+            min_records=sett.LLMPipeline.min_records_in_curated)
+    
     else:
         log.critical("Invalid shot_sampling: {}", sett.LLMPipeline.shot_sampling)
         raise ValueError("Invalid shot sampling.")

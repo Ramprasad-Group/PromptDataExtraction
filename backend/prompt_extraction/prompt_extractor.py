@@ -3,6 +3,7 @@ import json
 import random
 import openai
 import pylogg
+import hashlib
 
 try:
     import polyai.api as polyai
@@ -19,9 +20,11 @@ log = pylogg.New('llm')
 class LLMExtractor:
     PROMPTS = [
         "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
+        "Extract all {property} values in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
     ]
 
     def __init__(self, db, extraction_info : dict,
+                 property_corefs : list[str] = [],
                  debug : bool = False) -> None:
 
         self.db = db    # postgres db session handle.
@@ -33,37 +36,48 @@ class LLMExtractor:
         # The extraction_info will be saved to database as well.
         # These helps us have a single source of truth.
         self.extraction_info = extraction_info
-        self.prompt_id = self._get_param('prompt_id', False, 0)
+        prompt_id = self._get_param('prompt_id', False, 0)
+        self.prompt = self.PROMPTS[prompt_id]
+
+        if property_corefs:
+            property_str = ", ".join(property_corefs)
+            self.prompt = self.prompt.format(property=property_str)
+
+        self.extraction_info['prompt'] = self.prompt
+        log.note("Using Prompt: {}", self.prompt)
+
         self.api = self._get_param('api', True)
         self.max_api_retries = self._get_param('max_api_retries', False, 1)
         self.api_retry_delay = self._get_param('api_retry_delay', False, 2)
+        self.api_request_delay = self._get_param('api_request_delay', False, 0)
         self.user = self._get_param('user', True)
         self.model = self._get_param('model', True)
         self.temperature = self._get_param('temperature', False, 0.001)
         self.shots = self._get_param('shots', False, 0)
         log.trace("Initialized {}", self.__class__.__name__)
 
-    def process_paragraph(self, para : PaperTexts) -> list[dict]:
+    def process_paragraph(self, para : PaperTexts) -> tuple[list[dict], str]:
         """ Run the steps to send request to LLM, get response and parse the
             output.
 
             para:   The reference paragraph which will be processed.
 
-            Returns [{material: '', property: '', value: ''}]
+            Returns (
+                [{material: '', property: '', value: ''}],
+                Response hash for the api request.
+            )
+
         """
         text = self._preprocess_text(para.text)
         prompt = self._add_prompt(text)
         messages = self._get_example_messages(text)
-        response = self._ask_llm(para, prompt, messages)
+        response, resp_hash = self._ask_llm(para, prompt, messages)
 
         if response is None:
             return []
 
         data = self._extract_data(response)
-        return data
-    
-    def get_prompt(self) -> str:
-        return self.PROMPTS[self.prompt_id]
+        return data, resp_hash
     
     def _get_param(self, name : str, required : bool, default = None):
         """ Returns the value of a parameter or it's default.
@@ -81,8 +95,7 @@ class LLMExtractor:
         return text
     
     def _add_prompt(self, text : str) -> str:
-        prompt = self.PROMPTS[self.prompt_id]
-        return f"{text}\n\n{prompt}"
+        return f"{text}\n\n{self.prompt}"
 
     def _get_example_messages(self, text : str) -> list[dict]:
         records = []
@@ -103,7 +116,7 @@ class LLMExtractor:
         return messages
     
     def _ask_llm(self, para : PaperTexts, prompt : str,
-                 messages : dict) -> dict:
+                 messages : dict) -> tuple[dict, str]:
         """ Try to get a response from the API by making repeated requests
             until successful.
         """
@@ -116,6 +129,7 @@ class LLMExtractor:
         reqinfo.request = prompt
         reqinfo.response = None
         reqinfo.response_obj = None
+        reqinfo.response_hash = None
 
         reqinfo.details = {}
         reqinfo.details['n_shots'] = len(messages) // 2
@@ -125,7 +139,7 @@ class LLMExtractor:
         reqinfo.request_obj = messages
 
         # Make request.
-        delay = self.api_retry_delay
+        retry_delay = self.api_retry_delay
         exponential_base = 2
         jitter = 0.1
 
@@ -138,6 +152,7 @@ class LLMExtractor:
 
             try:
                 output = self._make_request(messages)
+                time.sleep(self.api_request_delay)
                 break
             except Exception as err:
                 log.warn("API request error: {}", err)
@@ -147,11 +162,13 @@ class LLMExtractor:
 
                 reqinfo.status = 'error'
 
-                # Increment the delay
-                delay *= exponential_base * (1 + jitter * random.random())
+                # Increment the retry_delay
+                retry_delay *= exponential_base * (1 + jitter * random.random())
+
                 # Wait
-                log.info("Waiting for {:.2f} seconds ...", delay)
-                time.sleep(delay)
+                log.info("Waiting for {:.2f} seconds ...", retry_delay)
+                time.sleep(retry_delay)
+
 
         reqinfo.details['retries'] = retry
 
@@ -178,10 +195,19 @@ class LLMExtractor:
                 log.error("Failed to parse API output: {}", err)
                 reqinfo.status = 'output parse error'
 
+        # Calculate response hash
+        if reqinfo.response:
+            hashstr = hashlib.sha256(
+                reqinfo.response.encode('utf-8')).hexdigest()
+            reqinfo.response_hash = hashstr
+
         # Store response info.
         reqinfo.insert(self.db)
+
+        # Commit
         reqinfo.commit(self.db)
-        return output
+
+        return output, reqinfo.response_hash
     
     def _make_request(self, messages : list[dict]) -> dict:
         """ Send the request to the specified API endpoint. """

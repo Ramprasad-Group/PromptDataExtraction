@@ -124,6 +124,35 @@ class TableCursor(ORMBase):
         super().__init__(**kwargs)
 
 
+class ExtractionMethods(ORMBase):
+    """
+    Postgres table to keep track of methods used to extract data.
+
+    Attributes:
+        name:       Name of the extraction method.
+
+        dataset:    Name of the extracted dataset.
+
+        model:      Model used for the extraction.
+
+        api:        (Optional) API name.
+
+        para_subset:
+                    (Optional) Filter name of the sub dataset if any.
+
+        info:       (Optional) Additional info about api, model, username etc.
+
+    """
+
+    __tablename__ = "extraction_methods"
+
+    name : Mapped[str] = mapped_column(Text)
+    dataset : Mapped[str] = mapped_column(Text)
+    model : Mapped[str] = mapped_column(Text)
+    api : Mapped[str] = mapped_column(Text, nullable=True)
+    para_subset : Mapped[str] = mapped_column(Text, nullable=True)
+    extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
+
 
 class PaperTexts(ORMBase):
     """
@@ -214,6 +243,11 @@ class ExtractedMaterials(ORMBase):
         ForeignKey("paper_texts.id", ondelete='CASCADE'),
         unique=False, index=True)
     
+    method_id: Mapped[int] = mapped_column(
+        ForeignKey("extraction_methods.id",
+                   ondelete='CASCADE', onupdate='CASCADE'),
+                   unique=False, index=True)
+
     entity_name: Mapped[str] = mapped_column(Text)
     material_class: Mapped[str] = mapped_column(Text)
     polymer_type: Mapped[str] = mapped_column(Text)
@@ -232,7 +266,6 @@ class ExtractedAmount(ORMBase):
     Table to store the material amount corresponding to an entity if available
 
     Attributes:
-        material_id: Foreign key referencing to material entity
         material_amount
         extraction_info
     '''
@@ -242,7 +275,12 @@ class ExtractedAmount(ORMBase):
     para_id: Mapped[int] = mapped_column(
         ForeignKey("paper_texts.id", ondelete='CASCADE'),
         unique=False, index=True)
-    
+
+    method_id: Mapped[int] = mapped_column(
+        ForeignKey("extraction_methods.id",
+                   ondelete='CASCADE', onupdate='CASCADE'),
+                   unique=False, index=True)
+
     entity_name: Mapped[str] = mapped_column(Text)
     material_amount: Mapped[str] = mapped_column(Text)
     extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
@@ -275,6 +313,12 @@ class ExtractedProperties(ORMBase):
     material_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("extracted_materials.id"), nullable= False
     )
+
+    method_id: Mapped[int] = mapped_column(
+        ForeignKey("extraction_methods.id",
+                   ondelete='CASCADE', onupdate='CASCADE'),
+                   unique=False, index=True)
+
     entity_name: Mapped[str] = mapped_column(Text)
     value: Mapped[str] = mapped_column(Text)
     coreferents: Mapped[List[str]] = mapped_column(ARRAY(String))
@@ -445,6 +489,9 @@ class APIRequests(ORMBase):
         response_tokens:
                     Cost or the number of tokens used for response / cost. (int)
 
+        response_hash:
+                    SHA256 HASH of the response for reference purposes.
+
     """
 
     __tablename__ = "api_requests"
@@ -463,6 +510,7 @@ class APIRequests(ORMBase):
     response_obj: Mapped[Dict] = mapped_column(JSON, nullable=True)
     request_tokens: Mapped[int] = mapped_column(Integer, nullable=True)
     response_tokens: Mapped[int] = mapped_column(Integer, nullable=True)
+    response_hash : Mapped[str] = mapped_column(Text, index=True, nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -489,6 +537,9 @@ class CuratedData(ORMBase):
 
         material_coreferents:
                     List of material other names.
+
+        conditions:
+                    Measurement or environment conditions about the data.
 
     """
 

@@ -3,6 +3,7 @@ matplotlib
 pyyaml
 python-dotenv
 pylogg @ git+https://github.com/akhlakm/python-logg.git
+pytest
 
 # -------------- FRONTEND ----------------
 streamlit
@@ -15,3 +16,4 @@ sqlalchemy >= 2.0
 tqdm
 openpyxl
 ChemDataExtractor @ git+https://github.com/akhlakm/ChemDataExtractor.git
+argcomplete

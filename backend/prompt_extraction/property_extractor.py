@@ -1,37 +1,33 @@
 """ Extract property value pairs and post process them to obtain a single property record """
+
 import re
 import pylogg
 from backend.record_extraction import utils
 from backend.postgres.orm import PropertyMetadata
 from backend.record_extraction.base_classes import PropertyValuePair
 
-
 log = pylogg.New('llm')
 
 ADDITIONAL_UNITS = [
     # Order matters. Keep the longer ones first.
     "° C", "°C", " ° C", " °C", " S cm^{-1}",
-    " Pa s", " mPa s", " MPa",
+    " Pa s", " mPa s", " MPa", " GPa",
     " cm²/s", " mm^{2}/s",
     " vol %", " mol %", " wt %", " %", " K", " kcal mol^{-1}",
-    " nm^3", " nm",
+    " nm^{3}", " nm^{2}", " nm^2", "nm^3", " nm", " Å",
     " kg mol^{-1}", " g mol^{-1}", " g/mol", " g mol^-1", " g/m^2/day",
-    " mmol/g", " dL/g", " g/dL", " mg mL^{-1}",
+    " mmol/g", " dL/g", " dl/g", " g/dL", " mg mL^{-1}",
     " erg/cm^2", " g/cm^3", " m^2/g", " cm^{3} g^{-1}",
     " kJ mol^{-1}", " kcal mol^{-1}", " J g^{-1}", 
-    " cd A^{-1}", 
+    " Ω cm^{2}", " cd A^{-1}", 
+    " dB", " h^{-1}", 
 ]
 
 
-REGEX_MATCHES = {
-    "for-and-for": (
-        r"(\d+.+)\sfor\s.+and\s(.+\d+.+)\sfor\s",
-    )
-}
-
-
 class PropertyDataExtractor:
-    RE_NUMBER = r'[+-]?\d+[.]?\d*(?:\s?±\s?\d+[.]?\d*)?(?:x10\^{[-]?\d*})?'
+    RE_NUMBER = r'[+-]?\d+[.]?\d*(?:\s?[±(+\-\/)]\s?\d+[.]?\d*)?(?:x10\^{[-]?\d*})?'
+    RE_PREF_NUMBER = r'^[+-]?\d+[.]?\d*(?:\s?[±(+\-\/)]\s?\d+[.]?\d*)?(?:\sx\s?10\^{?[-]?\d*}?)?[\s$]'
+    RE_MIDDLE_NUMBER = r'\s[+-]?\d+[.]?\d*(?:\s?[±(+\-\/)]\s?\d+[.]?\d*)?(?:\sx\s?10\^{?[-]?\d*}?)?[\s$]'
     RE_EXP = r'10\^{[-]?\d*}'
     RE_EXP_UNIT = r'([a-zA-Z]+\^{[-]?\d*})'
     property_value_descriptor_list = [
@@ -69,7 +65,7 @@ class PropertyDataExtractor:
 
         if not value or not name:
             return
-
+        
         # for and for
         match = re.search(r"(.*\d+.+)\sfor\s(.+)\sand\s(.*\d+.+)\sfor\s(.+)",
                           value)
@@ -78,13 +74,76 @@ class PropertyDataExtractor:
             prop.condition_str = f"avg for {match.group(2)} and {match.group(4)}"
             return
 
+        # at and at
+        match = re.search(r"(.*\d+.+)\sat\s(.+)\sand\s(.*\d+.+)\sat\s(.+)",
+                          value)
+        if match:
+            self._parse_double_values(prop, match.group(1), match.group(3))
+            prop.condition_str = f"avg at {match.group(2)} and {match.group(4)}"
+            return
+
+        # in and in
+        match = re.search(r"(.*\d+.+)\sin\s(.+)\sand\s(.*\d+.+)\sin\s(.+)",
+                          value)
+        if match:
+            self._parse_double_values(prop, match.group(1), match.group(3))
+            prop.condition_str = f"avg in {match.group(2)} and {match.group(4)}"
+            return
+
+        # by and by
+        match = re.search(r"(.*\d+.+)\sby\s(.+)\sand\s(.*\d+.+)\sby\s(.+)",
+                          value)
+        if match:
+            self._parse_double_values(prop, match.group(1), match.group(3))
+            prop.condition_str = f"avg by {match.group(2)} and {match.group(4)}"
+            return
+
+        # at 
+        match = re.search(r"(.*\d+.+)\sat\s(.+)$", value)
+        if match:
+            self._parse_single_value(prop, match.group(1))
+            prop.condition_str = f"at {match.group(2)}"
+            return
+
+        # in
+        match = re.search(r"(.*\d+.+)\sin\s(.+)$", value)
+        if match:
+            self._parse_single_value(prop, match.group(1))
+            prop.condition_str = f"in {match.group(2)}"
+            return
+
+        # by
+        match = re.search(r"(.*\d+.+)\sby\s(.+)$", value)
+        if match:
+            self._parse_single_value(prop, match.group(1))
+            prop.condition_str = f"by {match.group(2)}"
+            return
+
+        # Remove any bracketed values
+        prop.property_value = re.sub(r'\s\(.+?\)', "", prop.property_value)
+
+        # Get the first one from comma seperated multiple values
+        prop.property_value = re.split(r', ', prop.property_value)[0]
+
         # Fallback to original NER type parsing.
         return self._process_entity_ner(prop)
 
 
+    def _parse_single_value(self, prop : PropertyValuePair, val : str):
+        """ Parse number, error and unit parts from a property value string. """
+        n1, u1, e1 = self._parse_num_unit(val)
+        prop.property_numeric_value = None
+        if n1 is not None:
+            prop.property_numeric_value = n1
+        if e1 is not None:
+            prop.property_numeric_error = e1
+        if u1:
+            prop.property_unit = u1
+
+
     def _parse_double_values(self, prop : PropertyValuePair,
                              val1 : str, val2 : str):
-        """ Parse and set the average number, error and unit
+        """ Parse and set the average number, error and unit parts
         from two property value strings. """
         n1, u1, e1 = self._parse_num_unit(val1)
         n2, u2, e2 = self._parse_num_unit(val2)
@@ -93,7 +152,7 @@ class PropertyDataExtractor:
         if n1 is not None:
             prop.property_numeric_value = n1
 
-        if n2 is not None:
+        if n1 is not None and n2 is not None:
             prop.property_numeric_value += n2
             prop.property_numeric_value /= 2
             prop.property_value_avg = True
@@ -113,10 +172,23 @@ class PropertyDataExtractor:
         """ Given a value string with single number, try to parse
             the number, error and unit.
         """
+        # log.debug("Parsing number and units: {}", value)
         num, err, unit = None, None, None
-        unit = self._get_unit(value)
-        if unit:
-            value = value.rstrip(unit)
+
+        # Get the number part
+        match = re.search(self.RE_NUMBER, value)
+        if not match:
+            return num, err, unit
+        else:
+            trailing = value[match.span()[1]:].rstrip()
+            value = match.group()
+
+        # Normalize double numbers
+        value = re.sub(r'(\d)-(\d)', '\\1 - \\2', value)
+        value = re.sub(r'(\d) (\d)', '\\1\\2', value)
+        value = re.sub(r'(\d),(\d)', '\\1\\2', value)
+        value = re.sub(r'(\d),(\d),(\d)', '\\1\\2\\3', value)
+        value = re.sub(r'(\d) x (\d)', '\\1x\\2', value)
 
         if '±' in value:
             values = value.split('±')
@@ -131,15 +203,30 @@ class PropertyDataExtractor:
                 num = self._get_numeric(value)
             except:
                 num = None
+
+        # Try to detect the unit
+        if num is not None:
+            unit = self._get_unit(trailing)
+
+        if unit is None:
+            if trailing in self.unitlist:
+                unit = trailing
+            else:
+                words = trailing.split()
+                for i in range(1, len(words)):
+                    unit_candidate = " ".join(words[:-i])
+                    if unit_candidate in self.unitlist:
+                        unit = unit_candidate
+
         return num, unit, err
 
     def _get_unit(self, text : str) -> str | None:
         # Match against the list of known units
         for item in self.unitlist:
             if text.endswith(item):
-                return item
+                return item.strip()
+        
         return None
-
 
     def _process_entity_ner(self, prop : PropertyValuePair):
         property_value = prop.property_value
@@ -223,7 +310,7 @@ class PropertyDataExtractor:
         # Match against the list of known units
         for item in self.unitlist:
             if property_value.endswith(item):
-                prop.property_unit = item
+                prop.property_unit = item.strip()
                 return
 
         unit = ''
@@ -295,7 +382,12 @@ class PropertyDataExtractor:
 
     def _get_numeric(self, value : str) -> float:
         """ Convert string to float. Handle scientific notations. """
-        if '^{' in value and '}' in value and 'x' in value:
+        # log.debug("Converting to numeric: {}", value)
+        if " - " in value:
+            v = sum([self._get_numeric(x.strip()) for x in value.split(" - ")])
+            v /= value.count(" - ") + 1
+            return v
+        elif '^{' in value and '}' in value and 'x' in value:
             mantissa, exponent = value.split('x')[0].strip(), value.split(
                 'x')[1].strip().replace('10^{', '').replace('}', '')
             numeric_value = float(mantissa)*10**(float(exponent))
@@ -304,6 +396,19 @@ class PropertyDataExtractor:
             exponent = value.strip().replace('10^{', '').replace('}', '')
             numeric_value = 10**(float(exponent))
             return numeric_value
+        elif "x" in value and "10^" in value:
+            mantissa, exponent = value.split('x')[0].strip(), value.split(
+                'x')[1].strip().replace('10^', '')
+            numeric_value = float(mantissa)*10**(float(exponent))
+            return numeric_value
+        elif "/" in value:
+            xs = value.split("/")
+            return float(xs[0].strip()) / float(xs[1].strip())
+        elif " + " in value:
+            return sum([
+                self._get_numeric(x.strip()) for x in value.split(" + ")])
+        elif " " in value:
+            return None
         else:
             return float(value)
 

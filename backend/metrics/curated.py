@@ -225,7 +225,9 @@ def _property_match(val0 : str, val1 : str):
 
         # fuzzy match
         val1 in val0,
-        val0 in val1
+        val0 in val1,
+        val1 in val0.split(),
+        val0 in val1.split(),
     ]
     return any(criteria)
 
@@ -257,6 +259,10 @@ def _material_match(
 def _norm_value(val : str):
     val = val.lower()
     val = val.strip()
+    val = val.replace(" ± ", "±")
+    val = val.replace(" +/- ", "±")
+    val = val.replace(" +/-", "±")
+    val = val.replace("+/-", "±")
     val = val.replace(" ", '')
     val = val.replace('° C', '°C') # NER
     return val
