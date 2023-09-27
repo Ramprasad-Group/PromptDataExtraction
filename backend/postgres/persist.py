@@ -225,7 +225,7 @@ def add_material_amount(
     amtobj.material_amount = amount.material_amount
 
     amtobj.insert(db)
-    return amtid.id
+    return amtobj.id
 
 
 def add_crossref(db, para : orm.PaperTexts, name : str, othername : str,
