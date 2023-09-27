@@ -18,6 +18,12 @@ class Operation:
             raise ValueError("table must be a child of DeclarativeBase")
         self.table : DeclarativeBase = table
 
+    def exists(self, session, criteria = {}, **kwargs) -> DeclarativeBase:
+        """ Get the ID of the first element from current table using
+            a criteria. Returns None if not found. """
+        criteria.update(kwargs)
+        return get_id(self, session, criteria)
+
     def get_one(self, session, criteria = {}) -> DeclarativeBase:
         """ Get the first row using a criteria ."""
         return first_row(self.table, session, criteria)
@@ -69,6 +75,9 @@ def serialize(tbl):
         res[attr] = val
     return res
 
+def get_id(tbl, sess, criteria):
+    """ Get the ID of the first element from a table using a criteria ."""
+    return sess.query(tbl.__class__.id).filter_by(**criteria).first()
 
 def first_row(tbl, sess, criteria):
     """ Get the first element from a table using a criteria ."""

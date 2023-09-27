@@ -30,6 +30,12 @@ class ORMBase(DeclarativeBase):
 
     def serialize(self):
         return ops.serialize(self)
+    
+    def exists(self, session, criteria = {}, **kwargs) -> 'ORMBase':
+        """ Get the ID of the first element from current table using
+            a criteria. Returns None if not found. """
+        criteria.update(kwargs)
+        return ops.get_id(self, session, criteria)
 
     def get_one(self, session, criteria = {}) -> 'ORMBase':
         """ Get the first element from current table using a criteria ."""
