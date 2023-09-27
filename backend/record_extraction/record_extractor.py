@@ -82,7 +82,7 @@ class RelationExtraction:
                 material_record['one-to-many'] = False
 
             else:
-                print("-- No associated material found for the property. Adding all.")
+                # print("-- No associated material found for the property. Adding all.")
                 material_record['one-to-many'] = True
                 material_record['material_name'] = self.material_entity_processor.material_mentions
                 material_record['material_amount'] = self.mat_amount_processor.material_amounts
