@@ -36,11 +36,11 @@ class NERPipeline:
         # monomers = ner_output.get("monomers", [])
 
         records = ner_output.get("material_records", [])
-        log.info("Found {} records.", len(records))
+        log.info("Paragraph {}, found {} records.", paragraph.id, len(records))
 
         newfound = self._save_records(paragraph, records)
-        t2.done("Paragraph {} processed: {} records.",
-                paragraph.id, len(records))
+        t2.done("Paragraph {} saved to DB: {} records.", paragraph.id,
+                len(records))
         
         return newfound
 
