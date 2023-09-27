@@ -47,14 +47,13 @@ def run(args: ArgumentParser):
     log.info("Last run row ID: {}", last)
 
     query = """
+    --Get the para ids of the filtered paragraphs.
     SELECT * FROM (
-        --Get the para ids of the filtered paragraphs.
-        SELECT fp.id AS filter_id, pt.id AS para_id
-        FROM filtered_paragraphs fp
-        JOIN paper_texts pt ON fp.para_id = pt.id 
+        SELECT fp.id AS filter_id, fp.para_id FROM filtered_paragraphs fp
         WHERE fp.id > :last AND fp.filter_name = :filter
         ORDER BY fp.id LIMIT :limit
     ) AS ft
+
     --Ignore previously processed ones.
     WHERE NOT EXISTS (
         SELECT 1 FROM extracted_materials em
@@ -93,6 +92,7 @@ def run(args: ArgumentParser):
     bert.init_local_model(
         sett.NERPipeline.model, sett.NERPipeline.pytorch_device)
     
+    # Initialize the pipeline.
     pipeline = NERPipeline(db, method, bert, norm_dataset, prop_metadata)
 
     log.info("Running NER pipeline on filtered paragraphs.")
