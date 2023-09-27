@@ -78,7 +78,7 @@ def serialize(tbl):
 def get_id(tbl, sess, criteria):
     """ Get the ID of the first element from a table using a criteria ."""
     row = sess.query(tbl.__class__.id).filter_by(**criteria).first()
-    return row if row is None else row[0]
+    return None if row is None else row[0]
 
 def first_row(tbl, sess, criteria):
     """ Get the first element from a table using a criteria ."""
