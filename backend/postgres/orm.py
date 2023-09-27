@@ -146,7 +146,7 @@ class ExtractionMethods(ORMBase):
 
     __tablename__ = "extraction_methods"
 
-    name : Mapped[str] = mapped_column(Text)
+    name : Mapped[str] = mapped_column(Text, unique=True)
     dataset : Mapped[str] = mapped_column(Text)
     model : Mapped[str] = mapped_column(Text)
     api : Mapped[str] = mapped_column(Text, nullable=True)
@@ -329,6 +329,34 @@ class ExtractedProperties(ORMBase):
     unit: Mapped[str]= mapped_column(Text, nullable=True)
     conditions: Mapped[Dict] = mapped_column(JSON, default={})
     extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class RelMaterialProperties(ORMBase):
+    '''
+    Table to store many-to-many relationships of materials and 
+    properties. This is necessary because the NER pipeline can provide
+    multiple materials for the same properties and vice-versa.
+
+    Attributes:
+        material_id: Foreign key referencing material entity.
+        property_id: Foreign key referencing property entity.
+    '''
+    __tablename__ = "rel_material_properties"
+
+    material_id: Mapped[int] = mapped_column(
+        ForeignKey("extracted_materials.id", ondelete='CASCADE',
+                   onupdate='CASCADE'), unique=False, index=True)
+
+    property_id: Mapped[int] = mapped_column(
+        ForeignKey("extracted_properties.id", ondelete='CASCADE',
+                   onupdate='CASCADE'), unique=False, index=True)
+
+    method_id: Mapped[int] = mapped_column(
+        ForeignKey("extraction_methods.id", ondelete='CASCADE',
+                   onupdate='CASCADE'), unique=False, index=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

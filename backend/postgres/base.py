@@ -20,8 +20,22 @@ class ORMBase(DeclarativeBase):
         if self.date_added is None:
             self.date_added = datetime.now()
 
+    def __repr__(self) -> str:
+        ret = "\n" + self.__class__.__name__.split("(")[0] + "("
+        ret += ", ".join([
+            f"{k}={v}" for k, v in self.__dict__.items() 
+            if not k.startswith("_")
+        ])
+        return ret + "\n)"
+
     def serialize(self):
         return ops.serialize(self)
+    
+    def exists(self, session, criteria = {}, **kwargs) -> 'ORMBase':
+        """ Get the ID of the first element from current table using
+            a criteria. Returns None if not found. """
+        kwargs.update(dict(criteria))
+        return ops.get_id(self, session, kwargs)
 
     def get_one(self, session, criteria = {}) -> 'ORMBase':
         """ Get the first element from current table using a criteria ."""

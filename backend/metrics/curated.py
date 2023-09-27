@@ -1,13 +1,16 @@
 import pylogg as log
 from tqdm import tqdm
 from sqlalchemy import text
+from backend import postgres
 from backend.postgres.orm import (
-    PaperTexts, CuratedData, ExtractedMaterials, ExtractedProperties
+    PaperTexts, CuratedData, ExtractedMaterials, ExtractedProperties,
+    ExtractionMethods
 )
 
 
-def compute_metrics(db, property_names : list[str], extraction_method : str,
-                    runname : str):
+def compute_metrics(
+        db, property_names : list[str], method : ExtractionMethods) -> dict:
+
     tp_mat = 0
     fp_mat = 0
     fn_mat = 0
@@ -18,33 +21,38 @@ def compute_metrics(db, property_names : list[str], extraction_method : str,
     fp_prop = 0
     fn_prop = 0
 
-    para_ids = [
-        r.para_id for r in db.query(CuratedData.para_id).distinct()
-    ]
-    log.info("Total {} paragraphs found from curated data.", len(para_ids))
+    log.note("Filtering data only for method = {}", method.name)
 
+    # Select the curated paragraph that are also in the same method.
+    query = """
+        SELECT DISTINCT(cd.para_id) FROM curated_data cd
+        JOIN filtered_paragraphs fp ON fp.para_id = cd.para_id 
+        WHERE fp.filter_name = :filter;
+    """
+    items = postgres.raw_sql(query, filter=method.para_subset)
 
-    for id in tqdm(para_ids):
-        para = PaperTexts().get_one(db, {'id': id})
+    log.note("Total {} paragraphs found from curated data.", len(items))
 
-        t2 = log.trace("Processing paragraph: {}", para.id)
+    n_ex_mat = 0
+    n_ex_prop = 0
+    n_curated = 0
+
+    for item in tqdm(items):
+        t2 = log.info("Processing paragraph: {}", item.para_id)
+        para = PaperTexts().get_one(db, {'id': item.para_id})
 
         curated_rows : list[CuratedData] = CuratedData().get_all(db, {
-            'para_id': id
+            'para_id':  item.para_id
         })
 
-        log.trace("Curated records: {}", len(curated_rows))
+        log.info("Curated records: {}", len(curated_rows))
 
         ex_materials : list[ExtractedMaterials] = \
             db.query(ExtractedMaterials).filter(text(
-                "para_id = :para_id "
-                "and extraction_info->>'method' = :method "
-                "and extraction_info->>'runname' = :name "
-                "and extraction_info->>'dataset' = 'curated'"
+                "para_id = :para_id and method_id = :method_id"
             )).params(
-                para_id = id,
-                method = extraction_method,
-                name = runname
+                method_id = method.id,
+                para_id = item.para_id,
             ).all()
 
 
@@ -52,6 +60,7 @@ def compute_metrics(db, property_names : list[str], extraction_method : str,
 
         # Iterate over the curated/ground truth data.
         for cure in curated_rows:
+            n_curated += 1
             val0 = cure.property_value
             if cure.property_name not in property_names:
                 continue
@@ -65,14 +74,11 @@ def compute_metrics(db, property_names : list[str], extraction_method : str,
 
                 ex_props : list[ExtractedProperties] = \
                     db.query(ExtractedProperties).filter(text(
-                        "material_id = :material_id "
-                        "and extraction_info->>'method' = :method "
-                        "and extraction_info->>'runname' = :name "
-                        "and extraction_info->>'dataset' = 'curated'"
+                        "method_id = :method_id "
+                        "and material_id = :material_id"
                     )).params(
+                        method_id = method.id,
                         material_id = material.id,
-                        method = extraction_method,
-                        name = runname
                     ).all()
 
                 # Check the extracted properties against the curated one.
@@ -112,7 +118,9 @@ def compute_metrics(db, property_names : list[str], extraction_method : str,
 
 
         # Iterate over the extracted data
+
         for material in ex_materials:
+            n_ex_mat += 1
             # Check the curated materials against the extracted one.
             material_found = False
             for cure in curated_rows:
@@ -129,17 +137,15 @@ def compute_metrics(db, property_names : list[str], extraction_method : str,
            
             ex_props : list[ExtractedProperties] = \
                 db.query(ExtractedProperties).filter(text(
-                    "material_id = :material_id "
-                    "and extraction_info->>'method' = :method "
-                    "and extraction_info->>'runname' = :name "
-                    "and extraction_info->>'dataset' = 'curated'"
+                    "method_id = :method_id "
+                    "and material_id = :material_id"
                 )).params(
+                    method_id = method.id,
                     material_id = material.id,
-                    method = extraction_method,
-                    name = runname
                 ).all()
 
             for prop in ex_props:
+                n_ex_prop += 1
                 val1 = prop.value
 
                 prop1 = prop.entity_name
@@ -169,11 +175,16 @@ def compute_metrics(db, property_names : list[str], extraction_method : str,
 
     db.close()
 
+    log.note("Total curated properties: {}", n_curated)
+    log.note("Total extracted materials: {}, properties: {}",
+             n_ex_mat, n_ex_prop)
+
     mat_scores = _calc_scores(tp_mat, fp_mat, fn_mat)
     val_scores = _calc_scores(tp_val, fp_val, fn_val)
     prop_scores = _calc_scores(tp_prop, fp_prop, fn_prop)
 
     return {
+        'method': method.name,
         'material': mat_scores,
         'value': val_scores,
         'property': prop_scores
