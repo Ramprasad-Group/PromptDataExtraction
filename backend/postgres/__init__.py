@@ -82,7 +82,7 @@ def engine():
     return ENG
 
 
-def raw_sql(query : str, params = {}) -> list[namedtuple]:
+def raw_sql(query : str, params : dict = {}, **kwargs) -> list[namedtuple]:
     """
         Execute a raw sql query on the database.
         
@@ -90,6 +90,7 @@ def raw_sql(query : str, params = {}) -> list[namedtuple]:
 
         Returns a list of rows.
     """
+    params.update(kwargs)
     sess = session()
     results = sess.execute(sa.text(query), params)
     sess.close()
