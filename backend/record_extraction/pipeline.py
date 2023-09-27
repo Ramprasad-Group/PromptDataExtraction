@@ -9,9 +9,8 @@ log = pylogg.New('ner')
 class NERPipeline:
     def __init__(self, db, method : ExtractionMethods,
                  bert : bert_model.MaterialsBERT, nendata_json : str,
-                 prop_metadata_file : str, debug : bool = False) -> None:
+                 prop_metadata_file : str) -> None:
         self.db = db
-        self.debug = debug
         self.method = method
         self.bert = bert
         self.norm_dataset = nendata_json
@@ -60,7 +59,7 @@ class NERPipeline:
         return output_para
 
 
-    def _get_material_list(self, items) -> list:
+    def _get_material_list(self, items) -> list[base_classes.MaterialMention]:
         """ Normalize the return data of the NER pipeline. """
         if items is None:
             return []
@@ -72,7 +71,7 @@ class NERPipeline:
             return [i for i in items.entity_list]
 
 
-    def _get_amount_list(self, items) -> list:
+    def _get_amount_list(self, items) -> list[base_classes.MaterialAmount]:
         """ Normalize the return data of the NER pipeline. """
         if items is None:
             return []
@@ -85,38 +84,62 @@ class NERPipeline:
 
 
     def _save_records(self, paragraph : PaperTexts, records : list) -> int:
-        m, p, a = 0, 0, 0
+        m, p, a, r = 0, 0, 0, 0
 
-        # Insert the materials first.
+        # Insert the items first.
         for rec in records:
-            materials_list = self._get_material_list(rec.get('material_name'))
-            for material in materials_list:
-                if persist.add_material(
-                    self.db, paragraph, self.method, material):
-                    m += 1
-
-        for rec in records:
-            materials_list = self._get_material_list(rec.get('material_name'))
+            # Insert the amounts.
             amount_list = self._get_amount_list(rec.get('material_amount'))
-
             for amount in amount_list:
+                if not amount.entity_name:
+                    continue
                 if persist.add_material_amount(
                     self.db, paragraph, self.method, amount):
                     a += 1
 
-            # dict
+            # Insert the materials, store their IDs in a map.
+            matids = {}
+            materials_list = self._get_material_list(rec.get('material_name'))
+
+            # Get rid of the ones with empty name.
+            materials_list = [m for m in materials_list if m.entity_name]
+
+            # Empty list of materials.
+            if not materials_list:
+                continue
+
+            for material in materials_list:
+                matid = persist.add_material(self.db, paragraph, self.method,
+                                             material)
+                if matid:
+                    matids[material.entity_name] = matid
+                    m += 1
+
+
             prop = rec.get('property_record', {})
 
-            # Generally we expect to have only one material for a property dict.
-            # But there can be multiple in the materials in the list sometimes.
-            for material in materials_list:
-                if persist.add_property(
-                    self.db, paragraph, self.method, material, prop):
-                    p += 1
+            # Emptry property.
+            if not prop.entity_name:
+                continue
 
-        self.db.commit()
-        self.db.close()
-        log.done("Database new added: {} materials, {} amounts, {} records.",
-                 m, a, p)
+            # Insert the property with the last material.
+            propid = persist.add_property(self.db, paragraph, self.method,
+                                          material, prop)
+            if propid:
+                p += 1
+
+                # Insert one to many relationships for all materials.
+                for material in materials_list:
+                    matid = matids[material.entity_name]
+                    relid = persist.add_material_property_rel(
+                        self.db, matid, propid, self.method.id)
+
+                    if relid: r += 1
+
+            # Confirm saving the record.
+            self.db.commit()
+
+        log.info("Database new added: {} materials, {} amounts, {} properties, "
+                 "{} relations.", m, a, p, r)
         return p
 
