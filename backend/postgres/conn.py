@@ -43,8 +43,7 @@ def setup_engine(host, port, user, pswd, name,
 def new_session(connection) -> scoped_session:
     session = scoped_session(
         sessionmaker(
-            autocommit=False, autoflush=False, expire_on_commit=False,
-            bind=connection)
-    )
+            autocommit=False, autoflush=False,
+            expire_on_commit=False, bind=connection))
     return session
 
