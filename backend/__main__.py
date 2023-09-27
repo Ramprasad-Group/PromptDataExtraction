@@ -22,6 +22,7 @@ from backend.console import (
     llm_curated,
     heuristic_filter,
     add_conditions,
+    ps_ner_filter
 )
 
 def parse_args() -> argparse.Namespace:
@@ -42,6 +43,7 @@ def parse_args() -> argparse.Namespace:
     llm_curated.add_args(subparsers)
     heuristic_filter.add_args(subparsers)
     add_conditions.add_args(subparsers)
+    ps_ner_filter.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--dir', default=None,
@@ -131,6 +133,9 @@ def main():
         heuristic_filter.run(args)
     elif args.command == add_conditions.ScriptName:
         add_conditions.run(args)
+
+    elif args.command == ps_ner_filter.ScriptName:
+        ps_ner_filter.run(args)
 
     # Finalize.
     postgres.disconnect()
