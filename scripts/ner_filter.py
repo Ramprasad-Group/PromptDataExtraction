@@ -191,8 +191,8 @@ def log_run_info(property, publisher_directory, ner_filter_name):
 if __name__ == '__main__':
 	
 	publisher_directory = 'All'
-	prop_filter_name = 'property_tm'
-	ner_filter_name = 'ner_tm'
+	prop_filter_name = 'property_ym'
+	ner_filter_name = 'ner_ym'
 
 	# property = "thermal decomposition temperature"
 	property = getattr(FilterPropertyName, prop_filter_name)

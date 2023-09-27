@@ -149,7 +149,7 @@ def run(args: ArgumentParser):
 	log.info(f'Last processed para_id: {row.para_id}')
 
 	checkpoint.add_new(db, name = args.filter, table = PaperTexts.__tablename__, row = row.para_id, 
-										comment = {'user': 'sonakshi', 'filter': args.filter,
+										comment = {'user': sett.Run.userName, 'filter': args.filter,
 										'debug': True if sett.Run.debugCount > 0 else False})
 	
 	db.commit()
