@@ -125,7 +125,6 @@ def run(args: ArgumentParser):
         if not (n % 50) or n == len(records):
             log.info("Processed {} paragraphs.", n)
 
-
     # Store the last processed id.
     log.note("Last processed row ID: {}", last)
     checkpoint.add_new(
