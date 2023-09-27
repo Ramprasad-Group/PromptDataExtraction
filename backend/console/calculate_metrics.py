@@ -4,6 +4,7 @@ import argparse
 import pylogg
 from backend import sett, postgres
 from backend.metrics import curated
+from backend.postgres import persist
 
 ScriptName = 'metrics'
 
@@ -62,30 +63,30 @@ def add_args(subparsers : argparse._SubParsersAction):
         ScriptName,
         help='Calculate metrics using curated data table.')
     parser.add_argument(
-        'runname',
-        help="Name of the run, e.g., test-ner-pipeline.")
-    parser.add_argument(
-        '-m', '--method',
-        default = 'materials-bert',
-        help="Name of extraction method, default: materials-bert")
+        "-m", "--method", required=True,
+        help="Name of the method from the extraction_methods table.")
 
 
 def run(args : argparse.ArgumentParser):
     db = postgres.connect()
 
-    t1 = log.info("Calculating metrics on curated dataset.")
-    log.info("Method: {} Run: {}", args.method, args.runname)
+    method = persist.get_method(db, name=args.method)
+    if method is None:
+        log.critical("No such method defined in DB: {}", args.method)
+        exit(1)
 
-    metrics = curated.compute_metrics(
-        db, tg_corefs, args.method, args.runname)
+
+    t1 = log.info("Calculating metrics on curated dataset.")
+    log.info("Method: {}", args.method)
+
+    metrics = curated.compute_metrics(db, tg_corefs, method)
 
     with open(sett.Run.directory + "/tg_metrics.json", "w") as fp:
         json.dump(metrics, fp, indent=4)
 
     t1.done("Metrics: {}", metrics)
 
-    metrics = curated.compute_metrics(
-        db, eg_corefs, args.method, args.runname)
+    metrics = curated.compute_metrics(db, eg_corefs, method)
 
     with open(sett.Run.directory + "/eg_metrics.json", "w") as fp:
         json.dump(metrics, fp, indent=4)

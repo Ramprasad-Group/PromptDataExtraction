@@ -1,34 +1,10 @@
 import pylogg
 from backend.record_extraction.base_classes import (
-    MaterialMention, PropertyValuePair
+    MaterialMention, PropertyValuePair, MaterialAmount
 )
 from . import orm
 
 log = pylogg.New("persist")
-
-def add_crossref(db, para : orm.PaperTexts, name : str, othername : str,
-                   reftype : str) -> bool :
-    """ Add a cross reference to the database.
-        Returns false if already exists.
-    """
-    # log.debug("Adding {} cross-ref for paper {}: {} = {}",
-    #           reftype, para.pid, name, othername)
-    
-    ref = orm.ExtractedCrossrefs().get_one(
-        db, {'name': name, 'reftype': reftype})
-
-    if ref is None:
-        ref = orm.ExtractedCrossrefs()
-        ref.paper_id = para.pid
-        ref.para_id = para.id
-        ref.name = name
-        ref.othername = othername
-        ref.reftype = reftype
-
-        ref.insert(db)
-        return True
-    
-    return False
 
 
 def add_method(db, name : str, dataset : str, model : str,
@@ -70,6 +46,7 @@ def add_method(db, name : str, dataset : str, model : str,
     t2.done("New method added: {}", name)
     return True
 
+
 def get_method(db, **kwargs) -> orm.ExtractionMethods:
     """ Return an Extraction Method object using specified column values.
         Available columns:
@@ -84,27 +61,27 @@ def get_material(db, para_id: int, material_name: str,
         Returns None if not found.
     """
     return orm.ExtractedMaterials().get_one(db, {
-        'para_id': para_id,
         'method_id': method.id,
+        'para_id': para_id,
         'entity_name': material_name
     })
 
 
 def add_material(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
-                 material : MaterialMention) -> bool:
+                 material : MaterialMention) -> int:
 
     assert type(material) == MaterialMention
 
     entity_name = material.entity_name
     if not entity_name:
-        return False
+        log.warn("Empty material entity name.")
+        return None
+   
+    rowid = orm.ExtractedMaterials().exists(db,
+            para_id = para.id, method_id = method.id, entity_name = entity_name)
 
-    # check if already exists
-    if get_material(db, para.id, entity_name, method):
-        return False
-
-    if material.components:
-        log.debug("Components: {}", material.components)
+    if rowid:
+        return rowid
 
     matobj = orm.ExtractedMaterials()
     matobj.para_id = para.id
@@ -124,12 +101,12 @@ def add_material(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
         })
 
     matobj.insert(db)
-    return True
+    return matobj.id
 
 
 def add_property(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
                  material : MaterialMention, prop : PropertyValuePair,
-                 conditions : str = "", details : dict = {}) -> bool:
+                 conditions : str = "", details : dict = {}) -> int:
     """ Add extracted properties values to postgres.
         Check uniqueness based on material id and property entity name,
         and numeric value.
@@ -140,32 +117,34 @@ def add_property(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
 
     material_name = material.entity_name
     if not material_name:
-        return False
+        log.warn("Empty material name.")
+        return None
 
     # Make sure it's a number or ignore.
     numeric_value = prop.property_numeric_value
     try:
         numeric_value = float(numeric_value)
     except:
-        return False
+        log.warn("Invalid numeric value for property: {}", numeric_value)
+        return None
+    
+    matid = orm.ExtractedMaterials().exists(db,
+            para_id = para.id, method_id = method.id,
+            entity_name = material_name)
 
-    material = get_material(db, para.id, material_name, method)
-    if material is None:
+    if matid is None:
         log.error("Material {} not found in extracted_materials "
-                 "to store properties.", material_name)
-        return False
+                  "to store properties.", material_name)
+        return None
 
-    # check if already exists
-    if orm.ExtractedProperties().get_one(db, {
-        'material_id': material.id,
-        'method_id': method.id,
-        'entity_name': prop.entity_name,
-        'numeric_value': numeric_value
-    }):
-        return False
+    propid = orm.ExtractedProperties().exists(db,
+            method_id = method.id, material_id = matid,
+            entity_name = prop.entity_name, numeric_value = numeric_value)
+    if propid:
+        return propid
 
     propobj = orm.ExtractedProperties()
-    propobj.material_id = material.id
+    propobj.material_id = matid
     propobj.method_id = method.id
     propobj.entity_name = prop.entity_name
     propobj.value = prop.property_value
@@ -194,4 +173,76 @@ def add_property(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
         propobj.conditions['measurement'] = prop.condition_str
 
     propobj.insert(db)
-    return True
+    return propobj.id
+
+
+def add_material_property_rel(db, material_id, prop_id, method_id) -> int:
+    relid = orm.RelMaterialProperties().exists(
+        db, material_id = material_id,
+        property_id = prop_id, method_id = method_id
+    )
+
+    if relid:
+        return relid
+
+    rel = orm.RelMaterialProperties()
+    rel.material_id = material_id
+    rel.property_id = prop_id
+    rel.method_id = method_id
+
+    rel.insert(db)
+    return rel.id
+
+
+def add_material_amount(
+        db, paragraph: orm.PaperTexts, method : orm.ExtractionMethods,
+        amount: MaterialAmount) -> int:
+    """ Add an extracted material amount entry to postgres.
+        Check uniqueness based on material id and material entity name.
+
+        Returns true if the row was added to db.
+    """
+    assert type(amount) == MaterialAmount
+
+    name: str = amount.entity_name
+    if not name:
+        log.warn("Empty material amount entity name.")
+        return None
+    
+    amtid = orm.ExtractedAmount().exists(db, {
+        'method_id': method.id,
+        'para_id': paragraph.id,
+        'entity_name': name,
+    })
+
+    if amtid:
+        return amtid
+
+    amtobj = orm.ExtractedAmount()
+    amtobj.para_id = paragraph.id
+    amtobj.method_id = method.id
+    amtobj.entity_name = name
+    amtobj.material_amount = amount.material_amount
+
+    amtobj.insert(db)
+    return amtobj.id
+
+
+def add_crossref(db, para : orm.PaperTexts, name : str, othername : str,
+                 reftype : str) -> int :
+    """ Add a cross reference to the database.
+        Returns the id of the existing/inserted row.
+    """
+    refid = orm.ExtractedCrossrefs().exists(db, name=name, reftype=reftype)
+    if refid:
+        return refid
+    
+    ref = orm.ExtractedCrossrefs()
+    ref.paper_id = para.pid
+    ref.para_id = para.id
+    ref.name = name
+    ref.othername = othername
+    ref.reftype = reftype
+
+    ref.insert(db)
+    return ref.id
