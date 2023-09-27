@@ -52,7 +52,7 @@ def test_add_material(db, material, db_paragraph, method):
 
     # try adding new material
     ret = persist.add_material(db, db_paragraph, method, material)
-    assert ret == True
+    assert type(ret) == int
 
     # check if added
     ret = persist.get_material(
@@ -99,7 +99,7 @@ def test_add_property(db, material, prop, db_paragraph, method):
     ret = persist.add_property(
         db, db_paragraph, method, material, prop, conditions, details)
 
-    assert ret == True
+    assert type(ret) == int
     db.commit()
 
     # get the added material
