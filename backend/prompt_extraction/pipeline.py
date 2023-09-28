@@ -14,7 +14,7 @@ from backend.prompt_extraction.shot_selection import (
 
 log = pylogg.New('llm')
 
-Record = namedtuple('Record', ['material', 'property', 'conditions'])
+Record = namedtuple('Record', ['material', 'property', 'condition'])
 
 
 class LLMPipeline:
@@ -108,7 +108,7 @@ class LLMPipeline:
 
             if material and value:
                 processed.append(Record(material=material, property=value,
-                                        conditions=rec['conditions']))
+                                        condition=rec['condition']))
         return processed
 
 
@@ -117,10 +117,6 @@ class LLMPipeline:
         m = 0
         p = 0
 
-        details = {
-            'llm_api_req_id': api_req_id
-        }
-
         for record in records:
             if persist.add_material(
                 self.db, para, self.method, record.material):
@@ -128,7 +124,7 @@ class LLMPipeline:
 
             if persist.add_property(
                 self.db, para, self.method, record.material, record.property,
-                conditions=record.conditions, details=details):
+                api_req_id=api_req_id, extracted_condition=record.condition):
                 p += 1
 
         # Save.
