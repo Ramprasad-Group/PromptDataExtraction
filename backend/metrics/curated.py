@@ -21,6 +21,9 @@
         different while iterating over the curated rows vs. iterating over
         the extracted rows.
 
+        (2) Self-consistency check: F1-score must be 1.0 when the E = G. Use
+        this for validation, tests and debugging.
+
 """
 
 from dataclasses import dataclass
@@ -119,6 +122,9 @@ def compute_singular_metrics(property_names : list[str],
         WHERE ep.method_id = :method_id
         AND em.para_id = :para_id;
     """
+
+    # Uncomment to perform the self-consistency check.
+    # extracted_sql = curated_sql
 
     for item in tqdm(items):
         t2 = log.info("Processing paragraph: {}", item.para_id)
