@@ -31,8 +31,8 @@ def run(args: ArgumentParser):
     from backend.prompt_extraction.pipeline import LLMPipeline
 
     # Debugging
-    pylogg.setConsoleStack(show=True)
-    pylogg._conf.line_width = 150
+    # pylogg.setConsoleStack(show=True)
+    # pylogg._conf.line_width = 150
 
     db = postgres.connect()
 
