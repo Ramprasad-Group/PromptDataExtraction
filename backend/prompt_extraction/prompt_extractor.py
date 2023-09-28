@@ -237,7 +237,7 @@ class LLMExtractor:
                 if not value:
                     value = record.get("numeric value", None)
 
-            condition = record.get("condition")
+            condition = record.get("condition", record.get('conditions'))
             if condition == "None" or condition is None:
                 condition = ""
 
