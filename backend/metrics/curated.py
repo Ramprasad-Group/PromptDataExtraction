@@ -1,22 +1,52 @@
+from dataclasses import dataclass
+
 import pylogg as log
 from tqdm import tqdm
 from backend import postgres
-from backend.postgres.orm import CuratedData, ExtractionMethods
+from backend.postgres.orm import ExtractionMethods
+
+@dataclass
+class Counter:
+    tp_mat : int = 0
+    fp_mat : int = 0
+    fn_mat : int = 0
+    tp_val : int = 0
+    fp_val : int = 0
+    fn_val : int = 0
+    tp_prop : int = 0
+    fp_prop : int = 0
+    fn_prop : int = 0
+
+    para_from_curated : int = 0
+
+    all_extracted : int = 0
+    prop_extracted : int = 0
+    mat_matched_iter_extracted : int = 0
+    mat_not_matched_iter_extracted : int = 0
+    val_matched_iter_extracted : int = 0
+    val_not_matched_iter_extracted : int = 0
+    prop_matched_iter_extracted : int = 0
+    prop_not_matched_iter_extracted : int = 0
+
+    all_curated : int = 0
+    prop_curated : int = 0
+    mat_matched_iter_curated : int = 0
+    mat_not_matched_iter_curated : int = 0
+    val_matched_iter_curated : int = 0
+    val_not_matched_iter_curated : int = 0
+    prop_matched_iter_curated : int = 0
+    prop_not_matched_iter_curated : int = 0
+
+    def log_all(self):
+        log.note("Summary stats:")
+        for f in self.__dataclass_fields__:
+            log.note("{}: {}", f, self.__dict__[f])
 
 
 def compute_singular_metrics(property_names : list[str],
                              method : ExtractionMethods) -> dict:
 
-    tp_mat = 0
-    fp_mat = 0
-    fn_mat = 0
-    tp_val = 0
-    fp_val = 0
-    fn_val = 0
-    tp_prop = 0
-    fp_prop = 0
-    fn_prop = 0
-
+    n = Counter()
     log.note("Filtering data only for method = {}", method.name)
 
     # Select the curated paragraph that are also in the same method.
@@ -29,7 +59,9 @@ def compute_singular_metrics(property_names : list[str],
         );
     """
     items = postgres.raw_sql(query, filter_name = method.para_subset)
-    log.note("Total {} paragraphs found from curated data.", len(items))
+    n.para_from_curated = len(items)
+    log.note("Total {} paragraphs found from curated data.",
+             n.para_from_curated)
 
     curated_sql = """
         -- Curated data of a paragraph.
@@ -55,9 +87,6 @@ def compute_singular_metrics(property_names : list[str],
         AND em.para_id = :para_id;
     """
 
-    n_ex = 0
-    n_gn = 0
-
     for item in tqdm(items):
         t2 = log.info("Processing paragraph: {}", item.para_id)
 
@@ -68,12 +97,15 @@ def compute_singular_metrics(property_names : list[str],
         log.info("Total curated records: {}", len(curated_rows))
         log.info("Total extracted records: {}", len(extracted_rows))
 
+        n.all_curated += len(curated_rows)
+        n.all_extracted += len(extracted_rows)
+
         # Find TP, FP
         for extr in extracted_rows:
             if not _property_name_match(extr.property_name, property_names):
                 continue
 
-            n_ex += 1
+            n.prop_extracted += 1
             value_found = False
             material_found = False
             property_found = False
@@ -97,25 +129,31 @@ def compute_singular_metrics(property_names : list[str],
                         property_found = True
 
             if material_found:
-                tp_mat += 1
+                n.tp_mat += 1
+                n.mat_matched_iter_extracted += 1
             else:
-                fp_mat += 1
+                n.fp_mat += 1
+                n.mat_not_matched_iter_extracted += 1
                 log.info("[FP] Material '{}' not found in curated: {}",
                          extr.material, [r.material for r in curated_rows])
 
             if value_found:
-                tp_val += 1
+                n.tp_val += 1
+                n.val_matched_iter_extracted += 1
             else:
-                fp_val += 1
+                n.fp_val += 1
+                n.val_not_matched_iter_extracted += 1
                 log.info("[FP] Value '{}' not found in curated: {}",
                          extr.property_value, [
                              (r.property_name, r.property_value)
                              for r in curated_rows])
 
             if property_found:
-                tp_prop += 1
+                n.tp_prop += 1
+                n.prop_matched_iter_extracted += 1
             else:
-                fp_prop += 1
+                n.fp_prop += 1
+                n.prop_not_matched_iter_extracted += 1
                 if material_found:
                     log.info("[FP] Property material '{}' matches, "
                              "value '{}' does not match.", extr.material,
@@ -135,7 +173,7 @@ def compute_singular_metrics(property_names : list[str],
             if not _property_name_match(cure.property_name, property_names):
                 continue
 
-            n_gn += 1
+            n.prop_curated += 1
             value_found = False
             material_found = False
             property_found = False
@@ -159,19 +197,26 @@ def compute_singular_metrics(property_names : list[str],
                         property_found = True
 
             if not material_found:
-                fn_mat += 1
+                n.fn_mat += 1
+                n.mat_not_matched_iter_curated += 1
                 log.info("[FN] Material '{}' not found in extracted: {}",
                          cure.material, [r.material for r in extracted_rows])
+            else:
+                n.mat_matched_iter_curated += 1
 
             if not value_found:
-                fn_val += 1
+                n.fn_val += 1
+                n.val_not_matched_iter_curated += 1
                 log.info("[FN] Value '{}' not found in extracted: {}",
                          cure.property_value, [
                              (r.property_name, r.property_value)
                              for r in extracted_rows])
+            else:
+                n.val_matched_iter_curated += 1
 
             if not property_found:
-                fn_prop += 1
+                n.fn_prop += 1
+                n.prop_not_matched_iter_curated += 1
                 if material_found:
                     log.info("[FN] Property material '{}' matches, "
                              "value '{}' does not match.", cure.material,
@@ -184,15 +229,16 @@ def compute_singular_metrics(property_names : list[str],
                     log.info("[FN] Property material '{}' and "
                              "value '{}' do not match.", cure.material,
                              cure.property_value)
+            else:
+                n.prop_matched_iter_curated += 1
 
         t2.done("Paragraph {} processed.", item.para_id)
 
-    log.note("Property curated records: {}", n_gn)
-    log.note("Property extracted records: {}", n_ex)
+    mat_scores = _calc_scores(n.tp_mat, n.fp_mat, n.fn_mat)
+    val_scores = _calc_scores(n.tp_val, n.fp_val, n.fn_val)
+    prop_scores = _calc_scores(n.tp_prop, n.fp_prop, n.fn_prop)
 
-    mat_scores = _calc_scores(tp_mat, fp_mat, fn_mat)
-    val_scores = _calc_scores(tp_val, fp_val, fn_val)
-    prop_scores = _calc_scores(tp_prop, fp_prop, fn_prop)
+    n.log_all()
 
     return {
         'method': method.name,
