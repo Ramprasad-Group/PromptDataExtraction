@@ -15,7 +15,6 @@ log = pylogg.New(ScriptName)
 material_entity_types = ['POLYMER', 'POLYMER_FAMILY', 'MONOMER', 'ORGANIC']
 filtration_dict = defaultdict(int)
 
-
 class HeuristicFilterName:
 	ner_tg = 'property_tg'
 	ner_tm = 'property_tm'
@@ -29,6 +28,7 @@ class HeuristicFilterName:
 	ner_is = 'property_is'
 	ner_hardness = 'property_hardness'
 	ner_fs = 'property_fs'
+
 
 def add_args(subparsers: _SubParsersAction):
 	parser: ArgumentParser = subparsers.add_parser(
@@ -60,7 +60,8 @@ def _add_to_filtered_paragrahs(db, para_id, ner_filter_name):
 		log.trace(f"Added to PostGres: {para_id}")
 
 
-def _ner_filter(para_text, unit_list, ner_output=None):
+def _ner_filter(ner_pipeline, para_text, unit_list, ner_output=None):
+
 	"""Pass paragraph through NER pipeline to check whether it contains relevant information"""
 	if ner_output is None:
 			ner_output = ner_pipeline(para_text)
@@ -83,8 +84,15 @@ def _ner_filter(para_text, unit_list, ner_output=None):
 def run(args: ArgumentParser):
 	from backend import postgres, sett
 	from backend.utils import checkpoint
+	from backend.record_extraction import bert_model
 
 	db = postgres.connect()
+
+	# Load Materials bert to GPU
+	bert = bert_model.MaterialsBERT()
+	bert.init_local_model(
+		sett.NERPipeline.model, sett.NERPipeline.pytorch_device)
+	ner_pipeline = bert.pipeline
 
 	prop_filter_name = getattr(HeuristicFilterName, args.filter)
 	ner_filter_name = args.filter
@@ -128,7 +136,7 @@ def run(args: ArgumentParser):
 
 		para = PaperTexts().get_one(db, {'id': row.para_id})
 
-		ner_output, ner_filter_output = _ner_filter(para_text=para.text, unit_list= prop_metadata.units, ner_output=None)
+		ner_output, ner_filter_output = _ner_filter(ner_pipeline, para_text=para.text, unit_list= prop_metadata.units, ner_output=None)
 		if ner_filter_output:
 			log.note(f'Paragraph: {row.para_id} passed {ner_filter_name}.')
 			filtration_dict[f'{mode}_keyword_paragraphs_ner']+=1
@@ -142,7 +150,7 @@ def run(args: ArgumentParser):
 			log.info(f"{row.para_id} did not pass {ner_filter_name}")
 
 		if filtration_dict['total_paragraphs']% 100 == 0 or filtration_dict['total_paragraphs']== len(records):
-			log.info(f'Number of total paragraphs: {filtration_dict["total_paragraphs"]}')
+			log.info(f'Number of paragraphs parsed so far: {filtration_dict["total_paragraphs"]}')
 			log.info(f'Number of paragraphs with {property} information after heuristic filter: {len(records)}')
 			log.info(f'Number of paragraphs with {property} information after NER filter ({ner_filter_name}) : {filtration_dict[f"{mode}_keyword_paragraphs_ner"]}')
 
