@@ -52,8 +52,8 @@ def run(args : ArgumentParser):
         info['user'] = sett.Run.userName
 
         if args.info:
-            for k, values in args.info:
-                info[k] = values[0]
+            for k, value in args.info:
+                info[k] = value[0] if type(value) == list else value
 
         db = postgres.connect()
         res = persist.add_method(db, args.method, args.dataset, args.model,
@@ -87,7 +87,7 @@ def run(args : ArgumentParser):
             info = dict(method.extraction_info)
 
             for k, value in args.info:
-                info[k] = value
+                info[k] = value[0] if type(value) == list else value
                 log.info("extraction_info[{}] = {}", k, value)
 
             # Assign the new dict.
