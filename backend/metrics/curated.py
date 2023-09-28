@@ -147,6 +147,7 @@ def compute_singular_metrics(property_names : list[str],
                 if not _property_name_match(cure.property_name, property_names):
                     continue
 
+                # General property value match.
                 if _property_match(cure.property_value, extr.property_value):
                     value_found = True
 
@@ -215,6 +216,7 @@ def compute_singular_metrics(property_names : list[str],
                 if not _property_name_match(extr.property_name, property_names):
                     continue
 
+                # General property value match.
                 if _property_match(cure.property_value, extr.property_value):
                     value_found = True
 
