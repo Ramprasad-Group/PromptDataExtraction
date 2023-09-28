@@ -1,3 +1,28 @@
+"""
+    Module to compute material, property and material-property F1 scores.
+
+    Algorithm:
+        G = Curated ground truth from the `curated_data` table.
+        E = Extracted data using a specific method/pipeline.
+
+        Gr = Rows of G that matches the property name.
+        Er = Rows of E that matches the property name.
+
+        for e in Er:
+            if e in Gr, then TP, else FP.
+
+        for g in Gr:
+            if g NOT in Er, then FN.
+
+        TN = 0 since G does not have negative values.
+
+    Notes:
+        (1) Because there are many duplicates, the number of matches will be
+        different while iterating over the curated rows vs. iterating over
+        the extracted rows.
+
+"""
+
 from dataclasses import dataclass
 
 import pylogg as log
@@ -17,10 +42,16 @@ class Counter:
     fp_prop : int = 0
     fn_prop : int = 0
 
+    # Distinct paragraphs from the curated rows.
     para_from_curated : int = 0
 
-    all_extracted : int = 0
-    prop_extracted : int = 0
+    # There are extracted rows not associated with curated paragraphs.
+    relevant_extracted_rows : int = 0
+
+    # Extracted and relevant rows that matches the property.
+    prop_extracted_rows : int = 0
+
+    # How many materials, values and (materials,values) are found in curated.
     mat_matched_iter_extracted : int = 0
     mat_not_matched_iter_extracted : int = 0
     val_matched_iter_extracted : int = 0
@@ -28,8 +59,10 @@ class Counter:
     prop_matched_iter_extracted : int = 0
     prop_not_matched_iter_extracted : int = 0
 
-    all_curated : int = 0
-    prop_curated : int = 0
+    total_curated_rows : int = 0
+    prop_curated_rows : int = 0
+
+    # How many materials, values and (materials,values) are found in extracted.
     mat_matched_iter_curated : int = 0
     mat_not_matched_iter_curated : int = 0
     val_matched_iter_curated : int = 0
@@ -97,15 +130,15 @@ def compute_singular_metrics(property_names : list[str],
         log.info("Total curated records: {}", len(curated_rows))
         log.info("Total extracted records: {}", len(extracted_rows))
 
-        n.all_curated += len(curated_rows)
-        n.all_extracted += len(extracted_rows)
+        n.total_curated_rows += len(curated_rows)
+        n.relevant_extracted_rows += len(extracted_rows)
 
         # Find TP, FP
         for extr in extracted_rows:
             if not _property_name_match(extr.property_name, property_names):
                 continue
 
-            n.prop_extracted += 1
+            n.prop_extracted_rows += 1
             value_found = False
             material_found = False
             property_found = False
@@ -173,7 +206,7 @@ def compute_singular_metrics(property_names : list[str],
             if not _property_name_match(cure.property_name, property_names):
                 continue
 
-            n.prop_curated += 1
+            n.prop_curated_rows += 1
             value_found = False
             material_found = False
             property_found = False
