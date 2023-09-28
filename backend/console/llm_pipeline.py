@@ -127,7 +127,6 @@ def run(args: ArgumentParser):
     log.info("Extraction method = {}", method.name)
     log.info("Checkpoint info = {}", ckpt_info)
 
-    breakpoint()
 
     # Process each paragraph.
     for row in tqdm(records):
