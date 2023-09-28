@@ -18,8 +18,8 @@ log = pylogg.New('llm')
 
 class LLMExtractor:
     PROMPTS = [
-        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
-        "Extract all {property} values in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
+        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'condition' columns.",
+        "Extract all {property} values in JSONL format with 'material', 'property', 'value', 'condition' columns.",
     ]
 
     def __init__(self, db, method : ExtractionMethods) -> None:
@@ -237,15 +237,15 @@ class LLMExtractor:
                 if not value:
                     value = record.get("numeric value", None)
 
-            conditions = record.get("conditions")
-            if conditions == "None" or conditions is None:
-                conditions = ""
+            condition = record.get("condition")
+            if condition == "None" or condition is None:
+                condition = ""
 
             if material and prop and value:
                 data.append(
                     {
                         'material': material, 'property': prop, 'value': value,
-                        'conditions': conditions
+                        'condition': condition
                     }
                 )
 
