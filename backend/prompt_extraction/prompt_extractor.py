@@ -3,7 +3,6 @@ import json
 import random
 import openai
 import pylogg
-import hashlib
 
 try:
     import polyai.api as polyai
@@ -11,9 +10,9 @@ try:
 except:
     polyai_ok = False
 
-from backend.postgres.orm import APIRequests, PaperTexts
 from backend.text.normalize import TextNormalizer
 from backend.prompt_extraction.shot_selection import ShotSelector
+from backend.postgres.orm import APIRequests, PaperTexts, ExtractionMethods
 
 log = pylogg.New('llm')
 
@@ -23,40 +22,32 @@ class LLMExtractor:
         "Extract all {property} values in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
     ]
 
-    def __init__(self, db, extraction_info : dict,
-                 property_corefs : list[str] = [],
-                 debug : bool = False) -> None:
-
+    def __init__(self, db, method : ExtractionMethods) -> None:
         self.db = db    # postgres db session handle.
-        self.debug = debug
+        self.method = method
         self.shot_selector : ShotSelector = None
         self.normalizer = TextNormalizer()
 
-        # All settings should be in the extraction_info dictionary.
-        # The extraction_info will be saved to database as well.
-        # These helps us have a single source of truth.
-        self.extraction_info = extraction_info
-        prompt_id = self._get_param('prompt_id', False, 0)
-        self.prompt = self.PROMPTS[prompt_id]
+        self.model = self.method.model
+        self.api = self.method.api
 
-        if property_corefs:
-            property_str = ", ".join(property_corefs)
-            self.prompt = self.prompt.format(property=property_str)
-
-        self.extraction_info['prompt'] = self.prompt
-        log.note("Using Prompt: {}", self.prompt)
-
-        self.api = self._get_param('api', True)
+        # All other API settings should be in the info dictionary of the
+        # extraction method. This helps us have a single source of truth.
+        self.user = self._get_param('user', True)
         self.max_api_retries = self._get_param('max_api_retries', False, 1)
         self.api_retry_delay = self._get_param('api_retry_delay', False, 2)
         self.api_request_delay = self._get_param('api_request_delay', False, 0)
-        self.user = self._get_param('user', True)
-        self.model = self._get_param('model', True)
         self.temperature = self._get_param('temperature', False, 0.001)
-        self.shots = self._get_param('shots', False, 0)
+        self.shots = self._get_param('n_shots', False, 0)
+
+        prompt_id = self._get_param('prompt_id', False, 0)
+        self.prompt = self.PROMPTS[prompt_id]
+        log.note("Using Prompt: {}", self.prompt)
+
         log.trace("Initialized {}", self.__class__.__name__)
 
-    def process_paragraph(self, para : PaperTexts) -> tuple[list[dict], str]:
+
+    def process_paragraph(self, para : PaperTexts) -> tuple[list[dict], int]:
         """ Run the steps to send request to LLM, get response and parse the
             output.
 
@@ -64,31 +55,28 @@ class LLMExtractor:
 
             Returns (
                 [{material: '', property: '', value: ''}],
-                Response hash for the api request.
+                ID of the API request.
             )
 
         """
         text = self._preprocess_text(para.text)
         prompt = self._add_prompt(text)
         messages = self._get_example_messages(text)
-        response, resp_hash = self._ask_llm(para, prompt, messages)
+        response, apireqid = self._ask_llm(para, prompt, messages)
 
         if response is None:
-            return []
+            return [], None
 
         data = self._extract_data(response)
-        return data, resp_hash
+        return data, apireqid
     
     def _get_param(self, name : str, required : bool, default = None):
         """ Returns the value of a parameter or it's default.
             Raises exception if the parameter is required and not provided.
         """
-        if required:
-            if name not in self.extraction_info:
-                raise ValueError(f"'{name}' not set in extraction_info")
-            return self.extraction_info[name]
-        else:
-            return self.extraction_info.get(name, default)
+        if required and name not in self.method.extraction_info:
+            raise ValueError(f"'{name}' not set in extraction_info")
+        return self.method.extraction_info.get(name, default)
 
     def _preprocess_text(self, text : str) -> str:
         text = self.normalizer.normalize(text)
@@ -116,7 +104,7 @@ class LLMExtractor:
         return messages
     
     def _ask_llm(self, para : PaperTexts, prompt : str,
-                 messages : dict) -> tuple[dict, str]:
+                 messages : list[dict]) -> tuple[dict, int]:
         """ Try to get a response from the API by making repeated requests
             until successful.
         """
@@ -195,19 +183,13 @@ class LLMExtractor:
                 log.error("Failed to parse API output: {}", err)
                 reqinfo.status = 'output parse error'
 
-        # Calculate response hash
-        if reqinfo.response:
-            hashstr = hashlib.sha256(
-                reqinfo.response.encode('utf-8')).hexdigest()
-            reqinfo.response_hash = hashstr
-
         # Store response info.
         reqinfo.insert(self.db)
 
         # Commit
         reqinfo.commit(self.db)
 
-        return output, reqinfo.response_hash
+        return output, reqinfo.id
     
     def _make_request(self, messages : list[dict]) -> dict:
         """ Send the request to the specified API endpoint. """

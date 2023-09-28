@@ -51,9 +51,9 @@ tg_corefs = [
 
 eg_corefs = [
     'bandgap', 'band gap', 'band gaps', 'E_{g}', 'E_g',
-    'optical band gap', 'optical bandgap',
-    # LLM
-    'band gap energy', 'optical bandgap', 'optical band gap',
+    'optical band gap', 'optical bandgap', 'band gap energies',
+    'optical band gaps', 
+    'band gap energy', 'optical bandgaps', 'optical band gap',
     'optical band gap energy', 'optical energy gap',
 ]
 
@@ -79,16 +79,18 @@ def run(args : argparse.ArgumentParser):
     t1 = log.info("Calculating metrics on curated dataset.")
     log.info("Method: {}", args.method)
 
-    metrics = curated.compute_metrics(db, tg_corefs, method)
+    metrics = curated.compute_singular_metrics(tg_corefs, method)
 
     with open(sett.Run.directory + "/tg_metrics.json", "w") as fp:
         json.dump(metrics, fp, indent=4)
 
-    t1.done("Metrics: {}", metrics)
+    t1.done("Tg Metrics: {}", metrics)
 
-    metrics = curated.compute_metrics(db, eg_corefs, method)
+    log.info("=="*200)
+
+    metrics = curated.compute_singular_metrics(eg_corefs, method)
 
     with open(sett.Run.directory + "/eg_metrics.json", "w") as fp:
         json.dump(metrics, fp, indent=4)
 
-    t1.done("Metrics: {}", metrics)
+    t1.done("Eg Metrics: {}", metrics)

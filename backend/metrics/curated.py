@@ -1,187 +1,285 @@
+"""
+    Module to compute material, property and material-property F1 scores.
+
+    Algorithm:
+        G = Curated ground truth from the `curated_data` table.
+        E = Extracted data using a specific method/pipeline.
+
+        Gr = Rows of G that matches the property name.
+        Er = Rows of E that matches the property name.
+
+        for e in Er:
+            if e in Gr, then TP, else FP.
+
+        for g in Gr:
+            if g NOT in Er, then FN.
+
+        TN = 0 since G does not have negative values.
+
+    Notes:
+        (1) Because there are many duplicates, the number of matches will be
+        different while iterating over the curated rows vs. iterating over
+        the extracted rows.
+
+        (2) Self-consistency check: F1-score must be 1.0 when the E = G. Use
+        this for validation, tests and debugging.
+
+"""
+
+from dataclasses import dataclass
+
 import pylogg as log
 from tqdm import tqdm
-from sqlalchemy import text
 from backend import postgres
-from backend.postgres.orm import (
-    PaperTexts, CuratedData, ExtractedMaterials, ExtractedProperties,
-    ExtractionMethods
-)
+from backend.postgres.orm import ExtractionMethods
+
+@dataclass
+class Counter:
+    tp_mat : int = 0
+    fp_mat : int = 0
+    fn_mat : int = 0
+    tp_val : int = 0
+    fp_val : int = 0
+    fn_val : int = 0
+    tp_prop : int = 0
+    fp_prop : int = 0
+    fn_prop : int = 0
+
+    # Distinct paragraphs from the curated rows.
+    para_from_curated : int = 0
+
+    # There are extracted rows not associated with curated paragraphs.
+    relevant_extracted_rows : int = 0
+
+    # Extracted and relevant rows that matches the property.
+    prop_extracted_rows : int = 0
+
+    # How many materials, values and (materials,values) are found in curated.
+    mat_matched_iter_extracted : int = 0
+    mat_not_matched_iter_extracted : int = 0
+    val_matched_iter_extracted : int = 0
+    val_not_matched_iter_extracted : int = 0
+    prop_matched_iter_extracted : int = 0
+    prop_not_matched_iter_extracted : int = 0
+
+    total_curated_rows : int = 0
+    prop_curated_rows : int = 0
+
+    # How many materials, values and (materials,values) are found in extracted.
+    mat_matched_iter_curated : int = 0
+    mat_not_matched_iter_curated : int = 0
+    val_matched_iter_curated : int = 0
+    val_not_matched_iter_curated : int = 0
+    prop_matched_iter_curated : int = 0
+    prop_not_matched_iter_curated : int = 0
+
+    def log_all(self):
+        log.note("Summary stats:")
+        for f in self.__dataclass_fields__:
+            log.note("{}: {}", f, self.__dict__[f])
 
 
-def compute_metrics(
-        db, property_names : list[str], method : ExtractionMethods) -> dict:
+def compute_singular_metrics(property_names : list[str],
+                             method : ExtractionMethods) -> dict:
 
-    tp_mat = 0
-    fp_mat = 0
-    fn_mat = 0
-    tp_val = 0
-    fp_val = 0
-    fn_val = 0
-    tp_prop = 0
-    fp_prop = 0
-    fn_prop = 0
-
+    n = Counter()
     log.note("Filtering data only for method = {}", method.name)
 
     # Select the curated paragraph that are also in the same method.
     query = """
-        SELECT DISTINCT(cd.para_id) FROM curated_data cd
-        JOIN filtered_paragraphs fp ON fp.para_id = cd.para_id 
-        WHERE fp.filter_name = :filter;
+        SELECT DISTINCT(cd.para_id) FROM curated_data cd 
+        WHERE EXISTS (
+            SELECT 1 FROM filtered_paragraphs fp 
+            WHERE fp.para_id = cd.para_id
+            AND fp.filter_name = :filter_name
+        );
     """
-    items = postgres.raw_sql(query, filter=method.para_subset)
+    items = postgres.raw_sql(query, filter_name = method.para_subset)
+    n.para_from_curated = len(items)
+    log.note("Total {} paragraphs found from curated data.",
+             n.para_from_curated)
 
-    log.note("Total {} paragraphs found from curated data.", len(items))
+    curated_sql = """
+        -- Curated data of a paragraph.
+        SELECT
+            cd.material,
+            cd.material_coreferents,
+            cd.property_name,
+            cd.property_value
+        FROM curated_data cd 
+        WHERE cd.para_id = :para_id;
+    """
 
-    n_ex_mat = 0
-    n_ex_prop = 0
-    n_curated = 0
+    extracted_sql = """
+        -- Extracted data of a paragraph.
+        SELECT
+            em.entity_name AS material,
+            em.coreferents AS material_coreferents,
+            ep.entity_name AS property_name,
+            ep.value AS property_value
+        FROM extracted_properties ep 
+        JOIN extracted_materials em ON em.id = ep.material_id 
+        WHERE ep.method_id = :method_id
+        AND em.para_id = :para_id;
+    """
+
+    # Uncomment to perform the self-consistency check.
+    # extracted_sql = curated_sql
 
     for item in tqdm(items):
         t2 = log.info("Processing paragraph: {}", item.para_id)
-        para = PaperTexts().get_one(db, {'id': item.para_id})
 
-        curated_rows : list[CuratedData] = CuratedData().get_all(db, {
-            'para_id':  item.para_id
-        })
+        curated_rows = postgres.raw_sql(curated_sql, para_id = item.para_id)
+        extracted_rows = postgres.raw_sql(
+            extracted_sql, method_id = method.id, para_id = item.para_id)
+        
+        log.info("Total curated records: {}", len(curated_rows))
+        log.info("Total extracted records: {}", len(extracted_rows))
 
-        log.info("Curated records: {}", len(curated_rows))
+        n.total_curated_rows += len(curated_rows)
+        n.relevant_extracted_rows += len(extracted_rows)
 
-        ex_materials : list[ExtractedMaterials] = \
-            db.query(ExtractedMaterials).filter(text(
-                "para_id = :para_id and method_id = :method_id"
-            )).params(
-                method_id = method.id,
-                para_id = item.para_id,
-            ).all()
-
-
-        log.trace("Extracted materials: {}", len(ex_materials))
-
-        # Iterate over the curated/ground truth data.
-        for cure in curated_rows:
-            n_curated += 1
-            val0 = cure.property_value
-            if cure.property_name not in property_names:
+        # Find TP, FP
+        for extr in extracted_rows:
+            if not _property_name_match(extr.property_name, property_names):
                 continue
 
-            # Check the extracted materials against the curated one.
+            n.prop_extracted_rows += 1
+            value_found = False
             material_found = False
-            for material in ex_materials:
-                if _material_match(cure.material, material.entity_name,
-                    cure.material_coreferents, material.coreferents):
-                    material_found = True
+            property_found = False
 
-                ex_props : list[ExtractedProperties] = \
-                    db.query(ExtractedProperties).filter(text(
-                        "method_id = :method_id "
-                        "and material_id = :material_id"
-                    )).params(
-                        method_id = method.id,
-                        material_id = material.id,
-                    ).all()
-
-                # Check the extracted properties against the curated one.
-                property_found = False
-                for prop in ex_props:
-                    val1 = prop.value
-                    prop1 = prop.entity_name
-
-                    if not _property_name_match(prop1, property_names):
-                        continue
-
-                    if _property_match(val0, val1):
-                        property_found = True
-                        break
-
-                if property_found:
-                    tp_val += 1
-                    if material_found:
-                        tp_prop += 1
-                else:
-                    fn_val += 1
-                    if not material_found:
-                        fn_prop += 1
-                    log.warn("[FN] Value {} not found in extracted: {}",
-                        val0, [(p.entity_name, p.value) for p in ex_props])
-                    
-                if material_found:
-                    break
-
-            if material_found:
-                tp_mat += 1
-            else:
-                fn_mat += 1
-                log.warn("[FN] Material {} not found in extracted: {}",
-                         cure.material,
-                         [m.entity_name for m in ex_materials])
-
-
-        # Iterate over the extracted data
-
-        for material in ex_materials:
-            n_ex_mat += 1
-            # Check the curated materials against the extracted one.
-            material_found = False
             for cure in curated_rows:
-                if _material_match(
-                    cure.material, material.entity_name,
-                    cure.material_coreferents, material.coreferents):
-                        material_found = True
-
-            if not material_found:
-                fp_mat += 1
-                log.warn("[FP] Material {} not found in curated: {}",
-                         material.entity_name,
-                         [r.material for r in curated_rows])
-           
-            ex_props : list[ExtractedProperties] = \
-                db.query(ExtractedProperties).filter(text(
-                    "method_id = :method_id "
-                    "and material_id = :material_id"
-                )).params(
-                    method_id = method.id,
-                    material_id = material.id,
-                ).all()
-
-            for prop in ex_props:
-                n_ex_prop += 1
-                val1 = prop.value
-
-                prop1 = prop.entity_name
-                if not _property_name_match(prop1, property_names):
+                if not _property_name_match(cure.property_name, property_names):
                     continue
 
-                # Check the curated properties against the extracted one.
-                property_found = False
-                for cure in curated_rows:
-                    if cure.property_name not in property_names:
-                        continue
+                # General property value match.
+                if _property_match(cure.property_value, extr.property_value):
+                    value_found = True
 
-                    if _property_match(cure.property_value, val1):
+                match = _material_match(
+                    cure.material, extr.material, cure.material_coreferents,
+                    extr.material_coreferents)
+
+                if match:
+                    material_found = True
+                    # Must check for this specific row.
+                    if _property_match(cure.property_value,
+                                       extr.property_value):
                         property_found = True
-                        break
-                
-                if not property_found:
-                    fp_val += 1
-                    log.warn("[FP] Value {} not found in curated: {}",
-                        val1, [(r.property_name, r.property_value)
-                               for r in curated_rows])
-                    
-                    if not material_found:
-                        fp_prop += 1
 
-        t2.done("Paragraph {} processed.", para.id)
+            if material_found:
+                n.tp_mat += 1
+                n.mat_matched_iter_extracted += 1
+            else:
+                n.fp_mat += 1
+                n.mat_not_matched_iter_extracted += 1
+                log.info("[FP] Material '{}' not found in curated: {}",
+                         extr.material, [r.material for r in curated_rows])
 
-    db.close()
+            if value_found:
+                n.tp_val += 1
+                n.val_matched_iter_extracted += 1
+            else:
+                n.fp_val += 1
+                n.val_not_matched_iter_extracted += 1
+                log.info("[FP] Value '{}' not found in curated: {}",
+                         extr.property_value, [
+                             (r.property_name, r.property_value)
+                             for r in curated_rows])
 
-    log.note("Total curated properties: {}", n_curated)
-    log.note("Total extracted materials: {}, properties: {}",
-             n_ex_mat, n_ex_prop)
+            if property_found:
+                n.tp_prop += 1
+                n.prop_matched_iter_extracted += 1
+            else:
+                n.fp_prop += 1
+                n.prop_not_matched_iter_extracted += 1
+                if material_found:
+                    log.info("[FP] Property material '{}' matches, "
+                             "value '{}' does not match.", extr.material,
+                             extr.property_value)
+                elif property_found:
+                    log.info("[FP] Property value '{}' matches, "
+                             "material '{}' does not match.",
+                             extr.property_value, extr.material)
+                else:
+                    log.info("[FP] Property material '{}' and "
+                             "value '{}' do not match.", extr.material,
+                             extr.property_value)
 
-    mat_scores = _calc_scores(tp_mat, fp_mat, fn_mat)
-    val_scores = _calc_scores(tp_val, fp_val, fn_val)
-    prop_scores = _calc_scores(tp_prop, fp_prop, fn_prop)
+
+        # Find FN
+        for cure in curated_rows:
+            if not _property_name_match(cure.property_name, property_names):
+                continue
+
+            n.prop_curated_rows += 1
+            value_found = False
+            material_found = False
+            property_found = False
+
+            for extr in extracted_rows:
+                if not _property_name_match(extr.property_name, property_names):
+                    continue
+
+                # General property value match.
+                if _property_match(cure.property_value, extr.property_value):
+                    value_found = True
+
+                match = _material_match(
+                    cure.material, extr.material, cure.material_coreferents,
+                    extr.material_coreferents)
+
+                if match:
+                    material_found = True
+                    # Must check for this specific row.
+                    if _property_match(cure.property_value,
+                                       extr.property_value):
+                        property_found = True
+
+            if not material_found:
+                n.fn_mat += 1
+                n.mat_not_matched_iter_curated += 1
+                log.info("[FN] Material '{}' not found in extracted: {}",
+                         cure.material, [r.material for r in extracted_rows])
+            else:
+                n.mat_matched_iter_curated += 1
+
+            if not value_found:
+                n.fn_val += 1
+                n.val_not_matched_iter_curated += 1
+                log.info("[FN] Value '{}' not found in extracted: {}",
+                         cure.property_value, [
+                             (r.property_name, r.property_value)
+                             for r in extracted_rows])
+            else:
+                n.val_matched_iter_curated += 1
+
+            if not property_found:
+                n.fn_prop += 1
+                n.prop_not_matched_iter_curated += 1
+                if material_found:
+                    log.info("[FN] Property material '{}' matches, "
+                             "value '{}' does not match.", cure.material,
+                             cure.property_value)
+                elif property_found:
+                    log.info("[FN] Property value '{}' matches, "
+                             "material '{}' does not match.",
+                             cure.property_value, cure.material)
+                else:
+                    log.info("[FN] Property material '{}' and "
+                             "value '{}' do not match.", cure.material,
+                             cure.property_value)
+            else:
+                n.prop_matched_iter_curated += 1
+
+        t2.done("Paragraph {} processed.", item.para_id)
+
+    mat_scores = _calc_scores(n.tp_mat, n.fp_mat, n.fn_mat)
+    val_scores = _calc_scores(n.tp_val, n.fp_val, n.fn_val)
+    prop_scores = _calc_scores(n.tp_prop, n.fp_prop, n.fn_prop)
+
+    n.log_all()
 
     return {
         'method': method.name,
@@ -272,9 +370,10 @@ def _norm_value(val : str):
     val = val.strip()
     val = val.replace(" ± ", "±")
     val = val.replace(" +/- ", "±")
+    val = val.replace(" + /-", "±")
     val = val.replace(" +/-", "±")
     val = val.replace("+/-", "±")
-    val = val.replace(" ", '')
+    # val = val.replace(" ", '')
     val = val.replace('° C', '°C') # NER
     return val
 
@@ -282,4 +381,5 @@ def _norm_name(val : str):
     val = val.lower()
     val = val.strip()
     val = val.replace(" ", '')
+    val = val.replace("α", "\\alpha")
     return val

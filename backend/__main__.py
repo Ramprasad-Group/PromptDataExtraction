@@ -22,7 +22,9 @@ from backend.console import (
     llm_curated,
     heuristic_filter,
     add_conditions,
-    ps_ner_filter
+    ps_ner_filter,
+    methods,
+    llm_pipeline,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -44,6 +46,8 @@ def parse_args() -> argparse.Namespace:
     heuristic_filter.add_args(subparsers)
     add_conditions.add_args(subparsers)
     ps_ner_filter.add_args(subparsers)
+    methods.add_args(subparsers)
+    llm_pipeline.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--dir', default=None,
@@ -81,7 +85,6 @@ def main():
 
     # Initialize the logger.
     os.makedirs(sett.Run.directory, exist_ok=True)
-
     t1 = log.init(
         log_level=sett.Run.logLevel,
         output_directory=sett.Run.directory,
@@ -95,7 +98,7 @@ def main():
     # Initialize configurations.
     postgres.load_settings()
 
-    # Check and run the command against the registered scripts.
+    # Check the command against the registered scripts and run.
     if args.command == debugger.ScriptName:
         debugger.run(args)
 
@@ -131,11 +134,18 @@ def main():
 
     elif args.command == heuristic_filter.ScriptName:
         heuristic_filter.run(args)
+
     elif args.command == add_conditions.ScriptName:
         add_conditions.run(args)
 
     elif args.command == ps_ner_filter.ScriptName:
         ps_ner_filter.run(args)
+
+    elif args.command == methods.ScriptName:
+        methods.run(args)
+
+    elif args.command == llm_pipeline.ScriptName:
+        llm_pipeline.run(args)
 
     # Finalize.
     postgres.disconnect()
