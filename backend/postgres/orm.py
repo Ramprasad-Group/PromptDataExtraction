@@ -329,7 +329,10 @@ class ExtractedProperties(ORMBase):
     unit: Mapped[str]= mapped_column(Text, nullable=True)
     conditions: Mapped[Dict] = mapped_column(JSON, default={})
     extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
-    api_req: Mapped[int] = mapped_column(Integer, nullable=True)
+
+    api_req: Mapped[int] = mapped_column(
+        ForeignKey("api_requests.id", ondelete="SET NULL", onupdate='CASCADE'),
+        nullable=True, unique=False, default=None)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
