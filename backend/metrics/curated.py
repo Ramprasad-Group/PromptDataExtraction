@@ -25,11 +25,26 @@ def compute_metrics(
 
     # Select the curated paragraph that are also in the same method.
     query = """
-        SELECT DISTINCT(cd.para_id) FROM curated_data cd
-        JOIN filtered_paragraphs fp ON fp.para_id = cd.para_id 
-        WHERE fp.filter_name = :filter;
+        SELECT DISTINCT(cd.para_id) FROM extracted_materials em 
+        JOIN curated_data cd ON cd.para_id = em.para_id 
+        WHERE em.method_id = :method ORDER BY cd.para_id;
     """
-    items = postgres.raw_sql(query, filter=method.para_subset)
+
+    # SQL query for selecting materials of a para and method.
+    mquery = """
+        SELECT em.id, em.entity_name, em.coreferents
+        FROM extracted_materials em 
+        WHERE em.para_id = :para_id AND em.method_id = :method_id;
+    """
+
+    # SQL query for selecting properties of a material.
+    pquery = """
+        SELECT ep.entity_name, ep.value FROM extracted_properties ep 
+        JOIN rel_material_properties rmp ON rmp.property_id = ep.id 
+        WHERE ep.material_id = :material_id AND ep.method_id = :method_id;
+    """
+
+    items = postgres.raw_sql(query, method=method.id)
 
     log.note("Total {} paragraphs found from curated data.", len(items))
 
@@ -39,7 +54,6 @@ def compute_metrics(
 
     for item in tqdm(items):
         t2 = log.info("Processing paragraph: {}", item.para_id)
-        para = PaperTexts().get_one(db, {'id': item.para_id})
 
         curated_rows : list[CuratedData] = CuratedData().get_all(db, {
             'para_id':  item.para_id
@@ -47,17 +61,12 @@ def compute_metrics(
 
         log.info("Curated records: {}", len(curated_rows))
 
-        ex_materials : list[ExtractedMaterials] = \
-            db.query(ExtractedMaterials).filter(text(
-                "para_id = :para_id and method_id = :method_id"
-            )).params(
-                method_id = method.id,
-                para_id = item.para_id,
-            ).all()
-
-
+        ex_materials = postgres.raw_sql(
+            mquery, method_id = method.id, para_id = item.para_id)
+        
         log.trace("Extracted materials: {}", len(ex_materials))
 
+        n_para_props = 0
         # Iterate over the curated/ground truth data.
         for cure in curated_rows:
             n_curated += 1
@@ -72,14 +81,8 @@ def compute_metrics(
                     cure.material_coreferents, material.coreferents):
                     material_found = True
 
-                ex_props : list[ExtractedProperties] = \
-                    db.query(ExtractedProperties).filter(text(
-                        "method_id = :method_id "
-                        "and material_id = :material_id"
-                    )).params(
-                        method_id = method.id,
-                        material_id = material.id,
-                    ).all()
+                ex_props = postgres.raw_sql(
+                    pquery, method_id = method.id, material_id = material.id)
 
                 # Check the extracted properties against the curated one.
                 property_found = False
@@ -104,7 +107,7 @@ def compute_metrics(
                         fn_prop += 1
                     log.warn("[FN] Value {} not found in extracted: {}",
                         val0, [(p.entity_name, p.value) for p in ex_props])
-                    
+
                 if material_found:
                     break
 
@@ -116,9 +119,7 @@ def compute_metrics(
                          cure.material,
                          [m.entity_name for m in ex_materials])
 
-
         # Iterate over the extracted data
-
         for material in ex_materials:
             n_ex_mat += 1
             # Check the curated materials against the extracted one.
@@ -134,15 +135,12 @@ def compute_metrics(
                 log.warn("[FP] Material {} not found in curated: {}",
                          material.entity_name,
                          [r.material for r in curated_rows])
-           
-            ex_props : list[ExtractedProperties] = \
-                db.query(ExtractedProperties).filter(text(
-                    "method_id = :method_id "
-                    "and material_id = :material_id"
-                )).params(
-                    method_id = method.id,
-                    material_id = material.id,
-                ).all()
+
+            ex_props = postgres.raw_sql(
+                pquery, method_id = method.id, material_id = material.id)
+
+            n_para_props += len(ex_props)
+            # breakpoint()
 
             for prop in ex_props:
                 n_ex_prop += 1
@@ -171,7 +169,8 @@ def compute_metrics(
                     if not material_found:
                         fp_prop += 1
 
-        t2.done("Paragraph {} processed.", para.id)
+        log.trace("Extracted properties: {}", n_para_props)
+        t2.done("Paragraph {} processed.", item.para_id)
 
     db.close()
 
@@ -272,9 +271,10 @@ def _norm_value(val : str):
     val = val.strip()
     val = val.replace(" ± ", "±")
     val = val.replace(" +/- ", "±")
+    val = val.replace(" + /-", "±")
     val = val.replace(" +/-", "±")
     val = val.replace("+/-", "±")
-    val = val.replace(" ", '')
+    # val = val.replace(" ", '')
     val = val.replace('° C', '°C') # NER
     return val
 
@@ -282,4 +282,5 @@ def _norm_name(val : str):
     val = val.lower()
     val = val.strip()
     val = val.replace(" ", '')
+    val = val.replace("α", "\\alpha")
     return val
