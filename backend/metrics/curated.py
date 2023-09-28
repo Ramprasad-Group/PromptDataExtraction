@@ -40,7 +40,6 @@ def compute_metrics(
     # SQL query for selecting properties of a material.
     pquery = """
         SELECT ep.entity_name, ep.value FROM extracted_properties ep 
-        JOIN rel_material_properties rmp ON rmp.property_id = ep.id 
         WHERE ep.material_id = :material_id AND ep.method_id = :method_id;
     """
 
@@ -59,96 +58,48 @@ def compute_metrics(
             'para_id':  item.para_id
         })
 
-        log.info("Curated records: {}", len(curated_rows))
-
         ex_materials = postgres.raw_sql(
             mquery, method_id = method.id, para_id = item.para_id)
         
+        log.info("Curated records: {}", len(curated_rows))
         log.trace("Extracted materials: {}", len(ex_materials))
 
-        n_para_props = 0
-        # Iterate over the curated/ground truth data.
-        for cure in curated_rows:
-            n_curated += 1
-            val0 = cure.property_value
-            if cure.property_name not in property_names:
-                continue
-
-            # Check the extracted materials against the curated one.
-            material_found = False
-            for material in ex_materials:
-                if _material_match(cure.material, material.entity_name,
-                    cure.material_coreferents, material.coreferents):
-                    material_found = True
-
-                ex_props = postgres.raw_sql(
-                    pquery, method_id = method.id, material_id = material.id)
-
-                # Check the extracted properties against the curated one.
-                property_found = False
-                for prop in ex_props:
-                    val1 = prop.value
-                    prop1 = prop.entity_name
-
-                    if not _property_name_match(prop1, property_names):
-                        continue
-
-                    if _property_match(val0, val1):
-                        property_found = True
-                        break
-
-                if property_found:
-                    tp_val += 1
-                    if material_found:
-                        tp_prop += 1
-                else:
-                    fn_val += 1
-                    if not material_found:
-                        fn_prop += 1
-                    log.warn("[FN] Value {} not found in extracted: {}",
-                        val0, [(p.entity_name, p.value) for p in ex_props])
-
-                if material_found:
-                    break
-
-            if material_found:
-                tp_mat += 1
-            else:
-                fn_mat += 1
-                log.warn("[FN] Material {} not found in extracted: {}",
-                         cure.material,
-                         [m.entity_name for m in ex_materials])
 
         # Iterate over the extracted data
+        n_para_props = 0
         for material in ex_materials:
             n_ex_mat += 1
+
             # Check the curated materials against the extracted one.
             material_found = False
             for cure in curated_rows:
-                if _material_match(
+                match = _material_match(
                     cure.material, material.entity_name,
-                    cure.material_coreferents, material.coreferents):
-                        material_found = True
-
-            if not material_found:
+                    cure.material_coreferents, material.coreferents)
+                if match:
+                    material_found = True
+                    tp_mat += 1
+                    break
+            else:
                 fp_mat += 1
-                log.warn("[FP] Material {} not found in curated: {}",
+                log.info("[FP] Material {} not found in curated: {}",
                          material.entity_name,
                          [r.material for r in curated_rows])
 
+            # Fetch the properties of this material.
             ex_props = postgres.raw_sql(
                 pquery, method_id = method.id, material_id = material.id)
 
             n_para_props += len(ex_props)
-            # breakpoint()
 
             for prop in ex_props:
-                n_ex_prop += 1
                 val1 = prop.value
 
                 prop1 = prop.entity_name
                 if not _property_name_match(prop1, property_names):
                     continue
+
+                n_ex_prop += 1
 
                 # Check the curated properties against the extracted one.
                 property_found = False
@@ -158,18 +109,73 @@ def compute_metrics(
 
                     if _property_match(cure.property_value, val1):
                         property_found = True
+                        tp_val += 1
                         break
-                
-                if not property_found:
+
+                else:
                     fp_val += 1
-                    log.warn("[FP] Value {} not found in curated: {}",
+                    log.info("[FP] Value {} not found in curated: {}",
                         val1, [(r.property_name, r.property_value)
                                for r in curated_rows])
-                    
-                    if not material_found:
+                    if material_found:
+                        tp_prop += 1
+                    else:
                         fp_prop += 1
-
+                
         log.trace("Extracted properties: {}", n_para_props)
+
+        n_curated += len(curated_rows)
+
+        # Iterate over the curated/ground truth data.
+        for cure in curated_rows:
+            val0 = cure.property_value
+            if cure.property_name not in property_names:
+                continue
+
+            # Check the extracted materials against the curated one.
+            n_para_props = 0
+            material_found = False
+            property_found = False
+
+            for material in ex_materials:
+                if _material_match(cure.material, material.entity_name,
+                    cure.material_coreferents, material.coreferents):
+                    material_found = True
+
+                ex_props = postgres.raw_sql(
+                    pquery, method_id = method.id, material_id = material.id)
+                
+                n_para_props += len(ex_props)
+
+                # Check the extracted properties against the curated one.
+                if not property_found:
+                    for prop in ex_props:
+                        val1 = prop.value
+                        prop1 = prop.entity_name
+
+                        if not _property_name_match(prop1, property_names):
+                            continue
+
+                        if _property_match(val0, val1):
+                            property_found = True
+                            break
+
+                if not property_found:
+                    fn_val += 1
+                    if not material_found:
+                        fn_prop += 1
+
+                    log.info("[FN] Value {} not found in extracted: {}",
+                        val0, [(p.entity_name, p.value) for p in ex_props])
+                    
+            log.trace("Extracted properties: {}", n_para_props)
+
+            if not material_found:
+                fn_mat += 1
+                log.info("[FN] Material {} not found in extracted: {}",
+                         cure.material,
+                         [m.entity_name for m in ex_materials])
+
         t2.done("Paragraph {} processed.", item.para_id)
 
     db.close()
