@@ -33,6 +33,19 @@ def add_args(subparsers : _SubParsersAction):
     parser.add_argument(
         '--info', nargs='+', action='append', metavar=('key','value'),
         help="(Optional) Add/update items in extraction_info.")
+    
+
+def _try_numeric(value : str):
+    """ Try to check if its a numeric value. """
+    try:
+        value = int(value)
+    except:
+        try:
+            value = float(value)
+        except:
+            value = str(value)
+    return value
+
 
 def run(args : ArgumentParser):
     if args.subcmd in ['new', 'add']:
@@ -54,6 +67,7 @@ def run(args : ArgumentParser):
         if args.info:
             for k, value in args.info:
                 info[k] = value[0] if type(value) == list else value
+                info[k] = _try_numeric(info[k])
 
         db = postgres.connect()
         res = persist.add_method(db, args.method, args.dataset, args.model,
@@ -88,6 +102,7 @@ def run(args : ArgumentParser):
 
             for k, value in args.info:
                 info[k] = value[0] if type(value) == list else value
+                info[k] = _try_numeric(info[k])
                 log.info("extraction_info[{}] = {}", k, value)
 
             # Assign the new dict.
