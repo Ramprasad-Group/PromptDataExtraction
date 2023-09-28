@@ -81,8 +81,7 @@ class LLMPipeline:
         # Extract via API.
         t2 = log.trace("Sending paragraph to LLM extractor: {}",
                         paragraph.id)
-        records, hashstr = self.llm.process_paragraph(paragraph)
-        self.extraction_info['response_hash'] = hashstr
+        records, reqid = self.llm.process_paragraph(paragraph)
         t2.done("LLM extraction, found {} records.", len(records))
         
         if not records:
@@ -91,7 +90,7 @@ class LLMPipeline:
         # Post-process and save to db.
         t4 = log.trace("Post-processing LLM extracted records.")
         extracted = self._parse_records(records)
-        newfound = self._save_records(paragraph, extracted, hashstr)
+        newfound = self._save_records(paragraph, extracted, reqid)
         t4.done("Post-processing found {} new valid records.", len(extracted))
 
         return newfound
@@ -114,12 +113,12 @@ class LLMPipeline:
 
 
     def _save_records(self, para : PaperTexts, records : list[Record],
-                      response_hash : str) -> int:
+                      api_req_id : int) -> int:
         m = 0
         p = 0
 
         details = {
-            'llm_response_hash': response_hash
+            'llm_api_req_id': api_req_id
         }
 
         for record in records:

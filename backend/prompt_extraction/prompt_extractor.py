@@ -113,11 +113,11 @@ class LLMExtractor:
         reqinfo.model = self.model 
         reqinfo.api = self.api
         reqinfo.para_id = para.id
+        reqinfo.method_id = self.method.id
         reqinfo.status = 'preparing'
         reqinfo.request = prompt
         reqinfo.response = None
         reqinfo.response_obj = None
-        reqinfo.response_hash = None
 
         reqinfo.details = {}
         reqinfo.details['n_shots'] = len(messages) // 2
@@ -144,9 +144,6 @@ class LLMExtractor:
                 break
             except Exception as err:
                 log.warn("API request error: {}", err)
-
-                if self.debug:
-                    raise err
 
                 reqinfo.status = 'error'
 
