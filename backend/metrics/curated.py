@@ -116,7 +116,18 @@ def compute_singular_metrics(property_names : list[str],
                 tp_prop += 1
             else:
                 fp_prop += 1
-            
+                if material_found:
+                    log.info("[FP] Property material '{}' matches, "
+                             "value '{}' does not match.", extr.material,
+                             extr.property_value)
+                elif property_found:
+                    log.info("[FP] Property value '{}' matches, "
+                             "material '{}' does not match.",
+                             extr.property_value, extr.material)
+                else:
+                    log.info("[FP] Property material '{}' and "
+                             "value '{}' do not match.", extr.material,
+                             extr.property_value)
 
 
         # Find FN
@@ -161,6 +172,18 @@ def compute_singular_metrics(property_names : list[str],
 
             if not property_found:
                 fn_prop += 1
+                if material_found:
+                    log.info("[FN] Property material '{}' matches, "
+                             "value '{}' does not match.", cure.material,
+                             cure.property_value)
+                elif property_found:
+                    log.info("[FN] Property value '{}' matches, "
+                             "material '{}' does not match.",
+                             cure.property_value, cure.material)
+                else:
+                    log.info("[FN] Property material '{}' and "
+                             "value '{}' do not match.", cure.material,
+                             cure.property_value)
 
         t2.done("Paragraph {} processed.", item.para_id)
 
