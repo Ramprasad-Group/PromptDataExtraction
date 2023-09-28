@@ -14,7 +14,7 @@ from backend.prompt_extraction.shot_selection import (
 
 log = pylogg.New('llm')
 
-Record = namedtuple('Record', ['material', 'property', 'conditions'])
+Record = namedtuple('Record', ['material', 'property', 'condition'])
 
 
 class LLMPipeline:
@@ -37,7 +37,7 @@ class LLMPipeline:
         shot_selector = self.method.extraction_info.get('shot_selector')
         nshots = self.method.extraction_info.get('n_shots', 0)
         if shot_selector is None:
-            log.critical("Shot selector is not defined in the method.")
+            log.critical("shot_selector is not defined by the method.")
             raise ValueError("Shot selector needed.")
         else:
             if not nshots:
@@ -65,9 +65,7 @@ class LLMPipeline:
             log.critical("Invalid shot selector: {}", shot_selector)
             raise ValueError("Invalid shot selector", shot_selector)
         
-
-        log.note("Using {} shot selector with {} shots.",
-                    self.llm.shot_selector, nshots)
+        log.note("Using {} with {} shots.", self.llm.shot_selector, nshots)
 
 
     def run(self, paragraph : PaperTexts) -> int:
@@ -83,8 +81,7 @@ class LLMPipeline:
         # Extract via API.
         t2 = log.trace("Sending paragraph to LLM extractor: {}",
                         paragraph.id)
-        records, hashstr = self.llm.process_paragraph(paragraph)
-        self.extraction_info['response_hash'] = hashstr
+        records, reqid = self.llm.process_paragraph(paragraph)
         t2.done("LLM extraction, found {} records.", len(records))
         
         if not records:
@@ -93,7 +90,7 @@ class LLMPipeline:
         # Post-process and save to db.
         t4 = log.trace("Post-processing LLM extracted records.")
         extracted = self._parse_records(records)
-        newfound = self._save_records(paragraph, extracted, hashstr)
+        newfound = self._save_records(paragraph, extracted, reqid)
         t4.done("Post-processing found {} new valid records.", len(extracted))
 
         return newfound
@@ -111,18 +108,14 @@ class LLMPipeline:
 
             if material and value:
                 processed.append(Record(material=material, property=value,
-                                        conditions=rec['conditions']))
+                                        condition=rec['condition']))
         return processed
 
 
     def _save_records(self, para : PaperTexts, records : list[Record],
-                      response_hash : str) -> int:
+                      api_req_id : int) -> int:
         m = 0
         p = 0
-
-        details = {
-            'llm_response_hash': response_hash
-        }
 
         for record in records:
             if persist.add_material(
@@ -131,7 +124,7 @@ class LLMPipeline:
 
             if persist.add_property(
                 self.db, para, self.method, record.material, record.property,
-                conditions=record.conditions, details=details):
+                api_req_id=api_req_id, extracted_condition=record.condition):
                 p += 1
 
         # Save.

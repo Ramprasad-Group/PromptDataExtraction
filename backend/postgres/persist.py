@@ -106,7 +106,8 @@ def add_material(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
 
 def add_property(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
                  material : MaterialMention, prop : PropertyValuePair,
-                 conditions : str = "", details : dict = {}) -> int:
+                 api_req_id : int = None,
+                 extracted_condition : str = "") -> int:
     """ Add extracted properties values to postgres.
         Check uniqueness based on material id and property entity name,
         and numeric value.
@@ -154,10 +155,11 @@ def add_property(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
     propobj.value_average = prop.property_value_avg
     propobj.value_descriptor = prop.property_value_descriptor
     propobj.unit = prop.property_unit
+    propobj.api_req = api_req_id
     propobj.extraction_info = {}
 
     # Copy here. Or, dicts and lists params will persist between function calls.
-    propobj.conditions = dict(details)
+    propobj.conditions = {}
     tcond = prop.temperature_condition
     if tcond:
         propobj.conditions['temperature_condition'] = tcond
@@ -166,8 +168,8 @@ def add_property(db, para : orm.PaperTexts, method : orm.ExtractionMethods,
     if fcond:
         propobj.conditions['frequency_condition'] = fcond
 
-    if conditions:
-        propobj.conditions['extracted'] = conditions
+    if extracted_condition:
+        propobj.conditions['extracted'] = extracted_condition
 
     if prop.condition_str:
         propobj.conditions['measurement'] = prop.condition_str

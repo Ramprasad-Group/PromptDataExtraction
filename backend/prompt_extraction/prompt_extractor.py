@@ -18,8 +18,8 @@ log = pylogg.New('llm')
 
 class LLMExtractor:
     PROMPTS = [
-        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
-        "Extract all {property} values in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
+        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'condition' columns.",
+        "Extract all {property} values in JSONL format with 'material', 'property', 'value', 'condition' columns.",
     ]
 
     def __init__(self, db, method : ExtractionMethods) -> None:
@@ -113,11 +113,11 @@ class LLMExtractor:
         reqinfo.model = self.model 
         reqinfo.api = self.api
         reqinfo.para_id = para.id
+        reqinfo.method_id = self.method.id
         reqinfo.status = 'preparing'
         reqinfo.request = prompt
         reqinfo.response = None
         reqinfo.response_obj = None
-        reqinfo.response_hash = None
 
         reqinfo.details = {}
         reqinfo.details['n_shots'] = len(messages) // 2
@@ -144,9 +144,6 @@ class LLMExtractor:
                 break
             except Exception as err:
                 log.warn("API request error: {}", err)
-
-                if self.debug:
-                    raise err
 
                 reqinfo.status = 'error'
 
@@ -240,15 +237,15 @@ class LLMExtractor:
                 if not value:
                     value = record.get("numeric value", None)
 
-            conditions = record.get("conditions")
-            if conditions == "None" or conditions is None:
-                conditions = ""
+            condition = record.get("condition", record.get('conditions'))
+            if condition == "None" or condition is None:
+                condition = ""
 
             if material and prop and value:
                 data.append(
                     {
                         'material': material, 'property': prop, 'value': value,
-                        'conditions': conditions
+                        'condition': condition
                     }
                 )
 
