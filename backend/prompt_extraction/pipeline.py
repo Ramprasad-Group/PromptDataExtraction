@@ -37,7 +37,7 @@ class LLMPipeline:
         shot_selector = self.method.extraction_info.get('shot_selector')
         nshots = self.method.extraction_info.get('n_shots', 0)
         if shot_selector is None:
-            log.critical("Shot selector is not defined in the method.")
+            log.critical("shot_selector is not defined by the method.")
             raise ValueError("Shot selector needed.")
         else:
             if not nshots:
@@ -65,9 +65,7 @@ class LLMPipeline:
             log.critical("Invalid shot selector: {}", shot_selector)
             raise ValueError("Invalid shot selector", shot_selector)
         
-
-        log.note("Using {} shot selector with {} shots.",
-                    self.llm.shot_selector, nshots)
+        log.note("Using {} with {} shots.", self.llm.shot_selector, nshots)
 
 
     def run(self, paragraph : PaperTexts) -> int:

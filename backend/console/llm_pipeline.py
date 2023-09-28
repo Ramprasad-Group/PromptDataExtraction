@@ -106,7 +106,7 @@ def run(args: ArgumentParser):
     if len(records) == 0:
         return
     else:
-        log.note("Unprocessed Row IDs: {} to {}",
+        log.info("Unprocessed Row IDs: {} to {}",
                  records[0].filter_id, records[-1].filter_id)
 
     # Initialize the LLM extractor.
@@ -122,7 +122,8 @@ def run(args: ArgumentParser):
     new = 0
     processed_para = []
 
-    log.info("Running LLM pipeline on filtered paragraphs.")
+    log.info("Running LLM pipeline on '{}' filtered paragraphs.",
+             method.para_subset)
     log.info("Extraction method = {}", method.name)
     log.info("Checkpoint info = {}", ckpt_info)
 
