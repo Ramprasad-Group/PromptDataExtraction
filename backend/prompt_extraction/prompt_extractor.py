@@ -41,9 +41,11 @@ class LLMExtractor:
         self.shots = self._get_param('n_shots', False, 0)
 
         prompt_id = self._get_param('prompt_id', False, 0)
-        self.prompt = self.PROMPTS[prompt_id]
+        self.prompt = self._get_param('prompt', False, self.PROMPTS[prompt_id])
         log.note("Using Prompt: {}", self.prompt)
 
+        # Save the changes made to method extraction info.
+        self.db.commit()
         log.trace("Initialized {}", self.__class__.__name__)
 
 
@@ -72,11 +74,19 @@ class LLMExtractor:
     
     def _get_param(self, name : str, required : bool, default = None):
         """ Returns the value of a parameter or it's default.
+            The default value is written to method's info section.
             Raises exception if the parameter is required and not provided.
         """
-        if required and name not in self.method.extraction_info:
-            raise ValueError(f"'{name}' not set in extraction_info")
-        return self.method.extraction_info.get(name, default)
+        info = dict(self.method.extraction_info)
+        if required:
+            if name not in info:
+                raise ValueError(f"'{name}' not set in extraction_info")
+        else:
+            if name not in info:
+                info[name] = default
+                # Assignment required for sqlalchemy dict updates.
+                self.method.extraction_info = info
+        return info.get(name, default)
 
     def _preprocess_text(self, text : str) -> str:
         text = self.normalizer.normalize(text)
@@ -146,6 +156,7 @@ class LLMExtractor:
                 log.warn("API request error: {}", err)
 
                 reqinfo.status = 'error'
+                reqinfo.response_obj = dict(error=str(err))
 
                 # Increment the retry_delay
                 retry_delay *= exponential_base * (1 + jitter * random.random())
