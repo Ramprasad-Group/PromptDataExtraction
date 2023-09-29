@@ -39,6 +39,7 @@ class LLMExtractor:
         self.api_request_delay = self._get_param('api_request_delay', False, 0)
         self.temperature = self._get_param('temperature', False, 0.001)
         self.shots = self._get_param('n_shots', False, 0)
+        self.delay_multiplier = self._get_param('delay_multiplier', False, 2)
 
         prompt_id = self._get_param('prompt_id', False, 0)
         self.prompt = self._get_param('prompt', False, self.PROMPTS[prompt_id])
@@ -138,7 +139,6 @@ class LLMExtractor:
 
         # Make request.
         retry_delay = self.api_retry_delay
-        exponential_base = 2
         jitter = 0.1
 
         t2 = log.info("Making API request to {}.", self.api)
@@ -159,7 +159,8 @@ class LLMExtractor:
                 reqinfo.response_obj = dict(error=str(err))
 
                 # Increment the retry_delay
-                retry_delay *= exponential_base * (1 + jitter * random.random())
+                retry_delay *= self.delay_multiplier * (1 +
+                                                        jitter *random.random())
 
                 # Wait
                 log.info("Waiting for {:.2f} seconds ...", retry_delay)
