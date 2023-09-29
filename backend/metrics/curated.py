@@ -51,7 +51,7 @@ class Counter:
     # There are extracted rows not associated with curated paragraphs.
     relevant_extracted_rows : int = 0
 
-    # Extracted and relevant rows that matches the property.
+    # Extracted and relevant rows that matches the property name.
     prop_extracted_rows : int = 0
 
     # How many materials, values and (materials,values) are found in curated.
@@ -85,7 +85,7 @@ def compute_singular_metrics(property_names : list[str],
     n = Counter()
     log.note("Filtering data only for method = {}", method.name)
 
-    # Select the curated paragraph that are also in the same method.
+    # Select the curated paragraphs that are also in the same method.
     query = """
         SELECT DISTINCT(cd.para_id) FROM curated_data cd 
         WHERE EXISTS (
