@@ -15,18 +15,19 @@ material_entity_types = ['POLYMER', 'POLYMER_FAMILY', 'MONOMER', 'ORGANIC']
 filtration_dict = defaultdict(int)
 
 class FilterPropertyName:
-  property_tg = 'glass transition temperature'
-  property_tm = 'melting temperature'
-  property_td = 'thermal decomposition temperature'
-  property_thermal_conductivity = 'thermal conductivity'
-  property_bandgap = 'bandgap'
-  property_ts = 'tensile strength'
-  property_ym = 'youngs modulus'
-  property_eab = 'elongation at break'
-  property_cs = 'compressive strength'
-  property_is = 'impact strength'
-  property_hardness = 'hardness'
-  property_fs = 'flexural strength'
+	property_tg = 'glass transition temperature'
+	property_tm = 'melting temperature'
+	property_td = 'thermal decomposition temperature'
+	property_thermal_conductivity = 'thermal conductivity'
+	property_bandgap = 'bandgap'
+	property_ts = 'tensile strength'
+	property_ym = 'youngs modulus'
+	property_eab = 'elongation at break'
+	property_cs = 'compressive strength'
+	property_is = 'impact strength'
+	property_hardness = 'hardness'
+	property_fs = 'flexural strength'
+	
 
 
 def add_args(subparsers: _SubParsersAction):
