@@ -41,8 +41,13 @@ class LLMExtractor:
         self.shots = self._get_param('n_shots', False, 0)
         self.delay_multiplier = self._get_param('delay_multiplier', False, 2)
 
+        property = self._get_param('property', False, None)
         prompt_id = self._get_param('prompt_id', False, 0)
-        self.prompt = self._get_param('prompt', False, self.PROMPTS[prompt_id])
+        
+        # Format the prompt with the specified property string if any.
+        self.prompt = self._get_param('prompt', False,
+                            self.PROMPTS[prompt_id].format(property=property))
+
         log.note("Using Prompt: {}", self.prompt)
 
         # Save the changes made to method extraction info.
