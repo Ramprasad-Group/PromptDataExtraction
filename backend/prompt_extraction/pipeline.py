@@ -34,8 +34,15 @@ class LLMPipeline:
 
     def init_shot_selector(self, embeddings_model : str,
                            pytorch_device : int = 0, rebuild : bool = False):
-        shot_selector = self.method.extraction_info.get('shot_selector')
-        nshots = self.method.extraction_info.get('n_shots', 0)
+
+        # Get the required params from the method definition.
+        nshots = self._get_param('n_shots', 1)
+        shot_selector = self._get_param('shot_selector', None)
+        shot_min_recs = self._get_param('shot_nrecords', 2)
+
+        # Update the missing fields with the default values.
+        self.db.commit()
+
         if shot_selector is None:
             log.critical("shot_selector is not defined by the method.")
             raise ValueError("Shot selector needed.")
@@ -45,7 +52,6 @@ class LLMPipeline:
                 return
 
         # Initialize shot sampler.
-        shot_min_recs = self.method.extraction_info.get('shot_min_recs', 2)
         shot_curated_dataset = os.path.join(self.outdir, "shots.json")
         shot_embeddings_file = os.path.join(self.outdir, "embeddings.json")
 
@@ -96,6 +102,16 @@ class LLMPipeline:
         return newfound
 
 
+    def _get_param(self, name, default):
+        """ Get the value of a field of the method's extraction_info. """
+        info = dict(self.method.extraction_info)
+        if name not in info:
+            info[name] = default
+            # Assignment required for sqlalchemy dict updates.
+            self.method.extraction_info = info
+        return info[name]
+
+
     def _parse_records(self, llm_recs : list) -> list[Record]:
         processed = []
 
@@ -107,8 +123,10 @@ class LLMPipeline:
                 rec['property'], rec['value'])
 
             if material and value:
-                processed.append(Record(material=material, property=value,
+                processed.append(Record(material=material,
+                                        property=value,
                                         condition=rec['condition']))
+
         return processed
 
 
