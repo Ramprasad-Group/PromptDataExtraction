@@ -18,8 +18,8 @@ log = pylogg.New('llm')
 
 class LLMExtractor:
     PROMPTS = [
-        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
-        "Extract all {property} values in JSONL format with 'material', 'property', 'value', 'conditions' columns.",
+        "Extract all numbers in JSONL format with 'material', 'property', 'value', 'condition' columns.",
+        "Extract all {property} values in JSONL format with 'material', 'property', 'value', 'condition' columns.",
     ]
 
     def __init__(self, db, method : ExtractionMethods) -> None:
@@ -39,11 +39,19 @@ class LLMExtractor:
         self.api_request_delay = self._get_param('api_request_delay', False, 0)
         self.temperature = self._get_param('temperature', False, 0.001)
         self.shots = self._get_param('n_shots', False, 0)
+        self.delay_multiplier = self._get_param('delay_multiplier', False, 2)
 
+        property = self._get_param('property', False, None)
         prompt_id = self._get_param('prompt_id', False, 0)
-        self.prompt = self.PROMPTS[prompt_id]
+        
+        # Format the prompt with the specified property string if any.
+        self.prompt = self._get_param('prompt', False,
+                            self.PROMPTS[prompt_id].format(property=property))
+
         log.note("Using Prompt: {}", self.prompt)
 
+        # Save the changes made to method extraction info.
+        self.db.commit()
         log.trace("Initialized {}", self.__class__.__name__)
 
 
@@ -72,11 +80,19 @@ class LLMExtractor:
     
     def _get_param(self, name : str, required : bool, default = None):
         """ Returns the value of a parameter or it's default.
+            The default value is written to method's info section.
             Raises exception if the parameter is required and not provided.
         """
-        if required and name not in self.method.extraction_info:
-            raise ValueError(f"'{name}' not set in extraction_info")
-        return self.method.extraction_info.get(name, default)
+        info = dict(self.method.extraction_info)
+        if required:
+            if name not in info:
+                raise ValueError(f"'{name}' not set in extraction_info")
+        else:
+            if name not in info:
+                info[name] = default
+                # Assignment required for sqlalchemy dict updates.
+                self.method.extraction_info = info
+        return info.get(name, default)
 
     def _preprocess_text(self, text : str) -> str:
         text = self.normalizer.normalize(text)
@@ -113,11 +129,11 @@ class LLMExtractor:
         reqinfo.model = self.model 
         reqinfo.api = self.api
         reqinfo.para_id = para.id
+        reqinfo.method_id = self.method.id
         reqinfo.status = 'preparing'
         reqinfo.request = prompt
         reqinfo.response = None
         reqinfo.response_obj = None
-        reqinfo.response_hash = None
 
         reqinfo.details = {}
         reqinfo.details['n_shots'] = len(messages) // 2
@@ -128,7 +144,6 @@ class LLMExtractor:
 
         # Make request.
         retry_delay = self.api_retry_delay
-        exponential_base = 2
         jitter = 0.1
 
         t2 = log.info("Making API request to {}.", self.api)
@@ -145,13 +160,12 @@ class LLMExtractor:
             except Exception as err:
                 log.warn("API request error: {}", err)
 
-                if self.debug:
-                    raise err
-
                 reqinfo.status = 'error'
+                reqinfo.response_obj = dict(error=str(err))
 
                 # Increment the retry_delay
-                retry_delay *= exponential_base * (1 + jitter * random.random())
+                retry_delay *= self.delay_multiplier * (1 +
+                                                        jitter *random.random())
 
                 # Wait
                 log.info("Waiting for {:.2f} seconds ...", retry_delay)
@@ -240,15 +254,15 @@ class LLMExtractor:
                 if not value:
                     value = record.get("numeric value", None)
 
-            conditions = record.get("conditions")
-            if conditions == "None" or conditions is None:
-                conditions = ""
+            condition = record.get("condition", record.get('conditions'))
+            if condition == "None" or condition is None:
+                condition = ""
 
             if material and prop and value:
                 data.append(
                     {
                         'material': material, 'property': prop, 'value': value,
-                        'conditions': conditions
+                        'condition': condition
                     }
                 )
 

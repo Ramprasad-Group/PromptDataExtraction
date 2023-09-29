@@ -14,12 +14,10 @@ from backend.console import (
     checkpoint,
     db_tables,
     settings,
-    ner_curated,
     ner_filtered,
     filter_by_ner,
     parse_directory,
     parse_corpus,
-    llm_curated,
     heuristic_filter,
     add_conditions,
     ps_ner_filter,
@@ -37,12 +35,10 @@ def parse_args() -> argparse.Namespace:
     checkpoint.add_args(subparsers)
     db_tables.add_args(subparsers)
     settings.add_args(subparsers)
-    ner_curated.add_args(subparsers)
     ner_filtered.add_args(subparsers)
     filter_by_ner.add_args(subparsers)
     parse_directory.add_args(subparsers)
     parse_corpus.add_args(subparsers)
-    llm_curated.add_args(subparsers)
     heuristic_filter.add_args(subparsers)
     add_conditions.add_args(subparsers)
     ps_ner_filter.add_args(subparsers)
@@ -114,9 +110,6 @@ def main():
     elif args.command == settings.ScriptName:
         settings.run(args)
 
-    elif args.command == ner_curated.ScriptName:
-        ner_curated.run(args)
-
     elif args.command == ner_filtered.ScriptName:
         ner_filtered.run(args)
 
@@ -128,9 +121,6 @@ def main():
 
     elif args.command == parse_corpus.ScriptName:
         parse_corpus.run(args)
-
-    elif args.command == llm_curated.ScriptName:
-        llm_curated.run(args)
 
     elif args.command == heuristic_filter.ScriptName:
         heuristic_filter.run(args)

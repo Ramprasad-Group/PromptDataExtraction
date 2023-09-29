@@ -14,10 +14,11 @@ def add_args(subparsers : _SubParsersAction):
         ScriptName,
         help='Create or update extraction methods in database.')
     parser.add_argument(
-        "subcmd", choices=['new', 'set', 'show'])
+        "subcmd", choices=['new', 'set', 'show', 'list'])
     parser.add_argument(
         "-m", "--method", required=True,
-        help="(Required) Name of the method for the extraction_methods table.")
+        help="(Required) Name of the method for the extraction_methods table. "
+                "Use 'all' for listing.")
     parser.add_argument(
         "--filter", default=None,
         help="Name of the filter/para-subset to process in the method.")
@@ -33,9 +34,28 @@ def add_args(subparsers : _SubParsersAction):
     parser.add_argument(
         '--info', nargs='+', action='append', metavar=('key','value'),
         help="(Optional) Add/update items in extraction_info.")
+    
+
+def _try_numeric(value : str):
+    """ Try to check if its a numeric value. """
+    try:
+        value = int(value)
+    except:
+        try:
+            value = float(value)
+        except:
+            value = str(value)
+    return value
+
 
 def run(args : ArgumentParser):
-    if args.subcmd in ['new', 'add']:
+    if args.subcmd in ['list'] or args.method in ['all', 'list']:
+        rows = postgres.raw_sql("Select * From extraction_methods em;")
+        log.note("Methods list:")
+        for row in rows:
+            log.note(row.name)
+            log.trace(str(row))
+    elif args.subcmd in ['new', 'add']:
         # If method does not exist, we will create a new one.
         log.note("Creating new method: {}", args.method)
         if not args.dataset:
@@ -54,6 +74,7 @@ def run(args : ArgumentParser):
         if args.info:
             for k, value in args.info:
                 info[k] = value[0] if type(value) == list else value
+                info[k] = _try_numeric(info[k])
 
         db = postgres.connect()
         res = persist.add_method(db, args.method, args.dataset, args.model,
@@ -88,6 +109,7 @@ def run(args : ArgumentParser):
 
             for k, value in args.info:
                 info[k] = value[0] if type(value) == list else value
+                info[k] = _try_numeric(info[k])
                 log.info("extraction_info[{}] = {}", k, value)
 
             # Assign the new dict.
@@ -108,4 +130,6 @@ def run(args : ArgumentParser):
             return
         else:
             log.note("{}", method)
-
+    
+    else:
+        log.error("Invalid command.")

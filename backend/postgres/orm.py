@@ -330,6 +330,10 @@ class ExtractedProperties(ORMBase):
     conditions: Mapped[Dict] = mapped_column(JSON, default={})
     extraction_info: Mapped[Dict] = mapped_column(JSON, default={})
 
+    api_req: Mapped[int] = mapped_column(
+        ForeignKey("api_requests.id", ondelete="SET NULL", onupdate='CASCADE'),
+        nullable=True, unique=False, default=None)
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
@@ -501,6 +505,9 @@ class APIRequests(ORMBase):
         para_id:    Foreign key referencing the source paragraph used to make
                     the api request.
 
+        method_id:  Foreign key referencing the method definition used to make
+                    the api request.
+
         details:    Additional details about the interaction, eg. number of
                     shots, comments etc. (dict)
 
@@ -517,9 +524,6 @@ class APIRequests(ORMBase):
         response_tokens:
                     Cost or the number of tokens used for response / cost. (int)
 
-        response_hash:
-                    SHA256 HASH of the response for reference purposes.
-
     """
 
     __tablename__ = "api_requests"
@@ -534,11 +538,14 @@ class APIRequests(ORMBase):
     para_id: Mapped[int] = mapped_column(ForeignKey("paper_texts.id"),
             unique=False, index=True)
 
+    method_id: Mapped[int] = mapped_column(
+        ForeignKey("extraction_methods.id", ondelete='CASCADE',
+                   onupdate='CASCADE'), unique=False, index=True)
+
     request_obj: Mapped[Dict] = mapped_column(JSON)
     response_obj: Mapped[Dict] = mapped_column(JSON, nullable=True)
     request_tokens: Mapped[int] = mapped_column(Integer, nullable=True)
     response_tokens: Mapped[int] = mapped_column(Integer, nullable=True)
-    response_hash : Mapped[str] = mapped_column(Text, index=True, nullable=True)
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
