@@ -175,7 +175,9 @@ def compute_singular_metrics(property_names : list[str],
                 n.fp_mat += 1
                 n.mat_not_matched_iter_extracted += 1
                 log.info("[FP] Material '{}' not found in curated: {}",
-                         extr.material, [r.material for r in curated_rows])
+                         extr.material, [
+                             (r.property_name, r.material)
+                             for r in curated_rows])
 
             if value_found:
                 n.tp_val += 1
@@ -198,13 +200,13 @@ def compute_singular_metrics(property_names : list[str],
                     log.info("[FP] Property material '{}' matches, "
                              "value '{}' does not match.", extr.material,
                              extr.property_value)
-                elif property_found:
+                elif value_found:
                     log.info("[FP] Property value '{}' matches, "
                              "material '{}' does not match.",
                              extr.property_value, extr.material)
                 else:
                     log.info("[FP] Property material '{}' and "
-                             "value '{}' do not match.", extr.material,
+                             "value '{}' do not match/found.", extr.material,
                              extr.property_value)
 
 
@@ -241,7 +243,9 @@ def compute_singular_metrics(property_names : list[str],
                 n.fn_mat += 1
                 n.mat_not_matched_iter_curated += 1
                 log.info("[FN] Material '{}' not found in extracted: {}",
-                         cure.material, [r.material for r in extracted_rows])
+                         cure.material, [
+                             (r.property_name, r.material)
+                             for r in extracted_rows])
             else:
                 n.mat_matched_iter_curated += 1
 
@@ -262,13 +266,13 @@ def compute_singular_metrics(property_names : list[str],
                     log.info("[FN] Property material '{}' matches, "
                              "value '{}' does not match.", cure.material,
                              cure.property_value)
-                elif property_found:
+                elif value_found:
                     log.info("[FN] Property value '{}' matches, "
                              "material '{}' does not match.",
                              cure.property_value, cure.material)
                 else:
                     log.info("[FN] Property material '{}' and "
-                             "value '{}' do not match.", cure.material,
+                             "value '{}' do not match/found.", cure.material,
                              cure.property_value)
             else:
                 n.prop_matched_iter_curated += 1
@@ -324,6 +328,7 @@ def _property_name_match(name : str, namelist : list[str]):
     return any(criteria)
 
 def _property_match(val0 : str, val1 : str):
+    log.trace("Comparing values: '{}' vs. '{}'", val0, val1)
     val0 = _norm_value(val0)
     val1 = _norm_value(val1)
     criteria = [
@@ -338,11 +343,15 @@ def _property_match(val0 : str, val1 : str):
         val1 in val0.split(),
         val0 in val1.split(),
     ]
-    return any(criteria)
+    result = any(criteria)
+    log.trace("Result = {}", result)
+    return result
 
 
 def _material_match(
         mat0 : str, mat1 : str, mat0corefs : list[str], mat1corefs : list[str]):
+    log.trace("Comparing materials: '{}' vs. '{}'", mat0, mat1)
+    log.trace("Corefs: {} vs {}", mat0corefs, mat1corefs)
     mat0 = _norm_name(mat0)
     corefs0 = [_norm_name(c) for c in mat0corefs]
     mat1 = _norm_name(mat1)
@@ -363,7 +372,10 @@ def _material_match(
         any([mat1 == m.lower() for m in corefs0])
     ]
     # log.debug(f"{any(criteria)} = {mat0} in {corefs1}, or {mat1} in {corefs0}")
-    return any(criteria)
+    result = any(criteria)
+    log.trace("Result = {}", result)
+    return result
+
 
 def _norm_value(val : str):
     val = val.lower()
@@ -373,8 +385,8 @@ def _norm_value(val : str):
     val = val.replace(" + /-", "±")
     val = val.replace(" +/-", "±")
     val = val.replace("+/-", "±")
-    # val = val.replace(" ", '')
     val = val.replace('° C', '°C') # NER
+    val = val.replace(" ", '') # must be the last normalization!
     return val
 
 def _norm_name(val : str):
