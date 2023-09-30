@@ -47,6 +47,7 @@ tg_corefs = [
     'glass transition temperature (Tg)',
     'glass transition (T_{g})',
     'glass transition (T_g)',
+    'static Tg', 'dynamic Tg',
 ]
 
 eg_corefs = [
