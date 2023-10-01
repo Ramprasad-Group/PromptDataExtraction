@@ -70,6 +70,8 @@ class ShotSelector:
         except:
             # Retrive the curated data from database.
             curated: list[CuratedData] = CuratedData().get_all(db, criteria)
+            log.trace("Number of curated data rows: {}", len(curated))
+
             for data in curated:
                 if data.para_id not in self.curated:
                     # get the text
@@ -129,7 +131,7 @@ class ShotSelector:
                  self.min_records)
         return {
             k: v for k, v in dataset.items()
-            if len(v['records']) > self.min_records
+            if len(v['records']) >= self.min_records
         }
 
     def compute_embeddings(self, tokenizer : Tokenizer = None,
