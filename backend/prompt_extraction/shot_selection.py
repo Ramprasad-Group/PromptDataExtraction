@@ -134,8 +134,8 @@ class ShotSelector:
             if len(v['records']) >= self.min_records
         }
 
-    def compute_embeddings(self, tokenizer : Tokenizer = None,
-                           save_file : str = None, recompute : bool = False):
+    def compute_embeddings(self, save_file : str = None,
+                           recompute : bool = False):
         pass
 
     def get_best_shots(self, text: str, n: int = 1):
@@ -152,40 +152,53 @@ class RandomShotSelector(ShotSelector):
         return [self.curated[c] for c in choices]
 
 
-class DiverseShotSelector(ShotSelector):
-    def __init__(self, min_records: int = 2, use_keywords : bool = False):
+class SimilarShotSelector(ShotSelector):
+    """ Get the most similar n items based on text embeddings of the
+        curated data and prompt text. Calculate similarity scores based on
+        the distances from the K-means cluster centroids.
+    """
+
+    def __init__(self, tokenizer : Tokenizer, min_records: int = 2,
+                 use_keywords : bool = False):
         super().__init__(min_records)
         import spacy
         self.nlplang = spacy.load('en_core_web_sm')
         self.use_keywords = use_keywords
+        self.tokenizer : Tokenizer = tokenizer
+        self.kmeans = KMeans(n_clusters = 10)
+        self.diverse_paras = []
+
 
     def get_best_shots(self, text: str, n: int = 1):
-        """ Get the most diverse n items based on text embeddings
-        of the curated data. """
+        """ Calculate similarity score based on distance from the K-means
+            cluster centroids.
+        """
 
-        if not self.embeddings:
-            raise RuntimeError("Embeddings not computed")
+        # Embeddings for the new text
+        text_embeddings = self.tokenizer.get_text_embeddings(text)
 
-        Xt = np.array([embed for embed in self.embeddings.values()])
-        kmeans = KMeans(n_clusters=n)
-        kmeans.fit(Xt)
+        # Squared distances from cluster centers
+        distances = self.kmeans.transform(np.array(text_embeddings))**2
 
-        cluster_centers = kmeans.transform(Xt).argmin(axis=0)
-        diverse_paras = [
-            list(self.embeddings.keys())[i] for i in cluster_centers
-        ]
+        # Minimum distances
+        closest_centers = distances.argsort(axis=1)[:n]
 
-        return [self.curated[para_id] for para_id in diverse_paras]
+        # Para IDs for the closest cluster center
+        para_ids = [self.diverse_paras[i] for i in closest_centers]
 
-    def compute_embeddings(self, tokenizer : Tokenizer,
-                           save_file : str = None, recompute : bool = False):
+        # Curated items for the selected para_ids.
+        return [self.curated[para_id] for para_id in para_ids]
+
+
+    def compute_embeddings(self, save_file : str = None,
+                           recompute : bool = False):
         """ Compute embeddings of the curated texts using the BERT model. """
         if not self.curated:
             raise RuntimeError("Curated dataset not loaded.")
         
         try:
             if recompute:
-                raise RuntimeError
+                raise RuntimeError('Recomputing')
             self.load_embeddings(save_file)
         except:
             t2 = log.info("Computing text embeddings for {} text items.",
@@ -194,12 +207,16 @@ class DiverseShotSelector(ShotSelector):
             for para_id, data in self.curated.items():
                 text = self._get_relevant_sentences(data['text'],
                                                     data['keywords'])
-                self.embeddings[para_id] = tokenizer.get_text_embeddings(text)
+                self.embeddings[para_id] = \
+                    self.tokenizer.get_text_embeddings(text)
 
             t2.done("Embeddings computed.")
 
             if save_file is not None:
                 self.save_embeddings(save_file)
+
+        # Calculate KMeans cluster centers
+        self._find_clusters()
 
 
     def _get_relevant_sentences(self, text, keywords) -> str:
@@ -214,3 +231,32 @@ class DiverseShotSelector(ShotSelector):
                 relevant_sentences.append(sentence.text)
         return " ".join(relevant_sentences)
 
+
+    def _find_clusters(self):
+        """ Get the most diverse n items based on text embeddings
+        of the curated data. """
+
+        if not self.embeddings:
+            raise RuntimeError("Embeddings not computed")
+
+        Xt = np.array([embed for embed in self.embeddings.values()])
+        self.kmeans.fit(Xt)
+
+        cluster_centers = self.kmeans.transform(Xt).argmin(axis=0)
+        self.diverse_paras = [
+            list(self.embeddings.keys())[i] for i in cluster_centers
+        ]
+
+
+
+class DiverseShotSelector(SimilarShotSelector):
+    """ Get the most diverse n items based on text embeddings
+        of the curated data.
+    """
+    def __init__(self, tokenizer : Tokenizer, min_records: int = 2,
+                 use_keywords : bool = False):
+        super().__init__(tokenizer, min_records, use_keywords)
+
+
+    def get_best_shots(self, text: str, n: int = 1):
+        return [self.curated[para_id] for para_id in self.diverse_paras[:n]]

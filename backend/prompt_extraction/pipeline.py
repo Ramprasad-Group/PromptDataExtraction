@@ -9,7 +9,7 @@ from backend.prompt_extraction.crossref_extractor import CrossrefExtractor
 from backend.prompt_extraction.material_extractor import MaterialExtractor
 from backend.prompt_extraction.property_extractor import PropertyDataExtractor
 from backend.prompt_extraction.shot_selection import (
-    RandomShotSelector, DiverseShotSelector,
+    RandomShotSelector, DiverseShotSelector, SimilarShotSelector
 )
 from backend.prompt_extraction.tokenizers import (
     BertTokenizer, LlamaTokenizer, GPTTokenizer
@@ -43,10 +43,6 @@ class LLMPipeline:
         shot_selector = self._get_param('shot_selector', None)
         shot_min_recs = self._get_param('shot_nrecords', 2)
         shot_keywords = self._get_param('shot_keywords', False)
-        shot_tokenizer = self._get_param('shot_tokenizer', None)
-
-        # Update the missing fields with the default values.
-        self.db.commit()
 
         if shot_selector is None:
             log.critical("shot_selector is not defined by the method.")
@@ -66,30 +62,30 @@ class LLMPipeline:
                 self.db, shot_curated_dataset, rebuild)
 
         elif shot_selector == 'diverse':
-            self.llm.shot_selector = DiverseShotSelector(
-                shot_min_recs, shot_keywords)
+            tokenizer = \
+                self._get_shot_tokenizer(bert_model_path, pytorch_device)
+            self.llm.shot_selector = \
+                DiverseShotSelector(tokenizer, shot_min_recs, shot_keywords)
 
-            self.llm.shot_selector.build_curated_dataset(
-                self.db, shot_curated_dataset, rebuild)
-            
-            if shot_tokenizer in ['polyai', 'llama']:
-                tokenizer = LlamaTokenizer(self.method.model, pytorch_device)
-            elif shot_tokenizer in ['tiktoken', 'gpt', 'openai']:
-                tokenizer = GPTTokenizer(self.method.model, pytorch_device)
-            elif shot_tokenizer in ['bert', 'materials-bert']:
-                tokenizer = BertTokenizer(bert_model_path, pytorch_device)
-            else:
-                log.critical("shot_tokenizer is not defined by the method.")
-                raise ValueError("Tokenizer needed for diverse shot selector.")
-
-            self.llm.shot_selector.compute_embeddings(tokenizer,
-                                                      shot_embeddings_file,
-                                                      rebuild)
+        elif shot_selector == 'similar':
+            tokenizer = \
+                self._get_shot_tokenizer(bert_model_path, pytorch_device)
+            self.llm.shot_selector = \
+                SimilarShotSelector(tokenizer, shot_min_recs, shot_keywords)
 
         else:
             log.critical("Invalid shot selector: {}", shot_selector)
             raise ValueError("Invalid shot selector", shot_selector)
+
+        self.llm.shot_selector.build_curated_dataset(
+            self.db, shot_curated_dataset, rebuild)
         
+        self.llm.shot_selector.compute_embeddings(shot_embeddings_file,
+                                                    rebuild)
+
+        # Update the missing fields with the default values.
+        self.db.commit()
+
         log.note("Using {} with {} shots.", self.llm.shot_selector, nshots)
 
 
@@ -129,6 +125,21 @@ class LLMPipeline:
             # Assignment required for sqlalchemy dict updates.
             self.method.extraction_info = info
         return info[name]
+    
+
+    def _get_shot_tokenizer(self, bert_model_path, pytorch_device):
+        tokenizer = None
+        shot_tokenizer = self._get_param('shot_tokenizer', None)
+        if shot_tokenizer in ['polyai', 'llama']:
+            tokenizer = LlamaTokenizer(self.method.model, pytorch_device)
+        elif shot_tokenizer in ['tiktoken', 'gpt', 'openai']:
+            tokenizer = GPTTokenizer(self.method.model, pytorch_device)
+        elif shot_tokenizer in ['bert', 'materials-bert']:
+            tokenizer = BertTokenizer(bert_model_path, pytorch_device)
+        else:
+            log.critical("shot_tokenizer is not defined by the method.")
+            raise ValueError("Tokenizer needed for shot selection.")
+        return tokenizer
 
 
     def _parse_records(self, llm_recs : list) -> list[Record]:
