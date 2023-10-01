@@ -72,9 +72,9 @@ class LLMPipeline:
             self.llm.shot_selector.build_curated_dataset(
                 self.db, shot_curated_dataset, rebuild)
             
-            if shot_tokenizer in ['sentencepiece', 'llama']:
+            if shot_tokenizer in ['polyai', 'llama']:
                 tokenizer = LlamaTokenizer(self.method.model, pytorch_device)
-            elif shot_tokenizer in ['tiktoken', 'gpt']:
+            elif shot_tokenizer in ['tiktoken', 'gpt', 'openai']:
                 tokenizer = GPTTokenizer(self.method.model, pytorch_device)
             elif shot_tokenizer in ['bert', 'materials-bert']:
                 tokenizer = BertTokenizer(bert_model_path, pytorch_device)

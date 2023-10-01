@@ -52,7 +52,7 @@ class BertTokenizer(Tokenizer):
 
 class LlamaTokenizer(Tokenizer):
     def __init__(self, model : str, device : int = 0) -> None:
-        super().__init__()
+        super().__init__(model, device)
 
     def get_text_embeddings(self, text: str) -> np.array:
         """ Compute the embeddings for the given text.
@@ -69,7 +69,7 @@ class LlamaTokenizer(Tokenizer):
 
 class GPTTokenizer(Tokenizer):
     def __init__(self, model : str, device : int = 0) -> None:
-        super().__init__()
+        super().__init__(model, device)
 
         # Load model and tokenizer
         import tiktoken
