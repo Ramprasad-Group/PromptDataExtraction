@@ -117,7 +117,6 @@ def run(args: ArgumentParser):
     pipeline.init_shot_selector(
         sett.NERPipeline.model, sett.NERPipeline.pytorch_device, args.rebuild)
 
-
     n = 0
     new = 0
     processed_para = []
