@@ -177,14 +177,17 @@ class SimilarShotSelector(ShotSelector):
         # Embeddings for the new text
         text_embeddings = self.tokenizer.get_text_embeddings(text)
 
+        # Reshape into 2D
+        text_embeddings = text_embeddings.reshape(1, -1)
+
         # Squared distances from cluster centers
         distances = self.kmeans.transform(np.array(text_embeddings))**2
 
         # Minimum distances
-        closest_centers = distances.argsort(axis=1)[:n]
+        closest_centers = distances.argsort(axis=1).flatten().tolist()
 
         # Para IDs for the closest cluster center
-        para_ids = [self.diverse_paras[i] for i in closest_centers]
+        para_ids = [self.diverse_paras[i] for i in closest_centers[:n]]
 
         # Curated items for the selected para_ids.
         return [self.curated[para_id] for para_id in para_ids]
