@@ -16,15 +16,15 @@ class Tokenizer:
 
 class BertTokenizer(Tokenizer):
     def __init__(self, model : str, device : int = 0) -> None:
-        super().__init__()
+        super().__init__(model, device)
 
         # Load model and tokenizer
         from transformers import AutoTokenizer
         from transformers import AutoModelForTokenClassification
 
         t1 = log.trace("Loading bert model to device = {}.", device)
-        self.tokenizer = AutoTokenizer.from_pretrained(model,
-                                                       model_max_length=512)
+        self.tokenizer = \
+            AutoTokenizer.from_pretrained(model, model_max_length=512)
 
         self.model = AutoModelForTokenClassification.from_pretrained(model)
         t1.done("Loaded bert model to device {}", device)
@@ -48,36 +48,4 @@ class BertTokenizer(Tokenizer):
             embeddings = outputs[0].mean(dim=1).squeeze(0)
 
         return embeddings.numpy()
-
-
-class LlamaTokenizer(Tokenizer):
-    def __init__(self, model : str, device : int = 0) -> None:
-        super().__init__(model, device)
-
-    def get_text_embeddings(self, text: str) -> np.array:
-        """ Compute the embeddings for the given text.
-            Returns a numpy array containing the text embeddings.
-        """
-        import polyai.api as polyai
-        resp = polyai.TextEmbedding.create(
-            model="polyai", # currently ignored by the server.
-            text=text,
-        )
-
-        return np.array(resp['embeddings'])
-
-
-class GPTTokenizer(Tokenizer):
-    def __init__(self, model : str, device : int = 0) -> None:
-        super().__init__(model, device)
-
-        # Load model and tokenizer
-        import tiktoken
-        self.encoder = tiktoken.encoding_for_model(model)
-
-    def get_text_embeddings(self, text: str) -> np.array:
-        """ Compute the embeddings for the given text.
-            Returns a numpy array containing the text embeddings.
-        """
-        return np.array(self.encoder.encode(text))
 
