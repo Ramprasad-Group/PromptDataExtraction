@@ -9,7 +9,10 @@ from backend.prompt_extraction.crossref_extractor import CrossrefExtractor
 from backend.prompt_extraction.material_extractor import MaterialExtractor
 from backend.prompt_extraction.property_extractor import PropertyDataExtractor
 from backend.prompt_extraction.shot_selection import (
-    RandomShotSelector, DiverseShotSelector
+    RandomShotSelector, DiverseShotSelector,
+)
+from backend.prompt_extraction.tokenizers import (
+    BertTokenizer, LlamaTokenizer, GPTTokenizer
 )
 
 log = pylogg.New('llm')
@@ -32,13 +35,15 @@ class LLMPipeline:
         log.trace("Initialized {}", self.__class__.__name__)
 
 
-    def init_shot_selector(self, embeddings_model : str,
+    def init_shot_selector(self, bert_model_path : str,
                            pytorch_device : int = 0, rebuild : bool = False):
 
         # Get the required params from the method definition.
         nshots = self._get_param('n_shots', 1)
         shot_selector = self._get_param('shot_selector', None)
         shot_min_recs = self._get_param('shot_nrecords', 2)
+        shot_keywords = self._get_param('shot_keywords', False)
+        shot_tokenizer = self._get_param('shot_tokenizer', None)
 
         # Update the missing fields with the default values.
         self.db.commit()
@@ -61,11 +66,25 @@ class LLMPipeline:
                 self.db, shot_curated_dataset, rebuild)
 
         elif shot_selector == 'diverse':
-            self.llm.shot_selector = DiverseShotSelector(shot_min_recs)
+            self.llm.shot_selector = DiverseShotSelector(
+                shot_min_recs, shot_keywords)
+
             self.llm.shot_selector.build_curated_dataset(
                 self.db, shot_curated_dataset, rebuild)
-            self.llm.shot_selector.compute_embeddings(
-                embeddings_model, pytorch_device, shot_embeddings_file, rebuild)
+            
+            if shot_tokenizer in ['sentencepiece', 'llama']:
+                tokenizer = LlamaTokenizer(self.method.model, pytorch_device)
+            elif shot_tokenizer in ['tiktoken', 'gpt']:
+                tokenizer = GPTTokenizer(self.method.model, pytorch_device)
+            elif shot_tokenizer in ['bert', 'materials-bert']:
+                tokenizer = BertTokenizer(bert_model_path, pytorch_device)
+            else:
+                log.critical("shot_tokenizer is not defined by the method.")
+                raise ValueError("Tokenizer needed for diverse shot selector.")
+
+            self.llm.shot_selector.compute_embeddings(tokenizer,
+                                                      shot_embeddings_file,
+                                                      rebuild)
 
         else:
             log.critical("Invalid shot selector: {}", shot_selector)

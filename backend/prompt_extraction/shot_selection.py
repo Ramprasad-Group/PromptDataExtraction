@@ -5,6 +5,7 @@ import random
 import numpy as np
 from sklearn.cluster import KMeans
 from backend.postgres.orm import CuratedData, PaperTexts, PropertyMetadata
+from backend.prompt_extraction.tokenizers import Tokenizer
 
 log = pylogg.New("shot")
 
@@ -14,6 +15,7 @@ class ShotSelector:
         self.curated = {}
         self.embeddings = {}
         self.min_records = min_records
+        log.trace("Initialized {}", self.__class__.__name__)
 
     def __repr__(self) -> str:
         name = self.__class__.__name__
@@ -130,9 +132,8 @@ class ShotSelector:
             if len(v['records']) > self.min_records
         }
 
-    def compute_embeddings(
-            self, ner_model: str, device: int = 0, save_file : str = None,
-            recompute : bool = False):
+    def compute_embeddings(self, tokenizer : Tokenizer = None,
+                           save_file : str = None, recompute : bool = False):
         pass
 
     def get_best_shots(self, text: str, n: int = 1):
@@ -150,14 +151,11 @@ class RandomShotSelector(ShotSelector):
 
 
 class DiverseShotSelector(ShotSelector):
-    def __init__(self, min_records: int = 2) -> None:
-        import spacy
-        from backend.record_extraction import bert_model
-
+    def __init__(self, min_records: int = 2, use_keywords : bool = False):
         super().__init__(min_records)
-
+        import spacy
         self.nlplang = spacy.load('en_core_web_sm')
-        self.bert = bert_model.MaterialsBERT()
+        self.use_keywords = use_keywords
 
     def get_best_shots(self, text: str, n: int = 1):
         """ Get the most diverse n items based on text embeddings
@@ -177,7 +175,7 @@ class DiverseShotSelector(ShotSelector):
 
         return [self.curated[para_id] for para_id in diverse_paras]
 
-    def compute_embeddings(self, ner_model: str, device: int = 0,
+    def compute_embeddings(self, tokenizer : Tokenizer,
                            save_file : str = None, recompute : bool = False):
         """ Compute embeddings of the curated texts using the BERT model. """
         if not self.curated:
@@ -188,24 +186,29 @@ class DiverseShotSelector(ShotSelector):
                 raise RuntimeError
             self.load_embeddings(save_file)
         except:
-            self.bert.init_local_model(ner_model, device)
-
             t2 = log.info("Computing text embeddings for {} text items.",
                         len(self.curated))
 
             for para_id, data in self.curated.items():
-                text = self._get_relevant_sentences(data['text'], data['keywords'])
-                self.embeddings[para_id] = self.bert.get_text_embeddings(text)
+                text = self._get_relevant_sentences(data['text'],
+                                                    data['keywords'])
+                self.embeddings[para_id] = tokenizer.get_text_embeddings(text)
 
             t2.done("Embeddings computed.")
+
             if save_file is not None:
                 self.save_embeddings(save_file)
 
+
     def _get_relevant_sentences(self, text, keywords) -> str:
         """ Select only the sentences that contain one of the keywords. """
+        if not self.use_keywords:
+            return text
+
         relevant_sentences = []
         doc = self.nlplang(text)
         for sentence in doc.sents:
             if any([word in sentence.text for word in keywords]):
                 relevant_sentences.append(sentence.text)
         return " ".join(relevant_sentences)
+
