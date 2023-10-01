@@ -237,6 +237,8 @@ class LLMExtractor:
 
         if self.api == "polyai":
             str_output = str_output.split("###")[0].strip()
+            # Multiple jsonl sections.
+            str_output = str_output.replace("}] [{", "}, {")
 
         try:
             records = json.loads(str_output)
@@ -244,6 +246,10 @@ class LLMExtractor:
             log.error("Failed to parse LLM output as JSON: {}", err)
             log.info("Original output: {}", str_output)
             return data
+        
+        material = None
+        prop = None 
+        value = None
 
         for record in records:
             material = record.get("material", None)
