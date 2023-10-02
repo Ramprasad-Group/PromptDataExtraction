@@ -239,6 +239,7 @@ class LLMExtractor:
             str_output = str_output.split("###")[0].strip()
             # Multiple jsonl sections.
             str_output = str_output.replace("}] [{", "}, {")
+            str_output = str_output.replace("}]\n[{", "}, {")
 
         try:
             records = json.loads(str_output)
