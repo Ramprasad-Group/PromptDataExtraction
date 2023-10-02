@@ -1,3 +1,4 @@
+import re
 import time
 import json
 import random
@@ -174,7 +175,6 @@ class LLMExtractor:
 
         reqinfo.details['retries'] = retry
 
-        t2.done("Request processed.")
         log.trace("API Response: {}", output)
 
         reqinfo.details['elapsed'] = t2.elapsed()
@@ -243,7 +243,7 @@ class LLMExtractor:
             str_output = str_output.replace("}]\n[{", "}, {")
 
         try:
-            records = json.loads(str_output)
+            records = self._json_safe_load(str_output)
         except Exception as err:
             log.error("Failed to parse LLM output as JSON: {}", err)
             log.info("Original output: {}", str_output)
@@ -275,3 +275,17 @@ class LLMExtractor:
                 )
 
         return data
+
+    def _json_safe_load(self, jsonstr : str) -> list[dict]:
+        records = []
+        try:
+            records = json.loads(jsonstr)
+        except:
+            # Try to fix the malformed json.
+            if "\%" in jsonstr:
+                jsonstr = jsonstr.replace("\%", "%")
+
+            # Retry parsing json.
+            records = json.loads(jsonstr)
+
+        return records
