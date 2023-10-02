@@ -237,14 +237,8 @@ class LLMExtractor:
         str_output = response["choices"][0]["message"]["content"]
         log.trace("Parsing LLM output: {}", str_output)
 
-        if self.api == "polyai":
-            str_output = str_output.split("###")[0].strip()
-            # Multiple jsonl sections.
-            str_output = str_output.replace("}] [{", "}, {")
-            str_output = str_output.replace("}]\n[{", "}, {")
-
         try:
-            records = self._json_safe_load(str_output)
+            records = self._jsonl_safe_load(str_output)
         except Exception as err:
             log.error("Failed to parse LLM output as JSON: {}", err)
             log.info("Original output: {}", str_output)
@@ -277,14 +271,44 @@ class LLMExtractor:
 
         return data
 
-    def _json_safe_load(self, jsonstr : str) -> list[dict]:
+    def _jsonl_safe_load(self, jsonstr : str) -> list[dict]:
         records = []
         try:
             records = json.loads(jsonstr)
         except:
             # Try to fix the malformed json.
-            if "\%" in jsonstr:
-                jsonstr = jsonstr.replace("\%", "%")
+            if self.api == "polyai":
+                jsonstr = jsonstr.split("###")[0].strip()
+
+            # Multiple jsonl sections.
+            jsonstr = jsonstr.replace("}][{", "}, {")
+            jsonstr = jsonstr.replace("}] [{", "}, {")
+            jsonstr = jsonstr.replace("}]\n[{", "}, {")
+
+            # Missing comma
+            jsonstr = jsonstr.replace('""', '", "')
+            jsonstr = jsonstr.replace('" "', '", "')
+            jsonstr = jsonstr.replace('"\n"', '", "')
+
+            jsonstr = jsonstr.replace(': None, "', ': "None", "')
+            jsonstr = jsonstr.replace(': None}', ': "None"}')
+
+
+            if jsonstr.endswith("."):
+                jsonstr = jsonstr.removesuffix(".")
+
+            if jsonstr.endswith("}"):
+                jsonstr += "]"
+
+            if "[{" in jsonstr:
+                jsonstr = jsonstr.replace('"]', '"}]')
+
+            jsonstr = jsonstr.replace("\%", "%")
+            jsonstr = jsonstr.replace(r"\mu", r"\\mu")
+            jsonstr = jsonstr.replace(r"\beta", r"\\beta")
+            jsonstr = jsonstr.replace(r"\zeta", r"\\zeta")
+            jsonstr = jsonstr.replace(r"\alpha", r"\\alpha")
+            jsonstr = jsonstr.replace(r"\gamma", r"\\gamma")
 
             # Retry parsing json.
             records = json.loads(jsonstr)
