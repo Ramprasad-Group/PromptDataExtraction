@@ -164,9 +164,10 @@ class LLMExtractor:
                 reqinfo.status = 'error'
                 reqinfo.response_obj = dict(error=str(err))
 
-                # Increment the retry_delay
-                retry_delay *= self.delay_multiplier * (1 +
-                                                        jitter *random.random())
+                # Increment/decrement the retry_delay
+                if retry > 0:
+                    retry_delay *= 1 + \
+                        self.delay_multiplier * (1 + jitter *random.random())
 
                 # Wait
                 log.info("Waiting for {:.2f} seconds ...", retry_delay)
