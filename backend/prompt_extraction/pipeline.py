@@ -56,8 +56,6 @@ class LLMPipeline:
 
         if shot_selector == 'random':
             self.llm.shot_selector = RandomShotSelector(shot_min_recs)
-            self.llm.shot_selector.build_curated_dataset(
-                self.db, shot_curated_dataset, rebuild)
 
         elif shot_selector == 'diverse':
             tokenizer = BertTokenizer(bert_model_path, pytorch_device)
