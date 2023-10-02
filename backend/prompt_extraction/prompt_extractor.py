@@ -203,6 +203,7 @@ class LLMExtractor:
         # Commit
         reqinfo.commit(self.db)
 
+        t2.done("API Request #{} processed.", reqinfo.id)
         return output, reqinfo.id
     
     def _make_request(self, messages : list[dict]) -> dict:
