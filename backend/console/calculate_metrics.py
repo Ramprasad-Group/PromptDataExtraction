@@ -67,6 +67,14 @@ def add_args(subparsers : argparse._SubParsersAction):
         "-m", "--method", required=True,
         help="Name of the method from the extraction_methods table.")
 
+    parser.add_argument(
+        "-tg", "--tg", default=False, action="store_true",
+        help="Only calculate metric for glass transition temperature.")
+
+    parser.add_argument(
+        "-eg", "--bandgap", default=False, action="store_true",
+        help="Only calculate metrics for bandgap.")
+
 
 def run(args : argparse.ArgumentParser):
     db = postgres.connect()
@@ -76,22 +84,24 @@ def run(args : argparse.ArgumentParser):
         log.critical("No such method defined in DB: {}", args.method)
         exit(1)
 
+    if not args.tg and not args.bandgap:
+        args.tg = True
+        args.bandgap = True
 
     t1 = log.info("Calculating metrics on curated dataset.")
     log.info("Method: {}", args.method)
 
-    metrics = curated.compute_singular_metrics(tg_corefs, method)
+    if args.tg:
+        metrics = curated.compute_singular_metrics(tg_corefs, method)
+        with open(sett.Run.directory + "/tg_metrics.json", "w") as fp:
+            json.dump(metrics, fp, indent=4)
+        t1.done("Tg Metrics: {}", metrics)
 
-    with open(sett.Run.directory + "/tg_metrics.json", "w") as fp:
-        json.dump(metrics, fp, indent=4)
+    if args.tg and args.bandgap:
+        log.info("=="*200)
 
-    t1.done("Tg Metrics: {}", metrics)
-
-    log.info("=="*200)
-
-    metrics = curated.compute_singular_metrics(eg_corefs, method)
-
-    with open(sett.Run.directory + "/eg_metrics.json", "w") as fp:
-        json.dump(metrics, fp, indent=4)
-
-    t1.done("Eg Metrics: {}", metrics)
+    if args.bandgap:
+        metrics = curated.compute_singular_metrics(eg_corefs, method)
+        with open(sett.Run.directory + "/eg_metrics.json", "w") as fp:
+            json.dump(metrics, fp, indent=4)
+        t1.done("Eg Metrics: {}", metrics)
