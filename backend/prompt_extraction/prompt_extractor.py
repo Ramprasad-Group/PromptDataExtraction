@@ -239,9 +239,7 @@ class LLMExtractor:
 
         try:
             records = self._jsonl_safe_load(str_output)
-        except Exception as err:
-            log.error("Failed to parse LLM output as JSON: {}", err)
-            log.info("Original output: {}", str_output)
+        except:
             return data
         
         material = None
@@ -283,6 +281,7 @@ class LLMExtractor:
             # Multiple jsonl sections.
             jsonstr = jsonstr.replace("}][{", "}, {")
             jsonstr = jsonstr.replace("}] [{", "}, {")
+            jsonstr = jsonstr.replace("}]  [{", "}, {")
             jsonstr = jsonstr.replace("}]\n[{", "}, {")
 
             # Missing comma
@@ -304,6 +303,8 @@ class LLMExtractor:
                 jsonstr = jsonstr.replace('"]', '"}]')
 
             jsonstr = jsonstr.replace("\%", "%")
+            jsonstr = jsonstr.replace("\*", "*")
+            jsonstr = jsonstr.replace("\α", "α")
             jsonstr = jsonstr.replace(r"\mu", r"\\mu")
             jsonstr = jsonstr.replace(r"\beta", r"\\beta")
             jsonstr = jsonstr.replace(r"\zeta", r"\\zeta")
@@ -311,6 +312,11 @@ class LLMExtractor:
             jsonstr = jsonstr.replace(r"\gamma", r"\\gamma")
 
             # Retry parsing json.
-            records = json.loads(jsonstr)
+            try:
+                records = json.loads(jsonstr)
+            except Exception as err:
+                log.error("Failed to parse LLM output as JSON: {}", err)
+                log.info("Post-processed JSON: {}", jsonstr)
+                raise err
 
         return records
