@@ -27,8 +27,23 @@ class FilterPropertyName:
 	property_is = 'impact strength'
 	property_hardness = 'hardness'
 	property_fs = 'flexural strength'
+	property_ionic_cond = 'ionic conductivity'
+	property_wca = 'water contact angle'
+	property_dc= 'dielectric constant'
+	property_density = 'density'
+	property_loi = 'limiting oxygen index'
+	property_iec = 'ion exchange capacity'
+	property_lcst = 'lower critical solution temperature'
+	property_ucst = 'upper critical solution temperature'
+	property_co2_perm = 'CO_{2} permeability'
+	property_ct = 'crystallization temperature'
+	property_ri = 'refractive index'
+	property_wu = 'water uptake'
+	property_sd = 'swelling degree'
+	property_o2_perm = 'O_{2} permeability'
+	property_h2_perm = 'H_{2} permeability'
+	property_methanol_perm = 'methanol permeability'
 	
-
 
 def add_args(subparsers: _SubParsersAction):
 	parser: ArgumentParser = subparsers.add_parser(
@@ -90,14 +105,24 @@ def run(args: ArgumentParser):
 	log.info("Last run row ID: {}", last_processed_id)
 
 	# Query the unprocessed list of rows.
-	query= '''
+	# query= '''
+	# SELECT pt.id AS para_id FROM paper_texts pt
+	# JOIN filtered_papers fp ON fp.doi = pt.doi
+	# WHERE pt.id > :last_processed_id ORDER BY pt.id LIMIT :limit;
+	# '''
+
+	#Query for sel1k
+	query = '''
 	SELECT pt.id AS para_id FROM paper_texts pt
 	JOIN filtered_papers fp ON fp.doi = pt.doi
-	WHERE pt.id > :last_processed_id ORDER BY pt.id LIMIT :limit;
+	WHERE pt.id > :last_processed_id
+	AND fp.filter_name = 'select-1k'
+	ORDER BY pt.id
+	LIMIT :limit;
 	'''
 
 	t2 = log.info("Querying list of non-processed paragraphs.")
-	records = postgres.raw_sql(query, {'last_processed_id': last_processed_id, 'limit': 10000000})
+	records = postgres.raw_sql(query, {'last_processed_id': last_processed_id, 'limit': args.limit})
 	t2.note("Found {} paragraphs not processed.", len(records))
 
 	if len(records) == 0:

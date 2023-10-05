@@ -28,6 +28,22 @@ class HeuristicFilterName:
 	ner_is = 'property_is'
 	ner_hardness = 'property_hardness'
 	ner_fs = 'property_fs'
+	ner_ionic_cond ="property_ionic_cond"
+	ner_wca = "property_wca" 
+	ner_dc = "property_dc" 
+	ner_density = "property_density" 
+	ner_loi = "property_loi" 
+	ner_iec = "property_iec"
+	ner_lcst = "property_lcst"
+	ner_ucst = "property_ucst" 
+	ner_co2_perm = "property_co2_perm" 
+	ner_ct = "property_ct" 
+	ner_ri = "property_ri" 
+	ner_wu = "property_wu"
+	ner_sd = "property_sd"
+	ner_o2_perm = "property_o2_perm" 
+	ner_h2_perm = "property_h2_perm"
+	ner_methanol_perm = "property_methanol_perm"
 
 
 def add_args(subparsers: _SubParsersAction):

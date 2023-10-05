@@ -10,17 +10,9 @@ from backend.postgres.orm import Papers, FilteredPapers, PaperTexts, FilteredPar
 from backend.utils import checkpoint
 from backend.console.heuristic_filter import FilterPropertyName
 
-import pranav.prompt_extraction.config
-from pranav.prompt_extraction.run_inference import RunInformationExtraction
-from pranav.prompt_extraction.parse_args import parse_args
-from pranav.prompt_extraction.utils import connect_remote_database, LoadNormalizationDataset, ner_feed
-from pranav.prompt_extraction.pre_processing import PreProcessor
-# from pranav.prompt_extraction.run_inference import RunInformationExtraction
-
-import json
 import torch    
 
-from transformers import AutoModelForTokenClassification, AutoTokenizer, pipeline
+from backend.record_extraction import bert_model
 
 sett.load_settings()
 postgres.load_settings()
@@ -37,19 +29,12 @@ if torch.cuda.is_available():
 else:
 	device = 'cpu'
 
-normalization_dataloader = LoadNormalizationDataset()
-# train_data, test_data = normalization_dataloader.process_normalization_files()
 
-# Load model and tokenizer
-model_file = 'backend/models/MaterialsBERT'
-tokenizer = AutoTokenizer.from_pretrained(model_file, model_max_length=512)
-model = AutoModelForTokenClassification.from_pretrained(model_file)
-ner_pipeline = pipeline(task="ner", model=model, tokenizer=tokenizer, aggregation_strategy="simple", device=device)
-
-pre_processor = PreProcessor()
-
-token_cost = 0.002/1000 # Cost per token in dollars
-generation_constant = 30
+# Load Materials bert to GPU
+bert = bert_model.MaterialsBERT()
+bert.init_local_model(
+	sett.NERPipeline.model, sett.NERPipeline.pytorch_device)
+ner_pipeline = bert.pipeline
 
 
 def add_to_filtered_paragrahs(para_id, ner_filter_name):
@@ -190,17 +175,17 @@ def log_run_info(property, publisher_directory, ner_filter_name):
 
 if __name__ == '__main__':
 	
-	publisher_directory = 'All'
-	prop_filter_name = 'property_ym'
-	ner_filter_name = 'ner_ym'
+	publisher_directory = 'all'
+	prop_filter_name = 'ionic_cond-hf-sel1k'
+	ner_filter_name = 'ionic_cond-ner-sel1k'
 
-	# property = "thermal decomposition temperature"
-	property = getattr(FilterPropertyName, prop_filter_name)
+	property = "ionic conductivity"
+	# property = getattr(FilterPropertyName, prop_filter_name)
 	filename = property.replace(" ", "_")
 	
 	#set the reqd directory in settings.yaml
 	os.makedirs(sett.Run.directory, exist_ok=True)
-	log.setFile(open(sett.Run.directory+f"/ner_{filename}.log", "w+"))
+	log.setFile(open(sett.Run.directory+f"/ner_{ner_filter_name}.log", "w+"))
 	log.setLevel(sett.Run.logLevel)
 	log.setFileTimes(show=True)
 	log.setConsoleTimes(show=True)

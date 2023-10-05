@@ -48,10 +48,19 @@ def heuristic_filter_check(property:str, publisher_directory:str, filter_name:st
 	last_processed_id = checkpoint.get_last(db, name= filter_name, table= PaperTexts.__tablename__)
 	log.info("Last run row ID: {}", last_processed_id)
 
-	query= '''
+	# query= '''
+	# SELECT pt.id AS para_id FROM paper_texts pt
+	# JOIN filtered_papers fp ON fp.doi = pt.doi
+	# WHERE pt.id > :last_processed_id ORDER BY pt.id LIMIT :limit;
+	# '''
+
+	query = '''
 	SELECT pt.id AS para_id FROM paper_texts pt
 	JOIN filtered_papers fp ON fp.doi = pt.doi
-	WHERE pt.id > :last_processed_id ORDER BY pt.id LIMIT :limit;
+	WHERE pt.id > :last_processed_id
+	AND fp.filter_name = 'select-1k'
+	ORDER BY pt.id
+	LIMIT :limit;
 	'''
 
 	log.info("Querying list of non-processed paragraphs.")
@@ -145,14 +154,14 @@ def log_run_info(property, publisher_directory, filter_name):
 if __name__ == '__main__':
 	
 	publisher_directory = 'All'
-	property = 'hardness'
-	filter_name = 'property_hardness' 
+	property = 'flexural strength'
+	filter_name = 'fs-hf-sel1k' 
 
 	filename = property.replace(" ", "_")
 	
 	os.makedirs(sett.Run.directory, exist_ok=True)
 	# log.setFile(open(sett.Run.directory+f"/hf_{publisher_directory}_{filename}.log", "w+"))
-	log.setFile(open(sett.Run.directory+f"/hf_{filename}.log", "w+"))
+	log.setFile(open(sett.Run.directory+f"/hf_{filter_name}.log", "w+"))
 	log.setLevel(sett.Run.logLevel)
 	log.setFileTimes(show=True)
 	log.setConsoleTimes(show=True)
