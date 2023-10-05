@@ -33,10 +33,6 @@ class ner_pipeline:
     pytorch_device : int = 0
     """ GPU id to load the BERT model. """
 
-    mongodb_collection : str = 'modular_run_4'
-    """ Mongodb ground/curated dataset collection. """
-
-
 
 @dataclass
 class full_text_parse:
@@ -52,15 +48,6 @@ class llm_pipeline:
     # Settings for LLM based extraction.
     openai_key : str = None
     polyai_key : str = 'pl-test'
-    openai_model: str = 'gpt-3.5-turbo'
-    polyai_model: str = 'polyai'
-    n_shots : int = 0
-    prompt : int = 0
-    max_api_retries : int = 0
-    api_retry_delay : int = 2 # seconds
-    api_request_delay : int = 1 # seconds
-    shot_sampling : str = 'random'  # random, diverse
-    min_records_in_curated : int = 4 
 
 
 @dataclass

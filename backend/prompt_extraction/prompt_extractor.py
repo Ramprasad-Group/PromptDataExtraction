@@ -1,3 +1,4 @@
+import re
 import time
 import json
 import random
@@ -163,9 +164,10 @@ class LLMExtractor:
                 reqinfo.status = 'error'
                 reqinfo.response_obj = dict(error=str(err))
 
-                # Increment the retry_delay
-                retry_delay *= self.delay_multiplier * (1 +
-                                                        jitter *random.random())
+                # Increment/decrement the retry_delay
+                if retry > 0:
+                    retry_delay *= 1 + \
+                        self.delay_multiplier * (1 + jitter *random.random())
 
                 # Wait
                 log.info("Waiting for {:.2f} seconds ...", retry_delay)
@@ -174,7 +176,6 @@ class LLMExtractor:
 
         reqinfo.details['retries'] = retry
 
-        t2.done("Request processed.")
         log.trace("API Response: {}", output)
 
         reqinfo.details['elapsed'] = t2.elapsed()
@@ -203,6 +204,7 @@ class LLMExtractor:
         # Commit
         reqinfo.commit(self.db)
 
+        t2.done("API Request #{} processed.", reqinfo.id)
         return output, reqinfo.id
     
     def _make_request(self, messages : list[dict]) -> dict:
@@ -235,15 +237,14 @@ class LLMExtractor:
         str_output = response["choices"][0]["message"]["content"]
         log.trace("Parsing LLM output: {}", str_output)
 
-        if self.api == "polyai":
-            str_output = str_output.split("###")[0].strip()
-
         try:
-            records = json.loads(str_output)
-        except Exception as err:
-            log.error("Failed to parse LLM output as JSON: {}", err)
-            log.info("Original output: {}", str_output)
+            records = self._jsonl_safe_load(str_output)
+        except:
             return data
+        
+        material = None
+        prop = None 
+        value = None
 
         for record in records:
             material = record.get("material", None)
@@ -267,3 +268,55 @@ class LLMExtractor:
                 )
 
         return data
+
+    def _jsonl_safe_load(self, jsonstr : str) -> list[dict]:
+        records = []
+        try:
+            records = json.loads(jsonstr)
+        except:
+            # Try to fix the malformed json.
+            if self.api == "polyai":
+                jsonstr = jsonstr.split("###")[0].strip()
+
+            # Multiple jsonl sections.
+            jsonstr = jsonstr.replace("}][{", "}, {")
+            jsonstr = jsonstr.replace("}] [{", "}, {")
+            jsonstr = jsonstr.replace("}]  [{", "}, {")
+            jsonstr = jsonstr.replace("}]\n[{", "}, {")
+
+            # Missing comma
+            jsonstr = jsonstr.replace('""', '", "')
+            jsonstr = jsonstr.replace('" "', '", "')
+            jsonstr = jsonstr.replace('"\n"', '", "')
+
+            jsonstr = jsonstr.replace(': None, "', ': "None", "')
+            jsonstr = jsonstr.replace(': None}', ': "None"}')
+
+
+            if jsonstr.endswith("."):
+                jsonstr = jsonstr.removesuffix(".")
+
+            if jsonstr.endswith("}"):
+                jsonstr += "]"
+
+            if "[{" in jsonstr:
+                jsonstr = jsonstr.replace('"]', '"}]')
+
+            jsonstr = jsonstr.replace("\%", "%")
+            jsonstr = jsonstr.replace("\*", "*")
+            jsonstr = jsonstr.replace("\α", "α")
+            jsonstr = jsonstr.replace(r"\mu", r"\\mu")
+            jsonstr = jsonstr.replace(r"\beta", r"\\beta")
+            jsonstr = jsonstr.replace(r"\zeta", r"\\zeta")
+            jsonstr = jsonstr.replace(r"\alpha", r"\\alpha")
+            jsonstr = jsonstr.replace(r"\gamma", r"\\gamma")
+
+            # Retry parsing json.
+            try:
+                records = json.loads(jsonstr)
+            except Exception as err:
+                log.error("Failed to parse LLM output as JSON: {}", err)
+                log.info("Post-processed JSON: {}", jsonstr)
+                raise err
+
+        return records

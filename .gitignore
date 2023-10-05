@@ -12,5 +12,6 @@ runs/
 .env
 *.json
 notebooks/*.png
+notebooks/*.eps
 scripts/compare_poly_papers.ipynb
 notebooks/Plots.ipynb
