@@ -20,7 +20,7 @@ echo "CWD: $MY_PATH"
 
 # Activate conda environment.
 # ==============================================================================
-eval "$(conda shell.bash hook)"
+eval "$(/data/akhlak/miniconda3/condabin/conda shell.bash hook)"
 conda activate "${MY_PATH}/_conda_env"
 export LD_LIBRARY_PATH=$(realpath _conda_env/lib64):$LD_LIBRARY_PATH
 export PYTHONPATH=.
