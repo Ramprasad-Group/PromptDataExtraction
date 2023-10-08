@@ -145,7 +145,8 @@ def ner_filter(para_text, unit_list, ner_output=None):
 					mat_flag = True
 			elif entity['entity_group'] == 'PROP_NAME':
 					prop_name_flag = True
-			elif entity['entity_group'] == 'PROP_VALUE' and any([entity['word'].endswith(unit.lower()) for unit in unit_list]): # Using ends with to avoid false positives such as K in kPa or °C/min
+			elif entity['entity_group'] == 'PROP_VALUE':
+			# and any([entity['word'].endswith(unit.lower()) for unit in unit_list]): # Using ends with to avoid false positives such as K in kPa or °C/min
 					prop_value_flag = True
 			
 	output_flag = mat_flag and prop_name_flag and prop_value_flag
@@ -173,13 +174,75 @@ def log_run_info(property, publisher_directory, ner_filter_name):
 		return t1
 
 
+filter_names = {
+	"tg-hf-sel1k":  "tg-ner-sel1k-no-unit",
+	"bandgap-hf-sel1k": "bandgap-ner-sel1k-no-unit",
+	"tm-hf-sel1k": "tm-ner-sel1k-no-unit",
+	"td-hf-sel1k": "td-ner-sel1k-no-unit",
+	"tc-hf-sel1k": "tc-ner-sel1k-no-unit",
+	"ts-hf-sel1k": "ts-ner-sel1k-no-unit",
+	"ym-hf-sel1k": "ym-ner-sel1k-no-unit",
+	"cs-hf-sel1k": "cs-ner-sel1k-no-unit",
+	"eab-hf-sel1k": "eab-ner-sel1k-no-unit",
+	"fs-hf-sel1k": "fs-ner-sel1k-no-unit",
+	"is-hf-sel1k": "is-ner-sel1k-no-unit",
+	"iec-hf-sel1k": "iec-ner-sel1k-no-unit",
+	"ionic_cond-hf-sel1k": "ionic_cond-ner-sel1k-no-unit",
+	"wca-hf-sel1k": "wca-ner-sel1k-no-unit",
+	"dc-hf-sel1k": "dc-ner-sel1k-no-unit",
+	"density-hf-sel1k": "density-ner-sel1k-no-unit",
+	"loi-hf-sel1k": "loi-ner-sel1k-no-unit",
+	"hardness-hf-sel1k": "hardness-ner-sel1k-no-unit",
+	"lcst-hf-sel1k": "lcst-ner-sel1k-no-unit",
+	"ucst-hf-sel1k": "ucst-ner-sel1k-no-unit",
+	"co2_perm-hf-sel1k": "co2_perm-ner-sel1k-no-unit",
+	"ct-hf-sel1k": "ct-ner-sel1k-no-unit",
+	"ri-hf-sel1k": "ri-ner-sel1k-no-unit",
+	"wu-hf-sel1k": "wu-ner-sel1k-no-unit",
+	"sd-hf-sel1k": "sd-ner-sel1k-no-unit",
+	"o2_perm-hf-sel1k": "o2_perm-ner-sel1k-no-unit",
+	"h2_perm-hf-sel1k": "h2_perm-ner-sel1k-no-unit",
+	"methanol_perm-hf-sel1k": "methanol_perm-ner-sel1k-no-unit"
+}
+
+filter_property_mapping = {
+	"tg-hf-sel1k": "glass transition temperature",
+	"bandgap-hf-sel1k": "bandgap",
+	"tm-hf-sel1k": "melting temperature",
+	"td-hf-sel1k": "thermal decomposition temperature",
+	"tc-hf-sel1k": "thermal conductivity",
+	"ts-hf-sel1k": "tensile strength",
+	"ym-hf-sel1k": "youngs modulus",
+	"cs-hf-sel1k": "compressive strength",
+	"eab-hf-sel1k": "elongation at break",
+	"fs-hf-sel1k": "flexural strength",
+	"is-hf-sel1k": "impact strength",
+	"iec-hf-sel1k": "ion exchange capacity",
+	"ionic_cond-hf-sel1k": "ionic conductivity",
+	"hardness-hf-sel1k": "hardness",
+	"wca-hf-sel1k": "water contact angle",
+	"dc-hf-sel1k": "dielectric constant",
+	"density-hf-sel1k": "density",
+	"loi-hf-sel1k": "limiting oxygen index",
+	"lcst-hf-sel1k": "lower critical solution temperature",
+	"ucst-hf-sel1k": "upper critical solution temperature",
+	"co2_perm-hf-sel1k": "CO_{2} permeability",
+	"ct-hf-sel1k": "crystallization temperature",
+	"ri-hf-sel1k": "refractive index",
+	"wu-hf-sel1k": "water uptake",
+	"sd-hf-sel1k": "swelling degree",
+	"o2_perm-hf-sel1k": "O_{2} permeability",
+	"h2_perm-hf-sel1k": "H_{2} permeability",
+	"methanol_perm-hf-sel1k": "methanol permeability"
+}
+
 if __name__ == '__main__':
 	
 	publisher_directory = 'all'
-	prop_filter_name = 'ionic_cond-hf-sel1k'
-	ner_filter_name = 'ionic_cond-ner-sel1k'
+	prop_filter_name = 'hardness-hf-sel1k'
+	ner_filter_name = filter_names['hardness-hf-sel1k']
 
-	property = "ionic conductivity"
+	property = filter_property_mapping['hardness-hf-sel1k']
 	# property = getattr(FilterPropertyName, prop_filter_name)
 	filename = property.replace(" ", "_")
 	
