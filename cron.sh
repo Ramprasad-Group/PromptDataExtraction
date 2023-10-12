@@ -29,5 +29,5 @@ python --version
 # Execute the cron job.
 # ==============================================================================
 python  backend --dir runs/ner-pipeline/ \
-        ner-filtered -m g-ner-pipeline -l 10000 
+        ner-filtered -m g-ner-pipeline -l 25000 
 
