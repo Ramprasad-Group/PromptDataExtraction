@@ -12,38 +12,38 @@ ScriptName = 'ps-ner-filter'
 
 log = pylogg.New(ScriptName)
 
-material_entity_types = ['POLYMER', 'POLYMER_FAMILY', 'MONOMER', 'ORGANIC']
+material_entity_types = ['POLYMER', 'POLYMER_FAMILY', 'MONOMER', 'ORGANIC', 'INORGANIC']
 filtration_dict = defaultdict(int)
 
 class HeuristicFilterName:
-	ner_tg = 'property_tg'
-	ner_tm = 'property_tm'
-	ner_td = 'property_td'
-	ner_thermal_conductivity = 'property_thermal_conductivity'
-	ner_bandgap =  'property_bandgap'
-	ner_ts = 'property_ts'
-	ner_ym = 'property_ym'
-	ner_eab = 'property_eab'
-	ner_cs = 'property_cs'
-	ner_is = 'property_is'
-	ner_hardness = 'property_hardness'
-	ner_fs = 'property_fs'
-	ner_ionic_cond ="property_ionic_cond"
-	ner_wca = "property_wca" 
-	ner_dc = "property_dc" 
-	ner_density = "property_density" 
-	ner_loi = "property_loi" 
-	ner_iec = "property_iec"
-	ner_lcst = "property_lcst"
-	ner_ucst = "property_ucst" 
-	ner_co2_perm = "property_co2_perm" 
-	ner_ct = "property_ct" 
-	ner_ri = "property_ri" 
-	ner_wu = "property_wu"
-	ner_sd = "property_sd"
-	ner_o2_perm = "property_o2_perm" 
-	ner_h2_perm = "property_h2_perm"
-	ner_methanol_perm = "property_methanol_perm"
+	tg_ner_full = 'property_tg'
+	tm_ner_full = 'property_tm'
+	td_ner_full = 'property_td'
+	thermal_conductivity_ner_full = 'property_thermal_conductivity'
+	bandgap_ner_full =  'property_bandgap'
+	ts_ner_full = 'property_ts'
+	ym_ner_full = 'property_ym'
+	eab_ner_full = 'property_eab'
+	cs_ner_full = 'property_cs'
+	is_ner_full = 'property_is'
+	hardness_ner_full = 'property_hardness'
+	fs_ner_full = 'property_fs'
+	ionic_cond_ner_full ="property_ionic_cond"
+	wca_ner_full = "property_wca" 
+	dc_ner_full = "property_dc" 
+	density_ner_full = "property_density" 
+	loi_ner_full = "property_loi" 
+	iec_ner_full = "property_iec"
+	lcst_ner_full = "property_lcst"
+	ucst_ner_full = "property_ucst" 
+	co2_perm_ner_full = "property_co2_perm" 
+	ct_ner_full = "property_ct" 
+	ri_ner_full = "property_ri" 
+	wu_ner_full = "property_wu"
+	sd_ner_full = "property_sd"
+	o2_perm_ner_full = "property_o2_perm" 
+	h2_perm_ner_full = "property_h2_perm"
+	methanol_perm_ner_full = "property_methanol_perm"
 
 
 def add_args(subparsers: _SubParsersAction):
@@ -57,8 +57,8 @@ def add_args(subparsers: _SubParsersAction):
 
 	## add property argument 
 	parser.add_argument(
-			"-l", "--limit", default=10000000, type=int,
-			help="Number of paragraphs to process. Default: 10000000")
+			"-l", "--limit", default=1000000, type=int,
+			help="Number of paragraphs to process. Default: 1000000")
 		 
 
 def _add_to_filtered_paragrahs(db, para_id, ner_filter_name):
@@ -89,7 +89,8 @@ def _ner_filter(ner_pipeline, para_text, unit_list, ner_output=None):
 					mat_flag = True
 			elif entity['entity_group'] == 'PROP_NAME':
 					prop_name_flag = True
-			elif entity['entity_group'] == 'PROP_VALUE' and any([entity['word'].endswith(unit.lower()) for unit in unit_list]): # Using ends with to avoid false positives such as K in kPa or °C/min
+			elif entity['entity_group'] == 'PROP_VALUE':
+				#  and any([entity['word'].endswith(unit.lower()) for unit in unit_list]): # Using ends with to avoid false positives such as K in kPa or °C/min
 					prop_value_flag = True
 			
 	output_flag = mat_flag and prop_name_flag and prop_value_flag
@@ -141,7 +142,6 @@ def run(args: ArgumentParser):
 	relevant_paras = 0
 
 	for row in tqdm(records):
-
 		if row.para_id < last_processed_id:
 			continue
 
@@ -158,7 +158,6 @@ def run(args: ArgumentParser):
 			filtration_dict[f'{mode}_keyword_paragraphs_ner']+=1
 			if _add_to_filtered_paragrahs(db, row.para_id, ner_filter_name):
 				relevant_paras +=1
-
 				if relevant_paras % 50 == 0:
 					db.commit()
 

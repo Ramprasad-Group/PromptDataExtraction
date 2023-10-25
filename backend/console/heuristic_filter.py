@@ -11,7 +11,7 @@ ScriptName = 'heuristic-filter'
 
 log = pylogg.New(ScriptName)
 
-material_entity_types = ['POLYMER', 'POLYMER_FAMILY', 'MONOMER', 'ORGANIC']
+# material_entity_types = ['POLYMER', 'POLYMER_FAMILY', 'MONOMER', 'ORGANIC']
 filtration_dict = defaultdict(int)
 
 class FilterPropertyName:
@@ -105,21 +105,21 @@ def run(args: ArgumentParser):
 	log.info("Last run row ID: {}", last_processed_id)
 
 	# Query the unprocessed list of rows.
-	# query= '''
-	# SELECT pt.id AS para_id FROM paper_texts pt
-	# JOIN filtered_papers fp ON fp.doi = pt.doi
-	# WHERE pt.id > :last_processed_id ORDER BY pt.id LIMIT :limit;
-	# '''
-
-	#Query for sel1k
-	query = '''
+	query= '''
 	SELECT pt.id AS para_id FROM paper_texts pt
 	JOIN filtered_papers fp ON fp.doi = pt.doi
-	WHERE pt.id > :last_processed_id
-	AND fp.filter_name = 'select-1k'
-	ORDER BY pt.id
-	LIMIT :limit;
+	WHERE pt.id > :last_processed_id ORDER BY pt.id LIMIT :limit;
 	'''
+
+	# #Query for sel1k
+	# query = '''
+	# SELECT pt.id AS para_id FROM paper_texts pt
+	# JOIN filtered_papers fp ON fp.doi = pt.doi
+	# WHERE pt.id > :last_processed_id
+	# AND fp.filter_name = 'select-1k'
+	# ORDER BY pt.id
+	# LIMIT :limit;
+	# '''
 
 	t2 = log.info("Querying list of non-processed paragraphs.")
 	records = postgres.raw_sql(query, {'last_processed_id': last_processed_id, 'limit': args.limit})
