@@ -129,7 +129,10 @@ def run(args: ArgumentParser):
 	'''
 
 	log.info("Querying list of non-processed paragraphs.")
-	records = postgres.raw_sql(query, {'prop_filter_name': prop_filter_name, 'last_processed_id': last_processed_id, 'limit': 10000000})
+	records = postgres.raw_sql(query, {
+		'prop_filter_name': prop_filter_name,
+		'last_processed_id': last_processed_id, 'limit': args.limit
+	})
 	log.note("Found {} paragraphs not processed.", len(records))
 
 	if len(records) == 0:
