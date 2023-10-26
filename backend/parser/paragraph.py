@@ -9,21 +9,28 @@ class ParagraphParser(object):
         self.name = None
         self.text = None
         self.body = None
+        self.debug = False
 
     def _is_reference(self, text : str) -> bool:
         """ Return True if a text looks like a bibliographic reference. """
-        if "http" and "doi" in text:
-            return True
-        
-        if ". et al." in text:
+        if "http" in text:
             return True
 
-        # If there are a lot of dots and commas, return true.
-        dots = text.count(".")
-        commas = text.count(",")
-        punctuations = dots + commas
-        if punctuations / len(text) > 0.1:
+        if "https" in text:
             return True
+
+        if "doi" in text:
+            return True
+
+        # if ". et al." in text:
+        #     return True
+
+        # If there are a lot of dots and commas, return true.
+        # dots = text.count(".")
+        # commas = text.count(",")
+        # punctuations = dots + commas
+        # if punctuations / len(text) > 0.1:
+        #     return True
         
         return False
     
@@ -65,6 +72,8 @@ class ParagraphParser(object):
             tail = cleanedtail
 
         fulltext = text + " ".join(childtexts) + tail
+        # if self.debug:
+        #     breakpoint()
         return normalize.normText(fulltext)
 
     def parse(self, paragraph_element):
