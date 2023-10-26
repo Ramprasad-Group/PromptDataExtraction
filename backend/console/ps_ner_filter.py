@@ -173,8 +173,11 @@ def run(args: ArgumentParser):
 			log.info(f'Number of paragraphs with {property} information after NER filter ({ner_filter_name}) : {filtration_dict[f"{mode}_keyword_paragraphs_ner"]}')
 
 
-	checkpoint.add_new(db, name = ner_filter_name, table = FilteredParagraphs.__tablename__, row = row.para_id, 
-										comment = {'user': 'sonakshi', 'filter': ner_filter_name, 
-										'debug': True if sett.Run.debugCount > 0 else False })
+	checkpoint.add_new(
+		db, name = ner_filter_name, table = FilteredParagraphs.__tablename__,
+		row = row.para_id, comment = {
+			'user': sett.Run.userName, 'filter': ner_filter_name, 
+			'debug': True if sett.Run.debugCount > 0 else False }
+		)
 	log.note(f'Last processed para_id: {row.para_id}')
 	db.commit()
