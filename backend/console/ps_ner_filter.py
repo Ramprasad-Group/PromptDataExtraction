@@ -19,7 +19,7 @@ class HeuristicFilterName:
 	tg_ner_full = 'property_tg'
 	tm_ner_full = 'property_tm'
 	td_ner_full = 'property_td'
-	thermal_conductivity_ner_full = 'property_thermal_conductivity'
+	tc_ner_full = 'property_thermal_conductivity'
 	bandgap_ner_full =  'property_bandgap'
 	ts_ner_full = 'property_ts'
 	ym_ner_full = 'property_ym'
