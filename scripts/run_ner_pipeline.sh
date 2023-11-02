@@ -1,7 +1,7 @@
 #!/bin/bash
 
 method_names=(
-    # "tg-ner-bert-sel1k-no-unit"
+    "tg-bert-full"
     # "tm-ner-bert-sel1k-no-unit"
     # "td-ner-bert-sel1k-no-unit"
     # "tc-ner-bert-sel1k-no-unit"
@@ -23,12 +23,12 @@ method_names=(
     # "lcst-ner-bert-sel1k-no-unit"
     # "co2_perm-ner-bert-sel1k-no-unit"
     # "o2_perm-ner-bert-sel1k-no-unit"
-    "h2_perm-ner-bert-sel1k-no-unit"
-    "ct-ner-bert-sel1k-no-unit"
-    "ri-ner-bert-sel1k-no-unit"
-    "wu-ner-bert-sel1k-no-unit"
-    "sd-ner-bert-sel1k-no-unit"
-    "methanol_perm-ner-bert-sel1k-no-unit"
+    # "h2_perm-ner-bert-sel1k-no-unit"
+    # "ct-ner-bert-sel1k-no-unit"
+    # "ri-ner-bert-sel1k-no-unit"
+    # "wu-ner-bert-sel1k-no-unit"
+    # "sd-ner-bert-sel1k-no-unit"
+    # "methanol_perm-ner-bert-sel1k-no-unit"
     )
 
 

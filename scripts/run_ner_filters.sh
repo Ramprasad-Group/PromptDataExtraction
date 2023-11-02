@@ -1,8 +1,8 @@
 #!/bin/bash
 
 filter_names=(
-	"bandgap_ner_full"
-  "tg_ner_full"
+	# "bandgap_ner_full"
+  # "tg_ner_full"
   # "co2_perm_ner_full"
   # "cs_ner_full"
   # "ct_ner_full"
@@ -12,9 +12,9 @@ filter_names=(
   # "fs_ner_full"
   # "hardness_ner_full"
   # "h2_perm_ner_full"
-  # "iec_ner_ner_full"
+  "iec_ner_full"
   # "ionic_cond_ner_full"
-  # "is_ner_full"
+  # "is_ner_full"s
   # "lcst_ner_full"
   # "loi_ner_full"
   # "methanol_perm_ner_full"
@@ -26,7 +26,7 @@ filter_names=(
   # "tm_ner_full"
   # "ts_ner_full"
   # "ucst_ner_full"
-  # "wca_ner_full"
+  "wca_ner_full"
   # "wu_ner_full"
   # "ym_ner_full"
 	)

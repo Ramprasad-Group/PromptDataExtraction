@@ -1,7 +1,7 @@
 #!/bin/bash
 
 method_names=(
-  "bandgap-gpt35-similar-full"
+  # "bandgap-gpt35-similar-full"
   # "co2_perm-gpt35-similar-full"
   # "cs-gpt35-similar-full"
   # "ct-gpt35-similar-full"
@@ -18,7 +18,7 @@ method_names=(
   # "loi-gpt35-similar-full"
   # "methanol_perm-gpt35-similar-full"
   # "o2_perm-gpt35-similar-full"
-  # "ri-gpt35-similar-full"
+  "ri-gpt35-similar-full"
   # "sd-gpt35-similar-full"
   # "tc-gpt35-similar-full"
   # "td-gpt35-similar-full"
@@ -39,5 +39,5 @@ for method_name in "${method_names[@]}"; do
     output_file="${nohup_folder}/${method_name}.out"
 
     echo "Running llm (gpt) pipeline for: $method_name"
-    nohup python backend --logfile "$log_file" llm-pipeline -m "$method_name" -l >"$output_file" 2>&1 &
+    nohup python backend --logfile "$log_file" llm-pipeline -m "$method_name" -l 10000 >"$output_file" 2>&1 &
 done

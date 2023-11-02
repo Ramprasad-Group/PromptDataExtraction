@@ -1,34 +1,34 @@
 #!/bin/bash
 
 method_names=(
-  "bandgap-gpt35-similar-full"
-  "co2_perm-gpt35-similar-full"
-  "cs-gpt35-similar-full"
-  "ct-gpt35-similar-full"
-  "dc-gpt35-similar-full"
-  "density-gpt35-similar-full"
-  "eab-gpt35-similar-full"
-  "fs-gpt35-similar-full"
-  "hardness-gpt35-similar-full"
-  "h2_perm-gpt35-similar-full"
-  "iec-gpt35-similar-full"
-  "ionic_cond-gpt35-similar-full"
-  "is-gpt35-similar-full"
-  "lcst-gpt35-similar-full"
-  "loi-gpt35-similar-full"
-  "methanol_perm-gpt35-similar-full"
-  "o2_perm-gpt35-similar-full"
-  "ri-gpt35-similar-full"
-  "sd-gpt35-similar-full"
-  "tc-gpt35-similar-full"
-  "td-gpt35-similar-full"
-  "tm-gpt35-similar-full"
-  "ts-gpt35-similar-full"
-  "tg-gpt35-similar-full"
-  "ucst-gpt35-similar-full"
-  "wca-gpt35-similar-full"
-  "wu-gpt35-similar-full"
-  "ym-gpt35-similar-full"
+  "bandgap-bert-full"
+  "co2_perm-bert-full"
+  "cs-bert-full"
+  "ct-bert-full"
+  "dc-bert-full"
+  "density-bert-full"
+  "eab-bert-full"
+  "fs-bert-full"
+  "hardness-bert-full"
+  "h2_perm-bert-full"
+  "iec-bert-full"
+  "ionic_cond-bert-full"
+  "is-bert-full"
+  "lcst-bert-full"
+  "loi-bert-full"
+  "methanol_perm-bert-full"
+  "o2_perm-bert-full"
+  "ri-bert-full"
+  "sd-bert-full"
+  "tc-bert-full"
+  "td-bert-full"
+  "tm-bert-full"
+  "ts-bert-full"
+  "tg-bert-full"
+  "ucst-bert-full"
+  "wca-bert-full"
+  "wu-bert-full"
+  "ym-bert-full"
 )
 
 para_subsets=(
@@ -93,7 +93,7 @@ property_names=(
   "youngs modulus"
 )
 
-nohup_folder="/data/sonakshi/PromptDataExtraction/filtered_paras/nohup/full-corpus"
+nohup_folder="/data/sonakshi/PromptDataExtraction/filtered_paras/nohup/full-corpus/methods"
 chmod +w "$nohup_folder"
 
 for i in "${!method_names[@]}"; do
@@ -104,5 +104,6 @@ for i in "${!method_names[@]}"; do
     output_file="${nohup_folder}/${method_name}.out"
 
     echo "Adding method: $method_name with filter: $filter_name"
-    nohup python backend method new -m "$method_name" --filter "$filter_name" --dataset data1 --model gpt-3.5-turbo --api openai --info user sonakshi --info shot_selector similar --info n_shots 1 --info api_retry_delay 60 --info delay_multiplier 0.5 --info max_api_retries 1 --info api_request_delay 0.01 --info temperature 0.001 --info  prompt "Extract all $property_name values in JSONL format with 'material', 'property', 'value', 'condition' columns." --info shot_nrecords 2 --info shot_keywords false > "$output_file" 2>&1 &
+    nohup python backend method new -m "$method_name" --filter "$filter_name" --dataset data3 --model gpt-3.5-turbo --api openai --info user sonakshi > "$output_file" 2>&1 &
+    #  --info shot_selector similar --info n_shots 1 --info api_retry_delay 60 --info delay_multiplier 0.5 --info max_api_retries 1 --info api_request_delay 0.01 --info temperature 0.001 --info  prompt "Extract all $property_name values in JSONL format with 'material', 'property', 'value', 'condition' columns." --info shot_nrecords 2 --info shot_keywords false > "$output_file" 2>&1 &
 done
