@@ -395,6 +395,63 @@ class ExtractedCrossrefs(ORMBase):
         super().__init__(**kw)
 
 
+class FilteredData(ORMBase):
+    '''
+    Table to track the extracted property, materials and paragraphs passing
+    particular filters.
+
+    Attributes:
+        filter_name:    Name of the passed filter.
+        target_table:   Name of the object the filter acted on. Ex. Material,
+                        Property, Paragraph etc.
+        target_id:      ID of the row in the target table.
+    '''
+
+    __tablename__ = "filtered_data"
+
+    filter_name : Mapped[str] = mapped_column(String)
+    target_table : Mapped[str] = mapped_column(String)
+    target_id: Mapped[int] = mapped_column(
+        Integer, nullable= False, unique=False, index=True,
+    )
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+
+
+class ExtractedData(ORMBase):
+    '''
+    Table for the finally exported/extracted data.
+
+    Attributes:
+        property_id:    ForeignKey referencing the original extracted property
+                        row.
+        method:         Name of the extraction method.
+        material:       Name of the material.
+        property:       Name of the property.
+        value:          Numeric value of the property.
+        unit:           Unit of the property value.
+        doi:            DOI of the source paper.
+        confidence:     Confidence score expressed as percentage (0-100).
+    '''
+
+    __tablename__ = "extracted_data"
+
+    property_id: Mapped[int] = mapped_column(
+        Integer,ForeignKey("extracted_properties.id", ondelete='CASCADE',
+                           onupdate='CASCADE'), unique=True, index=True)
+    method : Mapped[str] = mapped_column(String, index=True)
+    material : Mapped[str] = mapped_column(String, index=True)
+    property : Mapped[str] = mapped_column(String, index=True)
+    value: Mapped[float] = mapped_column(Float)
+    unit : Mapped[str] = mapped_column(String, nullable=True)
+    doi : Mapped[str] = mapped_column(String, index=True)
+    confidence: Mapped[int] = mapped_column(Integer, default=0)
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+
+
 PropertyScale = Literal['log', 'normal']
 
 class PropertyMetadata(ORMBase):
