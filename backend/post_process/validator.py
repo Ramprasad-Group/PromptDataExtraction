@@ -33,8 +33,9 @@ class DataValidator:
         t2 = log.info(
             "Querying list of non-processed '{}' items.", self.filter_name)
 
-        records = postgres.raw_sql(
-            query, filter = self.filter_name, mid=self.method.id, last=last)
+        records = postgres.raw_sql(query,
+            filter = self.filter_name, table = self.table_name,
+            mid=self.method.id, last=last)
 
         t2.note("Found {} items not processed.", len(records))
 
@@ -79,12 +80,14 @@ class DataValidator:
                 log.trace("Pass: {} ({})", self.filter_name, row.id)
 
             # Commit every 100 items
-            if n % 100 == 0:
+            if not (n % 100):
                 self.db.commit()
 
             last = row.id
+
             if not (n % 500) or n == len(records) or n == limit:
-                log.info("Processed {} paragraphs.", n)
+                log.info("Processed {} items, Passed {}, Failed {}.",
+                         n, p, n-p)
 
             if limit and n > limit:
                 break

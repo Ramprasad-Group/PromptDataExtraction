@@ -88,7 +88,13 @@ def run(args : argparse.ArgumentParser):
 
 
     if args.filter == 'known_property':
-        validator = known_property.Validator(db, method, meta)
+        validator = known_property.NameValidator(db, method, meta)
+        validator.process_items(args.limit)
+    elif args.filter == 'within_range':
+        validator = known_property.RangeValidator(db, method, meta)
+        validator.process_items(args.limit)
+    elif args.filter == 'unit_ok':
+        validator = known_property.UnitValidator(db, method, meta)
         validator.process_items(args.limit)
     else:
         raise ValueError("Unknown data filter", args.filter)
