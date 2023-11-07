@@ -60,12 +60,15 @@ def add_args(subparsers : argparse._SubParsersAction):
     parser.add_argument(
         "-l", "--limit", default=100, type=int,
         help="Number of items to process. Default: 100")
+    parser.add_argument(
+        "--redo", default=False, action='store_true',
+        help="Reprocess all the rows. Default: False")
     
 
 def run(args : argparse.ArgumentParser):
     from backend import postgres
     from backend.postgres import persist
-    from backend.post_process import known_property
+    from backend.post_process import known_property, known_material
     from backend.postgres.orm import PropertyMetadata
 
     # Sanity check
@@ -89,12 +92,15 @@ def run(args : argparse.ArgumentParser):
 
     if args.filter == 'known_property':
         validator = known_property.NameValidator(db, method, meta)
-        validator.process_items(args.limit)
+        validator.process_items(args.limit, args.redo)
     elif args.filter == 'within_range':
         validator = known_property.RangeValidator(db, method, meta)
-        validator.process_items(args.limit)
+        validator.process_items(args.limit, args.redo)
     elif args.filter == 'unit_ok':
         validator = known_property.UnitValidator(db, method, meta)
-        validator.process_items(args.limit)
+        validator.process_items(args.limit, args.redo)
+    elif args.filter == 'is_polymer':
+        validator = known_material.PolymerValidator(db, method)
+        validator.process_items(args.limit, args.redo)
     else:
         raise ValueError("Unknown data filter", args.filter)

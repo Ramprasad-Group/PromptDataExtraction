@@ -25,13 +25,13 @@ class DataValidator:
         # Last processed row.
         last = checkpoint.get_last(
             self.db, self.ckpt_name, self.table_name, self.ckpt_info)
-        log.info("Last run row ID: {}", last)
         return last
     
 
     def _get_records(self, query, last = 0) -> list:
         t2 = log.info(
             "Querying list of non-processed '{}' items.", self.filter_name)
+        log.info("Last checkpoint: {}", last)
 
         records = postgres.raw_sql(query,
             filter = self.filter_name, table = self.table_name,
@@ -54,7 +54,7 @@ class DataValidator:
         raise NotImplementedError(self.filter_name)
 
 
-    def process_items(self, limit : int = None):
+    def process_items(self, limit : int = None, redo : bool = False):
         assert self.filter_name
         assert self.table_name
 
@@ -63,7 +63,10 @@ class DataValidator:
 
         # Run the pipeline.
         sql = self._get_record_sql()
-        last = self._get_last_ckpt()
+        if redo:
+            last = 0
+        else:
+            last = self._get_last_ckpt()
         records = self._get_records(sql, last)
 
         n = 0
@@ -86,8 +89,8 @@ class DataValidator:
             last = row.id
 
             if not (n % 500) or n == len(records) or n == limit:
-                log.info("Processed {} items, Passed {}, Failed {}.",
-                         n, p, n-p)
+                log.info("Processed {} {} items, Passed {}, Failed {}.",
+                         n, self.filter_name, p, n-p)
 
             if limit and n > limit:
                 break
