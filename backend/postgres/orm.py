@@ -460,10 +460,11 @@ class PropertyMetadata(ORMBase):
 
     Attributes:
         name: name of property
+        property: property identifier
         other_names: list of property names that can be reported in literature
         units: list of different units that can be seen in literature
         scale: Must be 'log' or 'normal'
-        short_name: 
+        short_name: short name or symbol for the property name
         lower_limit: lower limit of range of values that can be seen
         upper_limit: upper limit of range of values that can be seen
     '''
@@ -471,6 +472,7 @@ class PropertyMetadata(ORMBase):
     __tablename__ = "property_metadata"
 
     name: Mapped[str] = mapped_column(Text)
+    property: Mapped[str] = mapped_column(Text)
     other_names: Mapped[List[str]] = mapped_column(ARRAY(String))
     units: Mapped[List[str]] = mapped_column(ARRAY(String))
     scale: Mapped[PropertyScale] = mapped_column(String, default='normal')
