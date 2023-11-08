@@ -36,7 +36,8 @@ class DataValidator:
             filter = self.filter_name, table = self.table_name,
             mid=self.method.id, last=last)
 
-        t2.note("Found {} items not processed.", len(records))
+        t2.note("Found {} '{}' items not processed.", len(records),
+                self.filter_name)
 
         if len(records):
             log.info("Unprocessed Row IDs: {} to {}",
