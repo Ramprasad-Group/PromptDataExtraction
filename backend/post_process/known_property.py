@@ -120,9 +120,11 @@ class UnitValidator(DataValidator):
 
         criteria = [
             row.value in self.prop_meta.units,
+            # no unit
+            len(row.value.strip()) == 0 and len(self.prop_meta.units) == 0
         ]
 
-        if all(criteria):
+        if any(criteria):
             return False
         
         log.warn("Invalid property unit: {} ({})", row.value, row.id)
