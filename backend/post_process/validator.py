@@ -2,7 +2,6 @@ import pylogg
 from tqdm import tqdm
 from backend import postgres, sett
 from backend.postgres import checkpoint, persist
-from backend.postgres.orm import ExtractedProperties
 
 log = pylogg.New("data_valid")
 
@@ -89,7 +88,7 @@ class DataValidator:
             last = row.id
 
             if not (n % 500) or n == len(records) or n == limit:
-                log.info("Processed {} {} items, Passed {}, Failed {}.",
+                log.info("Processed {} '{}' filter items, Passed {}, Failed {}.",
                          n, self.filter_name, p, n-p)
 
             if limit and n > limit:

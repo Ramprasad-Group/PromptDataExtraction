@@ -7,12 +7,12 @@ log = pylogg.New(ScriptName)
 
 
 filter_list = [
-    'known_property',
-    'unit_ok',
-    'within_range',
-    'is_polymer',
-    'clean_text',
-    'multi_methods'
+    'name',
+    'unit',
+    'range',
+    'polymer',
+    'table',
+    'multi',
 ]
 
 method_property_map = {
@@ -58,8 +58,8 @@ def add_args(subparsers : argparse._SubParsersAction):
         "-m", "--method", required=True,
         help="Name of the method from the extraction_methods table.")
     parser.add_argument(
-        "-l", "--limit", default=100, type=int,
-        help="Number of items to process. Default: 100")
+        "-l", "--limit", default=10000, type=int,
+        help="Number of items to process. Default: 10000")
     parser.add_argument(
         "--redo", default=False, action='store_true',
         help="Reprocess all the rows. Default: False")
@@ -68,7 +68,7 @@ def add_args(subparsers : argparse._SubParsersAction):
 def run(args : argparse.ArgumentParser):
     from backend import postgres
     from backend.postgres import persist
-    from backend.post_process import known_property, known_material
+    from backend.post_process import known_property, known_material, known_text
     from backend.postgres.orm import PropertyMetadata
 
     # Sanity check
@@ -90,17 +90,20 @@ def run(args : argparse.ArgumentParser):
         raise ValueError("No property metadata defined", prop_name)
 
 
-    if args.filter == 'known_property':
+    if args.filter == 'name':
         validator = known_property.NameValidator(db, method, meta)
         validator.process_items(args.limit, args.redo)
-    elif args.filter == 'within_range':
+    elif args.filter == 'range':
         validator = known_property.RangeValidator(db, method, meta)
         validator.process_items(args.limit, args.redo)
-    elif args.filter == 'unit_ok':
+    elif args.filter == 'unit':
         validator = known_property.UnitValidator(db, method, meta)
         validator.process_items(args.limit, args.redo)
-    elif args.filter == 'is_polymer':
+    elif args.filter == 'polymer':
         validator = known_material.PolymerValidator(db, method)
+        validator.process_items(args.limit, args.redo)
+    elif args.filter == 'table':
+        validator = known_text.TableValidator(db, method)
         validator.process_items(args.limit, args.redo)
     else:
         raise ValueError("Unknown data filter", args.filter)

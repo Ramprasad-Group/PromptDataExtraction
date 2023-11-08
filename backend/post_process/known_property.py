@@ -1,14 +1,12 @@
-import pylogg
+import pylogg as log
 from backend.post_process.validator import DataValidator
-
-log = pylogg.New('known_property')
 
 class NameValidator(DataValidator):
     def __init__(self, db, method, meta) -> None:
         super().__init__(db, method)
 
         # Set required parameters
-        self.filter_name = 'known_property'
+        self.filter_name = 'invalid_property_name'
         self.table_name = 'extracted_properties'
         self.prop_meta = meta
 
@@ -36,10 +34,10 @@ class NameValidator(DataValidator):
     def _check_filter(self, row) -> bool:
         """ Return True if row passes the filter. """
         if row.entity_name in self.prop_meta.other_names:
-            return True
+            return False
         
-        log.warn("Unknown property name: {} ({})", row.entity_name, row.id)
-        return False
+        log.warn("Invalid property name: {} ({})", row.entity_name, row.id)
+        return True
 
 
 class RangeValidator(DataValidator):
@@ -47,7 +45,7 @@ class RangeValidator(DataValidator):
         super().__init__(db, method)
 
         # Set required parameters
-        self.filter_name = 'within_range'
+        self.filter_name = 'out_of_range'
         self.table_name = 'extracted_properties'
         self.prop_meta = meta
 
@@ -81,10 +79,10 @@ class RangeValidator(DataValidator):
         ]
 
         if all(criteria):
-            return True
+            return False
         
         log.warn("Out of range property value: {} ({})", row.value, row.id)
-        return False
+        return True
 
 
 class UnitValidator(DataValidator):
@@ -92,7 +90,7 @@ class UnitValidator(DataValidator):
         super().__init__(db, method)
 
         # Set required parameters
-        self.filter_name = 'unit_ok'
+        self.filter_name = 'invalid_property_unit'
         self.table_name = 'extracted_properties'
         self.prop_meta = meta
 
@@ -125,7 +123,7 @@ class UnitValidator(DataValidator):
         ]
 
         if all(criteria):
-            return True
+            return False
         
         log.warn("Invalid property unit: {} ({})", row.value, row.id)
-        return False
+        return True
