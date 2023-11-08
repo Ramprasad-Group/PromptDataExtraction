@@ -72,12 +72,12 @@ def _create_data_scores_view():
     FROM (
         SELECT
             fd.target_id AS prop_id,
-            -- negative attributes
+            -- negative attributes (errors)
             sum(CASE WHEN fd.filter_name = 'invalid_property_unit' 	THEN -1 ELSE 0 END) AS unit,
             sum(CASE WHEN fd.filter_name = 'invalid_property_name' 	THEN -1 ELSE 0 END) AS prop,
             sum(CASE WHEN fd.filter_name = 'is_table' 				THEN -1 ELSE 0 END) AS tabl,
             sum(CASE WHEN fd.filter_name = 'out_of_range' 			THEN -1 ELSE 0 END) AS rang,
-            -- positive attributes
+            -- positive attributes (scores)
             sum(CASE WHEN fd.filter_name = 'is_polymer' 			THEN  1 ELSE 0 END) AS poly
         FROM filtered_data fd
         GROUP BY fd.target_id
@@ -88,6 +88,7 @@ def _create_data_scores_view():
 
 
 def _create_valid_data_view(method_id, method_name, prop_name):
+    # Add more columns here to insert into extracted data.
     sql = """
     CREATE OR REPLACE VIEW valid_data AS 
     SELECT
@@ -126,7 +127,11 @@ def _insert_to_extracted_data():
         vd.prop_id, vd."method", vd.material, vd.property,
         vd.value, vd.unit, vd.doi, vd.score, now() 
     FROM valid_data vd
+
+    -- Ignore data with errors.
     WHERE vd.error = 0
+
+    -- Skip already inserted ones.
     AND NOT EXISTS (
         SELECT 1 FROM extracted_data ed 
         WHERE ed.property_id = vd.prop_id
