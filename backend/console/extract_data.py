@@ -1,8 +1,9 @@
 import pylogg
 from argparse import ArgumentParser, _SubParsersAction
 
-from backend import postgres
+from backend import postgres, sett
 from backend.postgres import persist
+from backend.utils import shell
 
 ScriptName = 'extract-data'
 

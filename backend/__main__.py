@@ -26,6 +26,7 @@ from backend.console import (
     token_count,
     filter_data,
     extract_data,
+    export_data,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -50,6 +51,7 @@ def parse_args() -> argparse.Namespace:
     token_count.add_args(subparsers)
     filter_data.add_args(subparsers)
     extract_data.add_args(subparsers)
+    export_data.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--dir', default=None,
@@ -151,6 +153,9 @@ def main():
 
     elif args.command == extract_data.ScriptName:
         extract_data.run(args)
+
+    elif args.command == export_data.ScriptName:
+        export_data.run(args)
 
     # Finalize.
     postgres.disconnect()

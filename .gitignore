@@ -17,3 +17,4 @@ notebooks/*.txt
 scripts/compare_poly_papers.ipynb
 notebooks/Plots.ipynb
 metrics.txt
+exports/*
