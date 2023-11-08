@@ -40,12 +40,20 @@ class TableValidator(DataValidator):
 
         # Consecutive digits seperated by whitespace
         needle = r"\s?\d+\s+\d+[%\s]?"
-        matches = re.findall(needle, row.text)
-        # matches = re.finditer()
-        if len(matches) >= 3:
-            breakpoint()
-            log.note("Found table, consecutive digits in {}", row.id)
-            return True
+
+        # Distance between two consecutive digits.
+        dist = 20
+
+        m = 0
+        last = -dist
+        for match in re.finditer(needle, row.text):
+            start = match.span()[0]
+            if start - last < dist:
+                m += 1
+            if m >= 3:
+                log.warn("Table detected: {}", row.id)
+                return True
+            last = match.span()[1]
 
         return False
 
