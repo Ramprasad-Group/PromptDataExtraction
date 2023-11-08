@@ -121,7 +121,7 @@ class UnitValidator(DataValidator):
         criteria = [
             row.value in self.prop_meta.units,
             # no unit
-            len(row.value.strip()) == 0 and len(self.prop_meta.units) == 0
+            len(row.value) == 0 and len(self.prop_meta.units) == 0
         ]
 
         if any(criteria):
