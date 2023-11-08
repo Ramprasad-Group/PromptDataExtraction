@@ -7,6 +7,7 @@ log = pylogg.New(ScriptName)
 
 
 filter_list = [
+    'all',
     'name',
     'unit',
     'range',
@@ -52,11 +53,11 @@ def add_args(subparsers : argparse._SubParsersAction):
         ScriptName,
         help='Run filters on extracted data for postprocessing.')
     parser.add_argument(
-        "filter", choices = filter_list,
-        help="Name of the filter to run.")
-    parser.add_argument(
         "-m", "--method", required=True,
         help="Name of the method from the extraction_methods table.")
+    parser.add_argument(
+        "-f", "--filter", choices = filter_list, default = 'all',
+        help="Name of the filter to run.")
     parser.add_argument(
         "-l", "--limit", default=100000, type=int,
         help="Number of items to process. Default: 100000")
@@ -106,4 +107,18 @@ def run(args : argparse.ArgumentParser):
         validator = known_text.TableValidator(db, method)
         validator.process_items(args.limit, args.redo)
     else:
-        raise ValueError("Unknown data filter", args.filter)
+        # Run all the filters.
+        validator = known_property.NameValidator(db, method, meta)
+        validator.process_items(args.limit, args.redo)
+
+        validator = known_property.RangeValidator(db, method, meta)
+        validator.process_items(args.limit, args.redo)
+
+        validator = known_property.UnitValidator(db, method, meta)
+        validator.process_items(args.limit, args.redo)
+
+        validator = known_material.PolymerValidator(db, method)
+        validator.process_items(args.limit, args.redo)
+
+        validator = known_text.TableValidator(db, method)
+        validator.process_items(args.limit, args.redo)
