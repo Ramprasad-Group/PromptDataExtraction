@@ -1,4 +1,5 @@
 import sqlalchemy as sa
+from sqlalchemy import exc
 from collections import namedtuple
 from sqlalchemy.orm import scoped_session
 
@@ -95,5 +96,9 @@ def raw_sql(query : str, params : dict = {}, **kwargs) -> list[namedtuple]:
     results = sess.execute(sa.text(query), kwargs)
     sess.close()
 
-    Row = namedtuple('Row', results.keys())
-    return [Row(*r) for r in results.fetchall()]
+    try:
+        Row = namedtuple('Row', results.keys())
+        return [Row(*r) for r in results.fetchall()]
+    except exc.ResourceClosedError:
+        # Handle queries that don't return any result.
+        return []
