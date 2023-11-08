@@ -63,7 +63,7 @@ def add_args(subparsers : argparse._SubParsersAction):
         help="Number of items to process. Default: 100000")
     parser.add_argument(
         "--redo", default=False, action='store_true',
-        help="Reprocess all the rows. Default: False")
+        help="Reprocess all rows, ignore the last checkpoint. Default: False")
     
 
 def run(args : argparse.ArgumentParser):

@@ -24,7 +24,8 @@ from backend.console import (
     methods,
     llm_pipeline,
     token_count,
-    filter_data
+    filter_data,
+    extract_data,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -48,6 +49,7 @@ def parse_args() -> argparse.Namespace:
     llm_pipeline.add_args(subparsers)
     token_count.add_args(subparsers)
     filter_data.add_args(subparsers)
+    extract_data.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--dir', default=None,
@@ -146,6 +148,9 @@ def main():
 
     elif args.command == filter_data.ScriptName:
         filter_data.run(args)
+
+    elif args.command == extract_data.ScriptName:
+        extract_data.run(args)
 
     # Finalize.
     postgres.disconnect()
