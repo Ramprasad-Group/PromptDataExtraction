@@ -58,8 +58,8 @@ def add_args(subparsers : argparse._SubParsersAction):
         "-m", "--method", required=True,
         help="Name of the method from the extraction_methods table.")
     parser.add_argument(
-        "-l", "--limit", default=10000, type=int,
-        help="Number of items to process. Default: 10000")
+        "-l", "--limit", default=100000, type=int,
+        help="Number of items to process. Default: 100000")
     parser.add_argument(
         "--redo", default=False, action='store_true',
         help="Reprocess all the rows. Default: False")
