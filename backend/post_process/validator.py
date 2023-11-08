@@ -68,6 +68,9 @@ class DataValidator:
             last = self._get_last_ckpt()
         records = self._get_records(sql, last)
 
+        if len(records) == 0:
+            return
+
         n = 0
         p = 0
         # Process each item.
