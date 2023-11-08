@@ -83,17 +83,19 @@ def engine():
     return ENG
 
 
-def raw_sql(query : str, params : dict = {}, **kwargs) -> list[namedtuple]:
+def raw_sql(query : str, params : dict = {}, commit = False, **kwargs) -> list[namedtuple]:
     """
         Execute a raw sql query on the database.
         
         Ex. result = raw_sql('SELECT * FROM my_table WHERE my_column = :val', {'val': 5})
 
-        Returns a list of rows.
+        Returns a list of rows or results object
     """
     kwargs.update(dict(params))
     sess = session()
     results = sess.execute(sa.text(query), kwargs)
+    if commit:
+        sess.commit()
     sess.close()
 
     try:
@@ -101,4 +103,4 @@ def raw_sql(query : str, params : dict = {}, **kwargs) -> list[namedtuple]:
         return [Row(*r) for r in results.fetchall()]
     except exc.ResourceClosedError:
         # Handle queries that don't return any result.
-        return []
+        return results
