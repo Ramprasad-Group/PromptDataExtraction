@@ -9,35 +9,37 @@ ScriptName = 'extract-data'
 log = pylogg.New(ScriptName)
 
 
+EX_GPT_NAME = "GPT-3.5"
+
 method_property_map = {
-    "bandgap-gpt35-similar-full": "bandgap",
-    "co2_perm-gpt35-similar-full": "co2_perm",
-    "cs-gpt35-similar-full": "cs",
-    "ct-gpt35-similar-full": "ct",
-    "dc-gpt35-similar-full": "dc",
-    "density-gpt35-similar-full": "density",
-    "eab-gpt35-similar-full": "eab",
-    "fs-gpt35-similar-full": "fs",
-    "hardness-gpt35-similar-full": "hardness",
-    "h2_perm-gpt35-similar-full": "h2_perm",
-    "iec-gpt35-similar-full": "iec",
-    "ionic_cond-gpt35-similar-full": "ionic_cond",
-    "is-gpt35-similar-full": "is",
-    "lcst-gpt35-similar-full": "lcst",
-    "loi-gpt35-similar-full": "loi",
-    "methanol_perm-gpt35-similar-full": "meoh_perm",
-    "o2_perm-gpt35-similar-full": "o2_perm",
-    "ri-gpt35-similar-full": "ri",
-    "sd-gpt35-similar-full": "sd",
-    "tc-gpt35-similar-full": "tc",
-    "td-gpt35-similar-full": "td",
-    "tm-gpt35-similar-full": "tm",
-    "ts-gpt35-similar-full": "ts",
-    "tg-gpt35-similar-full": "tg",
-    "ucst-gpt35-similar-full": "ucst",
-    "wca-gpt35-similar-full": "wca",
-    "wu-gpt35-similar-full": "wu",
-    "ym-gpt35-similar-full": "ym",
+    "bandgap-gpt35-similar-full":       (EX_GPT_NAME, "bandgap"),
+    "co2_perm-gpt35-similar-full":      (EX_GPT_NAME, "co2_perm"),
+    "cs-gpt35-similar-full":            (EX_GPT_NAME, "cs"),
+    "ct-gpt35-similar-full":            (EX_GPT_NAME, "ct"),
+    "dc-gpt35-similar-full":            (EX_GPT_NAME, "dc"),
+    "density-gpt35-similar-full":       (EX_GPT_NAME, "density"),
+    "eab-gpt35-similar-full":           (EX_GPT_NAME, "eab"),
+    "fs-gpt35-similar-full":            (EX_GPT_NAME, "fs"),
+    "hardness-gpt35-similar-full":      (EX_GPT_NAME, "hardness"),
+    "h2_perm-gpt35-similar-full":       (EX_GPT_NAME, "h2_perm"),
+    "iec-gpt35-similar-full":           (EX_GPT_NAME, "iec"),
+    "ionic_cond-gpt35-similar-full":    (EX_GPT_NAME, "ionic_cond"),
+    "is-gpt35-similar-full":            (EX_GPT_NAME, "is"),
+    "lcst-gpt35-similar-full":          (EX_GPT_NAME, "lcst"),
+    "loi-gpt35-similar-full":           (EX_GPT_NAME, "loi"),
+    "methanol_perm-gpt35-similar-full": (EX_GPT_NAME, "meoh_perm"),
+    "o2_perm-gpt35-similar-full":       (EX_GPT_NAME, "o2_perm"),
+    "ri-gpt35-similar-full":            (EX_GPT_NAME, "ri"),
+    "sd-gpt35-similar-full":            (EX_GPT_NAME, "sd"),
+    "tc-gpt35-similar-full":            (EX_GPT_NAME, "tc"),
+    "td-gpt35-similar-full":            (EX_GPT_NAME, "td"),
+    "tm-gpt35-similar-full":            (EX_GPT_NAME, "tm"),
+    "ts-gpt35-similar-full":            (EX_GPT_NAME, "ts"),
+    "tg-gpt35-similar-full":            (EX_GPT_NAME, "tg"),
+    "ucst-gpt35-similar-full":          (EX_GPT_NAME, "ucst"),
+    "wca-gpt35-similar-full":           (EX_GPT_NAME, "wca"),
+    "wu-gpt35-similar-full":            (EX_GPT_NAME, "wu"),
+    "ym-gpt35-similar-full":            (EX_GPT_NAME, "ym"),
 }
 
 def add_args(subparsers : _SubParsersAction):
@@ -113,13 +115,34 @@ def _create_valid_data_view(method_id, method_name, prop_name):
     log.done("Recreated valid_data")
 
 
+def _insert_to_extracted_data():
+    t2 = log.info("Inserting new valid data.")
+    sql = """
+    INSERT INTO extracted_data (
+        property_id, "method", material, property,
+        value, unit, doi, confidence, date_added
+    )
+    SELECT
+        vd.prop_id, vd."method", vd.material, vd.property,
+        vd.value, vd.unit, vd.doi, vd.score, now() 
+    FROM valid_data vd
+    WHERE vd.error = 0
+    AND NOT EXISTS (
+        SELECT 1 FROM extracted_data ed 
+        WHERE ed.property_id = vd.prop_id
+    );
+    """
+    postgres.raw_sql(sql)
+    t2.done("Inserted valid_data into extracted_data")
+
+
 def run(args : ArgumentParser):
 
     # Sanity check
     if args.method not in method_property_map.keys():
         raise ValueError("Method not found in property map")
     else:
-        prop_name = method_property_map[args.method]
+        method_name, prop_name = method_property_map[args.method]
 
     db = postgres.connect()
 
@@ -135,7 +158,10 @@ def run(args : ArgumentParser):
     _create_data_scores_view()
 
     # Select data with good scores.
-    _create_valid_data_view(method.id, method.name, prop_name)
+    _create_valid_data_view(method.id, method_name, prop_name)
+
+    # Insert the selected data
+    _insert_to_extracted_data()
 
     db.commit()
 
