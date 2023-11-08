@@ -117,15 +117,22 @@ class UnitValidator(DataValidator):
     
     def _check_filter(self, row) -> bool:
         """ Return True if row passes the filter. """
+        unit = row.value
+
+        # Handle None
+        if unit is None:
+            unit = ''
+        if self.prop_meta.units is None:
+            self.prop_meta.units = []
 
         criteria = [
-            row.value in self.prop_meta.units,
+            unit in self.prop_meta.units,
             # no unit
-            len(row.value) == 0 and len(self.prop_meta.units) == 0
+            len(unit) == 0 and len(self.prop_meta.units) == 0
         ]
 
         if any(criteria):
             return False
         
-        log.warn("Invalid property unit: {} ({})", row.value, row.id)
+        log.warn("Invalid property unit: {} ({})", unit, row.id)
         return True
