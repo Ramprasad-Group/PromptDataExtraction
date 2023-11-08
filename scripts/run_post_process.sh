@@ -2,8 +2,8 @@
 
 method_names=(
 #     "tg-gpt35-similar-full"
-    "sd-gpt35-similar-full"
-#     "bandgap-gpt35-similar-full"
+#     "sd-gpt35-similar-full"
+    "bandgap-gpt35-similar-full"
 #     "hardness-gpt35-similar-full"
 #     "td-gpt35-similar-full"
 #     "co2_perm-gpt35-similar-full"
@@ -47,8 +47,8 @@ for method_name in "${method_names[@]}"; do
 
     # 2. Filter the values that are within range,
     #   has appropriate property name etc.
-    python backend --dir $log_dir filter-data --redo \
-            -m "$method_name" | tee -a $outfile
+    python backend --dir $log_dir filter-data \
+                -m "$method_name" | tee -a $outfile
 
     # 3. Calculate confidence and error scores using the filtered data.
     python backend --dir $log_dir extract-data \
