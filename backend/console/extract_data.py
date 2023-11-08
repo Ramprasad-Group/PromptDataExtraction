@@ -57,9 +57,9 @@ def add_args(subparsers : _SubParsersAction):
 
 
 def _drop_views():
-    postgres.raw_sql("DROP VIEW valid_data;")
+    postgres.raw_sql("DROP VIEW valid_data;", commit=True)
     log.warn("Dropped valid_data")
-    postgres.raw_sql("DROP VIEW data_scores;")
+    postgres.raw_sql("DROP VIEW data_scores;", commit=True)
     log.warn("Dropped data_scores")
 
 
@@ -84,7 +84,7 @@ def _create_data_scores_view():
         GROUP BY fd.target_id
     ) AS aggr;
     """
-    postgres.raw_sql(sql)
+    postgres.raw_sql(sql, commit=True)
     log.done("Recreated data_scores")
 
 
@@ -109,11 +109,11 @@ def _create_valid_data_view(method_id, method_name, prop_name):
     FROM extracted_properties ep 
     JOIN extracted_materials em ON em.id = ep.material_id 
     JOIN paper_texts pt ON pt.id = em.para_id 
-    LEFT JOIN data_score ds ON ep.id = ds.prop_id
+    LEFT JOIN data_scores ds ON ep.id = ds.prop_id
     WHERE ep.method_id = :mid;
     """
     postgres.raw_sql(
-        sql, mid = method_id, mname = method_name, pname = prop_name)
+        sql, commit=True, mid = method_id, mname = method_name, pname = prop_name)
     log.done("Recreated valid_data")
 
 
@@ -138,7 +138,7 @@ def _insert_to_extracted_data():
         WHERE ed.property_id = vd.prop_id
     );
     """
-    postgres.raw_sql(sql)
+    postgres.raw_sql(sql, commit=True)
     t2.done("Inserted valid_data into extracted_data")
 
 
@@ -168,6 +168,4 @@ def run(args : ArgumentParser):
 
     # Insert the selected data
     _insert_to_extracted_data()
-
-    db.commit()
 
