@@ -31,9 +31,11 @@ python --version
 
 # GENERAL NER PIPELINE
 python  backend --dir runs/ner-pipeline/ \
-        ner-filtered -m g-ner-pipeline -l 10000 
+        ner-filtered -m g-ner-pipeline -l 10000 &> $MY_PATH/ner-pipeline.out &
 
 # GENERAL NER FILTER
-# python  backend --dir runs/filters/ner/ \
-#         filter-by-ner -l 10000
+python  backend --dir runs/filters/ner/ \
+        filter-by-ner -l 10000 &> $MY_PATH/ner-filter.out &
 
+# Fix the values with +/- in them.
+# python backend/ fix-data --save 
