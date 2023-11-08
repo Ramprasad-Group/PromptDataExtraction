@@ -62,6 +62,11 @@ def _drop_views():
     postgres.raw_sql("DROP VIEW data_scores;", commit=True)
     log.warn("Dropped data_scores")
 
+def _delete_existing_rows(prop_name):
+    postgres.raw_sql("""
+    DELETE FROM extracted_data ed WHERE ed.property = :prop_name;
+    """, commit=True, prop_name = prop_name)
+    log.warn("Dropped existing extracted data for {}", prop_name)
 
 def _create_data_scores_view():
     sql = """
@@ -165,6 +170,9 @@ def run(args : ArgumentParser):
 
     # Select data with good scores.
     _create_valid_data_view(method.id, method_name, prop_name)
+
+    # Delete existing property data
+    _delete_existing_rows(prop_name)
 
     # Insert the selected data
     _insert_to_extracted_data()
