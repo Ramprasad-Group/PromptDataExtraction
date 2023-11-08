@@ -57,7 +57,7 @@ def run(args : ArgumentParser):
         return
 
     n = 0
-    p = 1
+    p = 0
     # Process each paragraph.
     for row in tqdm(records):
         n += 1
