@@ -15,9 +15,12 @@ def add_args(subparsers : _SubParsersAction):
         ScriptName,
         help='Fix the +/- extracted data as much as possible.')
     parser.add_argument(
-        '--save', default=False,
+        '--save', default=True,
         action='store_true',
         help="Commit the changes to database.")
+    parser.add_argument(
+        "-m", "--method", required=True,
+        help="Name of the method from the extraction_methods table.")
     
 def _clean_word(word):
     word = word.strip()
@@ -30,21 +33,24 @@ def _clean_word(word):
     return word.strip()
 
 def run(args : ArgumentParser):
+    from backend.postgres import persist
+
     db = postgres.connect()
+    method = persist.get_method(db, name=args.method)
+    if method is None:
+        log.critical("No such method defined in DB: {}", args.method)
+        exit(1)
 
     query = """
     SELECT  ep.id, ep.value, ep.numeric_value, ep.numeric_error
     FROM    extracted_properties ep 
-    WHERE   ep.method_id >= 176
-    -- AND     ep.value LIKE '%+/-%°C'
+    WHERE   ep.method_id = :mid
     AND     ep.value LIKE '%+/-%'
     AND     ep.numeric_error = 0;
     """
 
     t2 = log.info("Querying list of non-processed items.")
-
-    records = postgres.raw_sql(query)
-
+    records = postgres.raw_sql(query, mid = method.id)
     t2.note("Found {} paragraphs not processed.", len(records))
 
     if len(records) == 0:
