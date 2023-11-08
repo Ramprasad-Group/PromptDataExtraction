@@ -95,7 +95,8 @@ def raw_sql(query : str, params : dict = {}, commit = False, **kwargs) -> list[n
     sess = session()
     results = sess.execute(sa.text(query), kwargs)
     if commit:
-        sess.commit()
+        sess.execute(sa.text("COMMIT"), kwargs)
+
     sess.close()
 
     try:
