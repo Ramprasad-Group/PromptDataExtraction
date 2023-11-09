@@ -5,7 +5,8 @@
 UPDATE extracted_properties ep 
 SET
 	unit = 'eV',
-	numeric_value = 1239.8 / ep.numeric_value
+	numeric_value = 1239.8 / ep.numeric_value,
+	numeric_error = 1239.8 / ep.numeric_value
 WHERE   ep.method_id  = 175     -- method id for bandgap
 AND     ep.unit = 'nm'          -- original unit
 AND NOT EXISTS (                -- only the recognized bandgap properties
@@ -22,7 +23,8 @@ AND NOT EXISTS (                -- only the recognized bandgap properties
 UPDATE extracted_properties ep 
 SET
 	unit = 'eV',
-	numeric_value = ep.numeric_value / meV
+	numeric_value = ep.numeric_value / 1000.0,
+	numeric_error = ep.numeric_error / 1000.0
 WHERE   ep.method_id  = 175     -- method id for bandgap
 AND     ep.unit = 'meV'         -- original unit
 AND NOT EXISTS (                -- only the recognized bandgap properties
