@@ -31,51 +31,39 @@ method_names=(
 #     "ym-gpt35-similar-full"
 )
 
-nohup_folder="."
-chmod +w "$nohup_folder"
-
-
 for method_name in "${method_names[@]}"; do
     log_dir="gpt-full/post-process/${method_name}"
-    outfile="${nohup_folder}/post-proc.${method_name}.out"
-
-    echo "Running post-processing for: $method_name" | tee $outfile
+    echo "Running post-processing for: $method_name"
 
     # 1. Fix the values with +/- in them.
-    python backend --logfile $log_dir/fix_data.log fix-data \
-            -m "$method_name" | tee -a $outfile
+    python backend --logfile $log_dir/fix_data.log fix-data -m "$method_name"
 
     # 2a. Filter the values that have known property name.
-    python backend --logfile $log_dir/filter_name.log filter-data \
-                -f name --remove \
-                -m "$method_name" | tee -a $outfile
+    python backend --logfile $log_dir/filter_name.log \
+            filter-data -m "$method_name" -f name --remove
 
     # 2b. Filter the values that have known property unit.
-    python backend --logfile $log_dir/filter_unit.log filter-data \
-                -f unit --remove \
-                -m "$method_name" | tee -a $outfile
+    python backend --logfile $log_dir/filter_unit.log \
+            filter-data -m "$method_name" -f unit --remove
 
     # 2c. Filter the values that have known property range.
-    python backend --logfile $log_dir/filter_range.log filter-data \
-                -f range --remove \
-                -m "$method_name" | tee -a $outfile
+    python backend --logfile $log_dir/filter_range.log \
+            filter-data -m "$method_name" -f range --remove
 
     # 2d. Filter the values that have known polymer material name.
-    python backend --logfile $log_dir/filter_polymers.log filter-data \
-                -f polymer \
-                -m "$method_name" | tee -a $outfile
+    python backend --logfile $log_dir/filter_polymers.log \
+            filter-data -m "$method_name" -f polymer
 
     # 2e. Filter the values that have para text look like table.
-    python backend --logfile $log_dir/filter_tables.log filter-data \
-                -f table \
-                -m "$method_name" | tee -a $outfile
+    python backend --logfile $log_dir/filter_tables.log \
+            filter-data -m "$method_name" -f table
 
     # 3. Calculate confidence and error scores using the filtered items.
     # Add to the extract_data table.
-    python backend --logfile $log_dir/extract_data.log extract-data \
-            -m "$method_name" | tee -a $outfile
+    python backend --logfile $log_dir/extract_data.log \
+            extract-data -m "$method_name"
 
 done
 
 # 4. Export the final valid data for polymerscholar.
-python backend --logfile $log_dir/export_data.log export-data | tee -a $outfile
+python backend --logfile $log_dir/export_data.log export-data
