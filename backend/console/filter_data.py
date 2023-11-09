@@ -64,7 +64,10 @@ def add_args(subparsers : argparse._SubParsersAction):
     parser.add_argument(
         "--redo", default=False, action='store_true',
         help="Reprocess all rows, ignore the last checkpoint. Default: False")
-    
+    parser.add_argument(
+        "--remove", default=False, action='store_true',
+        help="Remove existing rows, ignore the last checkpoint. Default: False")
+
 
 def run(args : argparse.ArgumentParser):
     from backend import postgres
@@ -93,32 +96,32 @@ def run(args : argparse.ArgumentParser):
 
     if args.filter == 'name':
         validator = known_property.NameValidator(db, method, meta)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
     elif args.filter == 'range':
         validator = known_property.RangeValidator(db, method, meta)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
     elif args.filter == 'unit':
         validator = known_property.UnitValidator(db, method, meta)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
     elif args.filter == 'polymer':
         validator = known_material.PolymerValidator(db, method)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
     elif args.filter == 'table':
         validator = known_text.TableValidator(db, method)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
     else:
         # Run all the filters.
         validator = known_property.NameValidator(db, method, meta)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
 
         validator = known_property.RangeValidator(db, method, meta)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
 
         validator = known_property.UnitValidator(db, method, meta)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
 
         validator = known_material.PolymerValidator(db, method)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
 
         validator = known_text.TableValidator(db, method)
-        validator.process_items(args.limit, args.redo)
+        validator.process_items(args.limit, args.redo, args.remove)
