@@ -33,9 +33,14 @@ class NameValidator(DataValidator):
     
     def _check_filter(self, row) -> bool:
         """ Return True if row passes the filter. """
-        if row.entity_name in self.prop_meta.other_names:
+
+        # Lowercase
+        name = row.entity_name.lower()
+        namelist = [n.lower() for n in self.prop_meta.other_names]
+
+        if name in namelist:
             return False
-        
+
         log.warn("Invalid property name: {} ({})", row.entity_name, row.id)
         return True
 
@@ -117,18 +122,15 @@ class UnitValidator(DataValidator):
     
     def _check_filter(self, row) -> bool:
         """ Return True if row passes the filter. """
-        unit = row.value
 
-        # Handle None
-        if unit is None:
-            unit = ''
-        if self.prop_meta.units is None:
-            self.prop_meta.units = []
+        # Handle None, lowercase
+        unit = row.value.lower() if row.value else ""
+        unitlist = [u.lower() for u in self.prop_meta.units]
 
         criteria = [
-            unit in self.prop_meta.units,
+            unit in unitlist,
             # no unit
-            len(unit) == 0 and len(self.prop_meta.units) == 0
+            len(unit) == 0 and len(unitlist) == 0
         ]
 
         if any(criteria):
