@@ -2,8 +2,8 @@
 
 method_names=(
 #     "tg-gpt35-similar-full"
-#     "sd-gpt35-similar-full"
-    "bandgap-gpt35-similar-full"
+    "sd-gpt35-similar-full"
+    # "bandgap-gpt35-similar-full"
 #     "hardness-gpt35-similar-full"
 #     "td-gpt35-similar-full"
 #     "co2_perm-gpt35-similar-full"
@@ -36,25 +36,46 @@ chmod +w "$nohup_folder"
 
 
 for method_name in "${method_names[@]}"; do
-    log_dir="runs/gpt-full/post-process/${method_name}"
-    outfile="${nohup_folder}/${method_name}.out"
+    log_dir="gpt-full/post-process/${method_name}"
+    outfile="${nohup_folder}/post-proc.${method_name}.out"
 
     echo "Running post-processing for: $method_name" | tee $outfile
 
     # 1. Fix the values with +/- in them.
-    python backend --dir $log_dir fix-data \
+    python backend --logfile $log_dir/fix_data.log fix-data \
             -m "$method_name" | tee -a $outfile
 
-    # 2. Filter the values that are within range,
-    #   has appropriate property name etc.
-    python backend --dir $log_dir filter-data --remove \
+    # 2a. Filter the values that have known property name.
+    python backend --logfile $log_dir/filter_name.log filter-data \
+                -f name --remove \
                 -m "$method_name" | tee -a $outfile
 
-    # 3. Calculate confidence and error scores using the filtered data.
-    python backend --dir $log_dir extract-data \
+    # 2b. Filter the values that have known property unit.
+    python backend --logfile $log_dir/filter_unit.log filter-data \
+                -f unit --remove \
+                -m "$method_name" | tee -a $outfile
+
+    # 2c. Filter the values that have known property range.
+    python backend --logfile $log_dir/filter_range.log filter-data \
+                -f range --remove \
+                -m "$method_name" | tee -a $outfile
+
+    # 2d. Filter the values that have known polymer material name.
+    python backend --logfile $log_dir/filter_polymers.log filter-data \
+                -f polymer \
+                -m "$method_name" | tee -a $outfile
+
+    # 2e. Filter the values that have para text look like table.
+    python backend --logfile $log_dir/filter_tables.log filter-data \
+                -f table \
+                -m "$method_name" | tee -a $outfile
+
+    # 3. Calculate confidence and error scores using the filtered items.
+    # Add to the extract_data table.
+    python backend --logfile $log_dir/extract_data.log extract-data \
             -m "$method_name" | tee -a $outfile
 
 done
 
-# 4. Export the final valid data table.
-python backend --dir $log_dir export-data -o | tee -a $outfile
+# 4. Export the final valid data for polymerscholar.
+python backend --logfile $log_dir/export_data.log export-data | tee -a $outfile
