@@ -36,7 +36,8 @@ for method_name in "${method_names[@]}"; do
     echo "Running post-processing for: $method_name"
 
     # 1. Fix the values with +/- in them.
-    python backend --logfile $log_dir/fix_data.log fix-data -m "$method_name"
+    python backend --logfile $log_dir/fix_data.log \
+            fix-data -m "$method_name"
 
     # 2a. Filter the values that have known property name.
     python backend --logfile $log_dir/filter_name.log \
@@ -54,7 +55,7 @@ for method_name in "${method_names[@]}"; do
     python backend --logfile $log_dir/filter_polymers.log \
             filter-data -m "$method_name" -f polymer
 
-    # 2e. Filter the values that have para text look like table.
+    # 2e. Filter the values that have para text looking like a table.
     python backend --logfile $log_dir/filter_tables.log \
             filter-data -m "$method_name" -f table
 
