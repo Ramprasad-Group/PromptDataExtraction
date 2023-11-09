@@ -47,7 +47,7 @@ for method_name in "${method_names[@]}"; do
 
     # 2. Filter the values that are within range,
     #   has appropriate property name etc.
-    python backend --dir $log_dir filter-data \
+    python backend --dir $log_dir filter-data --remove \
                 -m "$method_name" | tee -a $outfile
 
     # 3. Calculate confidence and error scores using the filtered data.
