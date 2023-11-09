@@ -18,4 +18,3 @@ openpyxl
 ChemDataExtractor @ git+https://github.com/akhlakm/ChemDataExtractor.git
 argcomplete
 tiktoken
-postgresql

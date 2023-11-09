@@ -9,6 +9,7 @@ if [[ ! -f _conda_env/bin/pip ]]; then
 
     conda install -c conda-forge cxx-compiler==1.5.2 # gcc11
     conda install -c conda-forge cudatoolkit cudatoolkit-dev
+    conda install -c conda-forge postgresql
 
     pip -v install -r requirements.txt
     pip -v install -r pranav/requirements.txt
