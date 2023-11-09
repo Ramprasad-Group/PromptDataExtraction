@@ -27,8 +27,8 @@ def add_args(subparsers : _SubParsersAction):
         "-o", "--overwrite", default=False, action='store_true',
         help="Delete existing export directory.")
     parser.add_argument(
-        "-f", "--format", default='pgdump', choices=['pgdump', 'sql'],
-        help="Export format. Default: pgdump")
+        "-f", "--format", default='dump', choices=['dir', 'sql', 'tar', 'dump'],
+        help="Export format. Default: dump")
 
 
 def run(args : ArgumentParser):
@@ -37,6 +37,8 @@ def run(args : ArgumentParser):
         args.outdir = os.path.join(".", "exports", today, sett.PostGres.db_name)
 
     if args.overwrite:
+        if args.outdir == ".":
+            raise ValueError("Cannot recursively remove .")
         shutil.rmtree(args.outdir)
         log.warn("Recursively deleted existing directory: {}", args.outdir)
 
@@ -47,6 +49,14 @@ def run(args : ArgumentParser):
         outfile = os.path.join(args.outdir, f"{args.table}.sql")
         dump_opt = f'-F p -f {outfile}'   # plain text file, serial
         log.info("Exporting in plain text / SQL format")
+    elif args.format == 'tar':
+        outfile = os.path.join(args.outdir, f"{args.table}.sql.tar")
+        dump_opt = f'-F t -f {outfile}'   # plain text file, serial
+        log.info("Exporting in plain / TAR format")
+    elif args.format == 'dump':
+        outfile = os.path.join(args.outdir, f"{args.table}.pgdump")
+        dump_opt = f'-F c -f {outfile}'   # plain text file, serial
+        log.info("Exporting in compressed / custom format")
     else:
         dump_opt = f'-j 4 -F d -f {args.outdir}'   # directory, parallel
         log.info("Exporting in pgdump / directory format")
