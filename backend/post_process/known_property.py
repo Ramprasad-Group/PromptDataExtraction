@@ -10,7 +10,6 @@ class NameValidator(DataValidator):
         self.table_name = 'extracted_properties'
         self.prop_meta = meta
 
-
     def _get_record_sql(self) -> str:
         return """
             SELECT * FROM (
