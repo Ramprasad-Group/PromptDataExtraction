@@ -35,7 +35,4 @@ python  backend --dir runs/ner-pipeline/ \
 
 # GENERAL NER FILTER
 python  backend --dir runs/filters/ner/ \
-        filter-by-ner -l 10000 &> $MY_PATH/ner-filter.out &
-
-# Fix the values with +/- in them.
-# python backend/ fix-data --save 
+        filter-by-ner -l 50000 &> $MY_PATH/ner-filter.out &
