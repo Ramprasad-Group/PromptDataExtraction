@@ -2,8 +2,8 @@
 
 method_names=(
 #     "tg-gpt35-similar-full"
-    "sd-gpt35-similar-full"
-    # "bandgap-gpt35-similar-full"
+#     "sd-gpt35-similar-full"
+#     "bandgap-gpt35-similar-full"
 #     "hardness-gpt35-similar-full"
 #     "td-gpt35-similar-full"
 #     "co2_perm-gpt35-similar-full"
@@ -42,6 +42,8 @@ for method_name in "${method_names[@]}"; do
     # 2a. Filter the values that have known property name.
     python backend --logfile $log_dir/filter_name.log \
             filter-data -m "$method_name" -f name --remove
+
+    # @todo: Normalize units here (if needed).
 
     # 2b. Filter the values that have known property unit.
     python backend --logfile $log_dir/filter_unit.log \
