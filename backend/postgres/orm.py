@@ -398,22 +398,24 @@ class ExtractedCrossrefs(ORMBase):
 class FilteredData(ORMBase):
     '''
     Table to track the extracted property, materials and paragraphs passing
-    particular filters.
+    specific filters.
 
     Attributes:
-        filter_name:    Name of the passed filter.
-        target_table:   Name of the object the filter acted on. Ex. Material,
-                        Property, Paragraph etc.
-        target_id:      ID of the row in the target table.
+        table_name:     Name of the table filter acted on.
+                        Ex. extracted_properties, extracted_materials etc.
+        table_row:      ID of the row in the target table.
+        filter_on:      Name of the data class, e.g., Tg, bandgap, PS, PMMA.
+        filter_name:    Name of the passed filter, e.g. valid_name.
     '''
 
     __tablename__ = "filtered_data"
 
-    filter_name : Mapped[str] = mapped_column(String)
-    target_table : Mapped[str] = mapped_column(String)
-    target_id: Mapped[int] = mapped_column(
+    table_name  : Mapped[str] = mapped_column(String)
+    table_row   : Mapped[int] = mapped_column(
         Integer, nullable= False, unique=False, index=True,
     )
+    filter_on   : Mapped[str] = mapped_column(String)
+    filter_name : Mapped[str] = mapped_column(String)
 
     def __init__(self, **kw):
         super().__init__(**kw)
@@ -424,8 +426,7 @@ class ExtractedData(ORMBase):
     Table for the finally exported/extracted data.
 
     Attributes:
-        property_id:    ForeignKey referencing the original extracted property
-                        row.
+        property_id:    ForeignKey referencing the extracted_properties row.
         method:         Name of the extraction method.
         material:       Name of the material.
         property:       Name of the property.
