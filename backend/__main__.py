@@ -13,8 +13,6 @@ from backend.console import (
     calculate_metrics,
     checkpoint,
     db_tables,
-    extract_llm_data,
-    filter_llm_data,
     settings,
     ner_filtered,
     filter_by_ner,
@@ -27,7 +25,10 @@ from backend.console import (
     llm_pipeline,
     token_count,
     fix_data,
+    filter_llm_data,
+    extract_llm_data,
     filter_ner_data,
+    extract_ner_data,
     export_data,
 )
 
@@ -55,6 +56,7 @@ def parse_args() -> argparse.Namespace:
     filter_ner_data.add_args(subparsers)
     filter_by_ner.add_args(subparsers)
     extract_llm_data.add_args(subparsers)
+    extract_ner_data.add_args(subparsers)
     export_data.add_args(subparsers)
 
     # Additional arguments for the current run.
@@ -163,6 +165,9 @@ def main():
 
     elif args.command == extract_llm_data.ScriptName:
         extract_llm_data.run(args)
+
+    elif args.command == extract_ner_data.ScriptName:
+        extract_ner_data.run(args)
 
     elif args.command == export_data.ScriptName:
         export_data.run(args)
