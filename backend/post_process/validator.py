@@ -68,7 +68,7 @@ class DataValidator:
             WHERE EXISTS (
                 SELECT 1 FROM extracted_properties ep 
                 WHERE ep.method_id = :mid
-                AND ep.id = fd.target_id 
+                AND ep.id = fd.table_row
             )
             AND fd.filter_on = :data
             AND fd.table_name = :table
@@ -98,8 +98,8 @@ class DataValidator:
 
         # Remove the existing items
         if remove:
-            self._delete_existing()
             redo = True
+            self._delete_existing()
 
         # Get the SQL and last processed row.
         sql = self._get_record_sql()
@@ -140,8 +140,10 @@ class DataValidator:
             last = row.id
 
             if not (n % 500) or n == len(records) or n == limit:
-                log.info("Processed {} '{}' filter items, Passed {}, Failed {}.",
-                         n, self.filter_name, p, n-p)
+                log.info(
+                    "Processed {} '{}' filter items for {}, "
+                    "Passed {}, Failed {}.",
+                    n, self.filter_name, self.filter_on, p, n-p)
 
             if limit and n > limit:
                 break
