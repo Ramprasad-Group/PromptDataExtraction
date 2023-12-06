@@ -404,7 +404,7 @@ class FilteredData(ORMBase):
         table_name:     Name of the table filter acted on.
                         Ex. extracted_properties, extracted_materials etc.
         table_row:      ID of the row in the target table.
-        filter_on:      Name of the data class, e.g., Tg, bandgap, PS, PMMA.
+        filter_on:      Name of the data group, e.g., Tg, bandgap, PS, PMMA.
         filter_name:    Name of the passed filter, e.g. valid_name.
     '''
 
