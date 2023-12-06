@@ -5,7 +5,7 @@ from backend import postgres, sett
 from backend.postgres import persist
 from backend.utils import shell
 
-ScriptName = 'extract-data'
+ScriptName = 'extract-llm-data'
 
 log = pylogg.New(ScriptName)
 
@@ -62,10 +62,12 @@ def _drop_views():
     postgres.raw_sql("DROP VIEW data_scores;", commit=True)
     log.warn("Dropped data_scores")
 
-def _delete_existing_rows(prop_name):
+def _delete_existing_rows(method_name, prop_name):
     postgres.raw_sql("""
-    DELETE FROM extracted_data ed WHERE ed.property = :prop_name;
-    """, commit=True, prop_name = prop_name)
+    DELETE FROM extracted_data ed
+    WHERE ed.property = :prop_name
+    AND ed.method = :method_name;
+    """, commit=True, prop_name = prop_name, method_name = method_name)
     log.warn("Dropped existing extracted data for {}", prop_name)
 
 def _create_data_scores_view():
@@ -172,7 +174,7 @@ def run(args : ArgumentParser):
     _create_valid_data_view(method.id, method_name, prop_name)
 
     # Delete existing property data
-    _delete_existing_rows(prop_name)
+    _delete_existing_rows(method_name, prop_name)
 
     # Insert the selected data
     _insert_to_extracted_data()

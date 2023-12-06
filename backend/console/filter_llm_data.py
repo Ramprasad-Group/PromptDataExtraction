@@ -1,7 +1,7 @@
 import argparse
 import pylogg
 
-ScriptName = 'filter-data'
+ScriptName = 'filter-llm-data'
 
 log = pylogg.New(ScriptName)
 

@@ -1,3 +1,9 @@
+"""
+    Console entry to export the extracted_data table using postgres.
+    The output file can be used for backup or to update the webserver
+    database.
+"""
+
 import os
 import shutil
 from datetime import datetime
