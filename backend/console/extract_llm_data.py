@@ -52,14 +52,14 @@ def add_args(subparsers : _SubParsersAction):
         "-m", "--method", required=True,
         help="(Required) Name of the method for the extraction_methods table.")
     parser.add_argument(
-        "--drop", default=False, action='store_true',
-        help="Recreate intermediate views. Default: False")
+        "--no-drop", default=False, action='store_true',
+        help="Keep existing intermediate views. Default: False")
 
 
 def _drop_views():
-    postgres.raw_sql("DROP VIEW valid_data;", commit=True)
+    postgres.raw_sql("DROP VIEW IF EXISTS valid_data;", commit=True)
     log.warn("Dropped valid_data")
-    postgres.raw_sql("DROP VIEW data_scores;", commit=True)
+    postgres.raw_sql("DROP VIEW IF EXISTS data_scores;", commit=True)
     log.warn("Dropped data_scores")
 
 def _delete_existing_rows(method_name, prop_name):
@@ -167,7 +167,7 @@ def run(args : ArgumentParser):
         log.critical("No such method defined in DB: {}", args.method)
         exit(1)
 
-    if args.drop:
+    if not args.no_drop:
         _drop_views()
 
     # Calculate data scores used filtered_data items.

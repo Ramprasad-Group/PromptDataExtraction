@@ -18,8 +18,8 @@ def add_args(subparsers : _SubParsersAction):
         "-p", "--prop-name", required=True,
         help="(Required) Name of the property from the property_metadata table.")
     parser.add_argument(
-        "--drop", default=False, action='store_true',
-        help="Drop the intermediate views. Default: False")
+        "--no-drop", default=False, action='store_true',
+        help="Keep existing intermediate views. Default: False")
 
 
 def _drop_views():
@@ -129,7 +129,7 @@ def run(args : ArgumentParser):
         log.critical("No such method defined in DB: {}", args.method)
         exit(1)
 
-    if args.drop:
+    if not args.no_drop:
         _drop_views()
 
     # Calculate data scores
