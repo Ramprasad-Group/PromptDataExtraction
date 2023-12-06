@@ -3,12 +3,14 @@ import pylogg as log
 from backend.post_process.validator import DataValidator
 
 class TableValidator(DataValidator):
-    def __init__(self, db, method) -> None:
-        super().__init__(db, method)
-
-        # Set required parameters
-        self.filter_name = 'is_table'
-        self.table_name = 'extracted_properties'
+    def __init__(self, db, method, prop_meta) -> None:
+        """ For a specific extraction method and property, identify the rows of
+        extracted_properties where source text might be a table.
+        """
+        self.prop_meta = prop_meta
+        super().__init__(
+            db, method, self.prop_meta.property, 'extracted_properties',
+            'is_table')
 
 
     def _get_record_sql(self) -> str:
@@ -30,8 +32,9 @@ class TableValidator(DataValidator):
             WHERE NOT EXISTS (
                 SELECT 1 FROM filtered_data fd 
                 WHERE fd.filter_name = :filter
-                AND fd.target_table = :table
-                AND fd.target_id = ft.id
+                AND fd.filter_on = :data
+                AND fd.table_name = :table
+                AND fd.table_row = ft.id
             );
         """
     
