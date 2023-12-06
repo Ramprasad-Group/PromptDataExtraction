@@ -414,7 +414,7 @@ class FilteredData(ORMBase):
     table_row   : Mapped[int] = mapped_column(
         Integer, nullable= False, unique=False, index=True,
     )
-    filter_on   : Mapped[str] = mapped_column(String)
+    filter_on   : Mapped[str] = mapped_column(String, index=True)
     filter_name : Mapped[str] = mapped_column(String)
 
     def __init__(self, **kw):
