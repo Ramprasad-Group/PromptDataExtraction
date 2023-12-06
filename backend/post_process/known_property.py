@@ -7,6 +7,7 @@ class NameValidator(DataValidator):
         extracted_properties having invalid property names.
         """
         self.prop_meta = prop_meta
+        self.namelist = [n.lower() for n in self.prop_meta.other_names]
         super().__init__(
             db, method, self.prop_meta.property, 'extracted_properties',
             'invalid_property_name')
@@ -37,9 +38,8 @@ class NameValidator(DataValidator):
 
         # Lowercase
         name = row.entity_name.lower()
-        namelist = [n.lower() for n in self.prop_meta.other_names]
-
-        if name in namelist:
+        
+        if name in self.namelist:
             return False
 
         log.warn("Invalid property name: {} ({})", row.entity_name, row.id)
