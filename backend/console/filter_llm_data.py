@@ -104,10 +104,10 @@ def run(args : argparse.ArgumentParser):
         validator = known_property.UnitValidator(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
     elif args.filter == 'polymer':
-        validator = known_material.PolymerValidator(db, method)
+        validator = known_material.PolymerSelector(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
     elif args.filter == 'table':
-        validator = known_text.TableValidator(db, method)
+        validator = known_text.TableSelector(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
     else:
         # Run all the filters.
@@ -120,8 +120,8 @@ def run(args : argparse.ArgumentParser):
         validator = known_property.UnitValidator(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
 
-        validator = known_material.PolymerValidator(db, method)
+        validator = known_material.PolymerSelector(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
 
-        validator = known_text.TableValidator(db, method)
+        validator = known_text.TableSelector(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
