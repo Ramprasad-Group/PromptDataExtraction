@@ -2,7 +2,7 @@ import re
 import pylogg as log
 from backend.post_process.validator import DataValidator
 
-class TableValidator(DataValidator):
+class TableSelector(DataValidator):
     def __init__(self, db, method, prop_meta) -> None:
         """ For a specific extraction method and property, identify the rows of
         extracted_properties where source text might be a table.

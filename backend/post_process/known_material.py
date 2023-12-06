@@ -1,6 +1,6 @@
 from backend.post_process.validator import DataValidator
 
-class PolymerValidator(DataValidator):
+class PolymerSelector(DataValidator):
     def __init__(self, db, method, prop_meta) -> None:
         """ For a specific extraction method and property, identify the rows of
         extracted_properties having known polymer names.
