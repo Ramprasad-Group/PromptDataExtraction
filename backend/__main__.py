@@ -13,6 +13,8 @@ from backend.console import (
     calculate_metrics,
     checkpoint,
     db_tables,
+    extract_llm_data,
+    filter_llm_data,
     settings,
     ner_filtered,
     filter_by_ner,
@@ -24,10 +26,9 @@ from backend.console import (
     methods,
     llm_pipeline,
     token_count,
-    filter_data,
-    extract_data,
-    export_data,
     fix_data,
+    filter_ner_data,
+    export_data,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -41,7 +42,6 @@ def parse_args() -> argparse.Namespace:
     db_tables.add_args(subparsers)
     settings.add_args(subparsers)
     ner_filtered.add_args(subparsers)
-    filter_by_ner.add_args(subparsers)
     parse_directory.add_args(subparsers)
     parse_corpus.add_args(subparsers)
     heuristic_filter.add_args(subparsers)
@@ -50,10 +50,12 @@ def parse_args() -> argparse.Namespace:
     methods.add_args(subparsers)
     llm_pipeline.add_args(subparsers)
     token_count.add_args(subparsers)
-    filter_data.add_args(subparsers)
-    extract_data.add_args(subparsers)
-    export_data.add_args(subparsers)
     fix_data.add_args(subparsers)
+    filter_llm_data.add_args(subparsers)
+    filter_ner_data.add_args(subparsers)
+    filter_by_ner.add_args(subparsers)
+    extract_llm_data.add_args(subparsers)
+    export_data.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--dir', default=None,
@@ -150,17 +152,21 @@ def main():
     elif args.command == token_count.ScriptName:
         token_count.run(args)
 
-    elif args.command == filter_data.ScriptName:
-        filter_data.run(args)
+    elif args.command == fix_data.ScriptName:
+        fix_data.run(args)
 
-    elif args.command == extract_data.ScriptName:
-        extract_data.run(args)
+    elif args.command == filter_llm_data.ScriptName:
+        filter_llm_data.run(args)
+
+    elif args.command == filter_ner_data.ScriptName:
+        filter_ner_data.run(args)
+
+    elif args.command == extract_llm_data.ScriptName:
+        extract_llm_data.run(args)
 
     elif args.command == export_data.ScriptName:
         export_data.run(args)
 
-    elif args.command == fix_data.ScriptName:
-        fix_data.run(args)
 
     # Finalize.
     postgres.disconnect()
