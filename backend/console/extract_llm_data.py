@@ -5,7 +5,7 @@ from backend import postgres, sett
 from backend.postgres import persist
 from backend.utils import shell
 
-ScriptName = 'extract-data'
+ScriptName = 'extract-llm-data'
 
 log = pylogg.New(ScriptName)
 
@@ -62,10 +62,12 @@ def _drop_views():
     postgres.raw_sql("DROP VIEW data_scores;", commit=True)
     log.warn("Dropped data_scores")
 
-def _delete_existing_rows(prop_name):
+def _delete_existing_rows(method_name, prop_name):
     postgres.raw_sql("""
-    DELETE FROM extracted_data ed WHERE ed.property = :prop_name;
-    """, commit=True, prop_name = prop_name)
+    DELETE FROM extracted_data ed
+    WHERE ed.property = :prop_name
+    AND ed.method = :method_name;
+    """, commit=True, prop_name = prop_name, method_name = method_name)
     log.warn("Dropped existing extracted data for {}", prop_name)
 
 def _create_data_scores_view():
@@ -77,16 +79,18 @@ def _create_data_scores_view():
         (poly) AS score
     FROM (
         SELECT
-            fd.target_id AS prop_id,
+            fd.table_row AS prop_id,
+
             -- negative attributes (errors)
             sum(CASE WHEN fd.filter_name = 'invalid_property_unit' 	THEN -1 ELSE 0 END) AS unit,
             sum(CASE WHEN fd.filter_name = 'invalid_property_name' 	THEN -1 ELSE 0 END) AS prop,
             sum(CASE WHEN fd.filter_name = 'is_table' 				THEN -1 ELSE 0 END) AS tabl,
             sum(CASE WHEN fd.filter_name = 'out_of_range' 			THEN -1 ELSE 0 END) AS rang,
+
             -- positive attributes (scores)
             sum(CASE WHEN fd.filter_name = 'is_polymer' 			THEN  1 ELSE 0 END) AS poly
-        FROM filtered_data fd
-        GROUP BY fd.target_id
+
+        FROM filtered_data fd GROUP BY fd.table_row
     ) AS aggr;
     """
     postgres.raw_sql(sql, commit=True)
@@ -118,7 +122,8 @@ def _create_valid_data_view(method_id, method_name, prop_name):
     WHERE ep.method_id = :mid;
     """
     postgres.raw_sql(
-        sql, commit=True, mid = method_id, mname = method_name, pname = prop_name)
+        sql, commit=True, mid = method_id, mname = method_name,
+        pname = prop_name)
     log.done("Recreated valid_data")
 
 
@@ -165,14 +170,14 @@ def run(args : ArgumentParser):
     if args.drop:
         _drop_views()
 
-    # Calculate data scores
+    # Calculate data scores used filtered_data items.
     _create_data_scores_view()
 
     # Select data with good scores.
     _create_valid_data_view(method.id, method_name, prop_name)
 
     # Delete existing property data
-    _delete_existing_rows(prop_name)
+    _delete_existing_rows(method_name, prop_name)
 
     # Insert the selected data
     _insert_to_extracted_data()

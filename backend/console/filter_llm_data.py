@@ -1,7 +1,7 @@
 import argparse
 import pylogg
 
-ScriptName = 'filter-data'
+ScriptName = 'filter-llm-data'
 
 log = pylogg.New(ScriptName)
 
@@ -59,8 +59,8 @@ def add_args(subparsers : argparse._SubParsersAction):
         "-f", "--filter", choices = filter_list, default = 'all',
         help="Name of the filter to run.")
     parser.add_argument(
-        "-l", "--limit", default=1000000, type=int,
-        help="Number of items to process. Default: 1000000")
+        "-l", "--limit", default=10000000, type=int,
+        help="Number of items to process. Default: 10000000")
     parser.add_argument(
         "--redo", default=False, action='store_true',
         help="Reprocess all rows, ignore the last checkpoint. Default: False")
@@ -104,10 +104,10 @@ def run(args : argparse.ArgumentParser):
         validator = known_property.UnitValidator(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
     elif args.filter == 'polymer':
-        validator = known_material.PolymerValidator(db, method)
+        validator = known_material.PolymerSelector(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
     elif args.filter == 'table':
-        validator = known_text.TableValidator(db, method)
+        validator = known_text.TableSelector(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
     else:
         # Run all the filters.
@@ -120,8 +120,8 @@ def run(args : argparse.ArgumentParser):
         validator = known_property.UnitValidator(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
 
-        validator = known_material.PolymerValidator(db, method)
+        validator = known_material.PolymerSelector(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
 
-        validator = known_text.TableValidator(db, method)
+        validator = known_text.TableSelector(db, method, meta)
         validator.process_items(args.limit, args.redo, args.remove)
