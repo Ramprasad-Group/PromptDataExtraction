@@ -94,7 +94,7 @@ class DataValidator:
 
         # Init variables
         self.ckpt_name = \
-            f"data_{self.filter_name}_{self.method.id}_{self.filter_name}"
+            f"data_{self.filter_name}_{self.filter_on}_{self.method.id}"
 
         # Remove the existing items
         if remove:
