@@ -2,16 +2,14 @@ import pylogg as log
 from backend.post_process.validator import DataValidator
 
 class NameValidator(DataValidator):
-    def __init__(self, db, method, meta) -> None:
-        """ For a specific extraction method, identify the rows
-        of extracted_properties having invalid property names.
+    def __init__(self, db, method, prop_meta) -> None:
+        """ For a specific extraction method and property, identify the rows of
+        extracted_properties having invalid property names.
         """
-        super().__init__(db, method)
-
-        # Set required parameters
-        self.filter_name = 'invalid_property_name'
-        self.table_name = 'extracted_properties'
-        self.prop_meta = meta
+        self.prop_meta = prop_meta
+        super().__init__(
+            db, method, self.prop_meta.property, 'extracted_properties',
+            'invalid_property_name')
 
     def _get_record_sql(self) -> str:
         return """
@@ -28,8 +26,9 @@ class NameValidator(DataValidator):
             WHERE NOT EXISTS (
                 SELECT 1 FROM filtered_data fd 
                 WHERE fd.filter_name = :filter
-                AND fd.target_table = :table
-                AND fd.target_id = ft.id
+                AND fd.filter_on = :data
+                AND fd.table_name = :table
+                AND fd.table_row = ft.id
             );
         """
     
@@ -48,16 +47,14 @@ class NameValidator(DataValidator):
 
 
 class RangeValidator(DataValidator):
-    def __init__(self, db, method, meta) -> None:
-        """ For a specific extraction method, identify the rows
-        of extracted_properties having out of range values.
+    def __init__(self, db, method, prop_meta) -> None:
+        """ For a specific extraction method and property, identify the rows of
+        extracted_properties having out of range values.
         """
-        super().__init__(db, method)
-
-        # Set required parameters
-        self.filter_name = 'out_of_range'
-        self.table_name = 'extracted_properties'
-        self.prop_meta = meta
+        self.prop_meta = prop_meta
+        super().__init__(
+            db, method, self.prop_meta.property, 'extracted_properties',
+            'out_of_range')
 
 
     def _get_record_sql(self) -> str:
@@ -75,8 +72,9 @@ class RangeValidator(DataValidator):
             WHERE NOT EXISTS (
                 SELECT 1 FROM filtered_data fd 
                 WHERE fd.filter_name = :filter
-                AND fd.target_table = :table
-                AND fd.target_id = ft.id
+                AND fd.filter_on = :data
+                AND fd.table_name = :table
+                AND fd.table_row = ft.id
             );
         """
     
@@ -96,16 +94,14 @@ class RangeValidator(DataValidator):
 
 
 class UnitValidator(DataValidator):
-    """ For a specific extraction method, identify the rows
-    of extracted_properties having invalid unit.
-    """
-    def __init__(self, db, method, meta) -> None:
-        super().__init__(db, method)
-
-        # Set required parameters
-        self.filter_name = 'invalid_property_unit'
-        self.table_name = 'extracted_properties'
-        self.prop_meta = meta
+    def __init__(self, db, method, prop_meta) -> None:
+        """ For a specific extraction method and property, identify the rows of
+        extracted_properties having invalid property unit.
+        """
+        self.prop_meta = prop_meta
+        super().__init__(
+            db, method, self.prop_meta.property, 'extracted_properties',
+            'invalid_property_unit')
 
 
     def _get_record_sql(self) -> str:
@@ -123,8 +119,9 @@ class UnitValidator(DataValidator):
             WHERE NOT EXISTS (
                 SELECT 1 FROM filtered_data fd 
                 WHERE fd.filter_name = :filter
-                AND fd.target_table = :table
-                AND fd.target_id = ft.id
+                AND fd.filter_on = :data
+                AND fd.table_name = :table
+                AND fd.table_row = ft.id
             );
         """
     
@@ -148,17 +145,16 @@ class UnitValidator(DataValidator):
         return True
 
 
-class NERNameValidator(DataValidator):
-    def __init__(self, db, method, meta) -> None:
-        """ For a specific property meta information, identify the rows
-        of extracted_properties having matching property names.
+class NameSelector(DataValidator):
+    def __init__(self, db, method, prop_meta) -> None:
+        """ For a specific extraction method and property, identify the rows of
+        extracted_properties having matching property names.
         """
-        super().__init__(db, method)
+        self.prop_meta = prop_meta
+        super().__init__(
+            db, method, self.prop_meta.property, 'extracted_properties',
+            'valid_property_name')
 
-        # Set required parameters
-        self.filter_name = 'valid_property_name'
-        self.table_name = 'extracted_properties'
-        self.prop_meta = meta
 
     def _get_record_sql(self) -> str:
         return """
@@ -175,8 +171,9 @@ class NERNameValidator(DataValidator):
             WHERE NOT EXISTS (
                 SELECT 1 FROM filtered_data fd 
                 WHERE fd.filter_name = :filter
-                AND fd.target_table = :table
-                AND fd.target_id = ft.id
+                AND fd.filter_on = :data
+                AND fd.table_name = :table
+                AND fd.table_row = ft.id
             );
         """
     
