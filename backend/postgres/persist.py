@@ -250,22 +250,25 @@ def add_crossref(db, para : orm.PaperTexts, name : str, othername : str,
     return ref.id
 
 
-
-def add_data_filter(db, filter_name : str, target_table : str,
-                    target_id : int) -> int :
+def add_data_filter(db, filter_on : str, filter_name : str, table_name : str,
+                    table_row : int) -> int :
     """ Add a passed filter to filtered_data table.
         Returns the id of the existing/inserted row.
     """
-    fid = orm.FilteredData().exists(
-        db, filter_name = filter_name, target_table = target_table,
-        target_id = target_id
+    fid = orm.FilteredData().exists(db,
+        filter_on = filter_on,
+        filter_name = filter_name,
+        table_name = table_name,
+        table_row = table_row
     )
     if fid:
         return fid
     
     filt = orm.FilteredData()
-    filt.filter_name = filter_name
-    filt.target_table = target_table
-    filt.target_id = target_id
+    filt.filter_on      = filter_on
+    filt.filter_name    = filter_name
+    filt.table_name     = table_name
+    filt.table_row      = table_row
+
     filt.insert(db)
     return filt.id
