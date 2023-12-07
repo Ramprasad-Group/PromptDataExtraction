@@ -3,8 +3,8 @@
 method_names=(
 #     "tg-gpt35-similar-full"
 #     "sd-gpt35-similar-full"
-    "bandgap-gpt35-similar-full"
-        # "hardness-gpt35-similar-full"
+#     "bandgap-gpt35-similar-full"
+# "hardness-gpt35-similar-full"
 #     "td-gpt35-similar-full"
 #     "co2_perm-gpt35-similar-full"
 #     "cs-gpt35-similar-full"
@@ -28,7 +28,7 @@ method_names=(
 #     "ucst-gpt35-similar-full"
 #     "wca-gpt35-similar-full"
 #     "wu-gpt35-similar-full"
-#     "ym-gpt35-similar-full"
+    "ym-gpt35-similar-full"
 )
 
 for method_name in "${method_names[@]}"; do
@@ -36,14 +36,15 @@ for method_name in "${method_names[@]}"; do
     echo "Running post-processing for: $method_name"
 
     # 1. Fix the values with +/- in them.
-#     python backend --logfile $log_dir/fix_data.log \
-#             fix-data -m "$method_name"
+    python backend --logfile $log_dir/fix_data.log \
+            fix-data -m "$method_name"
 
     # 2a. Filter the values that have known property name.
-#     python backend --logfile $log_dir/filter_name.log \
-#             filter-llm-data -m "$method_name" -f name --remove
+    python backend --logfile $log_dir/filter_name.log \
+            filter-llm-data -m "$method_name" -f name --remove
 
     # @todo: Normalize units here (if needed).
+#     exit 0
 
     # 2b. Filter the values that have known property unit.
     python backend --logfile $log_dir/filter_unit.log \
@@ -69,4 +70,4 @@ for method_name in "${method_names[@]}"; do
 done
 
 # 4. Export the final valid data for polymerscholar.
-python backend --logfile $log_dir/export_data.log export-data
+# python backend --logfile $log_dir/export_data.log export-data

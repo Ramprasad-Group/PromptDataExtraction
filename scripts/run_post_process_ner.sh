@@ -3,7 +3,8 @@
 prop_names=(
 # tg
 # bandgap
-sd
+# sd
+# sr
 # hardness
 # td
 # co2_perm
@@ -28,7 +29,15 @@ sd
 # ucst
 # wca
 # wu
-# ym
+ym
+# scc
+# ocv
+# ff
+# pce
+# pdi
+# homo
+# lumo
+# eqe
 )
 
 # 1. Fix all values with +/- in them.
