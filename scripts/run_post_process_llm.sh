@@ -20,7 +20,9 @@ method_names=(
 #     "lcst-gpt35-similar-full"
 #     "loi-gpt35-similar-full"
 #     "methanol_perm-gpt35-similar-full"
-#     "o2_perm-gpt35-similar-full"
+    "o2_perm-gpt35-similar-full"
+#     "n2_perm-gpt35-similar-full"
+#     "ch4_perm-gpt35-similar-full"
 #     "ri-gpt35-similar-full"
 #     "tc-gpt35-similar-full"
 #     "tm-gpt35-similar-full"
@@ -28,7 +30,7 @@ method_names=(
 #     "ucst-gpt35-similar-full"
 #     "wca-gpt35-similar-full"
 #     "wu-gpt35-similar-full"
-    "ym-gpt35-similar-full"
+#     "ym-gpt35-similar-full"
 )
 
 for method_name in "${method_names[@]}"; do

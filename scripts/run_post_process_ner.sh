@@ -22,6 +22,8 @@ prop_names=(
 # loi
 # methanol_perm
 # o2_perm
+# n2_perm
+# ch4_perm
 # ri
 # tc
 # tm
@@ -29,7 +31,7 @@ prop_names=(
 # ucst
 # wca
 # wu
-ym
+# ym
 # scc
 # ocv
 # ff
