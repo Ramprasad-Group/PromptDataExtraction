@@ -474,6 +474,7 @@ class PropertyMetadata(ORMBase):
 
     name: Mapped[str] = mapped_column(Text)
     property: Mapped[str] = mapped_column(Text)
+    stdunit: Mapped[str] = mapped_column(VARCHAR)
     other_names: Mapped[List[str]] = mapped_column(ARRAY(String))
     units: Mapped[List[str]] = mapped_column(ARRAY(String))
     scale: Mapped[PropertyScale] = mapped_column(String, default='normal')
