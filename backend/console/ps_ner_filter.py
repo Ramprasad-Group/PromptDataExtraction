@@ -43,6 +43,8 @@ class HeuristicFilterName:
 	sd_ner_full = "property_sd"
 	o2_perm_ner_full = "property_o2_perm" 
 	h2_perm_ner_full = "property_h2_perm"
+	n2_perm_ner_full = "property_n2_perm" 
+	ch4_perm_ner_full = "property_ch4_perm" 
 	methanol_perm_ner_full = "property_methanol_perm"
 
 

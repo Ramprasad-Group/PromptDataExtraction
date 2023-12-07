@@ -30,6 +30,8 @@ method_property_map = {
     "loi-gpt35-similar-full":           (EX_GPT_NAME, "loi"),
     "methanol_perm-gpt35-similar-full": (EX_GPT_NAME, "meoh_perm"),
     "o2_perm-gpt35-similar-full":       (EX_GPT_NAME, "o2_perm"),
+    "n2_perm-gpt35-similar-full":       (EX_GPT_NAME, "n2_perm"),
+    "ch4_perm-gpt35-similar-full":      (EX_GPT_NAME, "ch4_perm"),
     "ri-gpt35-similar-full":            (EX_GPT_NAME, "ri"),
     "sd-gpt35-similar-full":            (EX_GPT_NAME, "sd"),
     "tc-gpt35-similar-full":            (EX_GPT_NAME, "tc"),

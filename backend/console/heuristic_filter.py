@@ -43,6 +43,8 @@ class FilterPropertyName:
 	property_o2_perm = 'O_{2} permeability'
 	property_h2_perm = 'H_{2} permeability'
 	property_methanol_perm = 'methanol permeability'
+	property_n2_perm = 'N_{2} permeability'
+	property_ch4_perm = 'CH_{4} permeability'
 	
 
 def add_args(subparsers: _SubParsersAction):
