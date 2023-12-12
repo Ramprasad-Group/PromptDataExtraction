@@ -4,6 +4,7 @@ pyyaml
 python-dotenv
 pylogg @ git+https://github.com/akhlakm/python-logg.git
 pytest
+matplotlib_venn
 
 # -------------- FRONTEND ----------------
 streamlit
