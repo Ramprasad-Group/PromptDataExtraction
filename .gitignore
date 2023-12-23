@@ -13,6 +13,7 @@ runs/
 *.json
 notebooks/*.png
 notebooks/*.eps
+notebooks/*.svg
 notebooks/*.txt
 scripts/compare_poly_papers.ipynb
 notebooks/Plots.ipynb
