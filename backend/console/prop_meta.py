@@ -23,6 +23,9 @@ def add_args(subparsers : argparse._SubParsersAction):
     parser.add_argument(
         "-f", "--file", default="property.txt",
         help="Input/Output file name.")
+    parser.add_argument(
+        "-u", "--update", default=False, action='store_true',
+        help="Update instead of appending new names.")
 
 
 def run(args : argparse.ArgumentParser):
@@ -47,8 +50,12 @@ def run(args : argparse.ArgumentParser):
         with open(args.file) as fp:
             lines = [l.strip() for l in fp.readlines() if len(l.strip())]
         
+        if args.update:
+            existing = []
+        else:
+            existing = list(meta.other_names)
+
         n = 0
-        existing = list(meta.other_names)
         for line in lines:
             if line not in existing:
                 n += 1
