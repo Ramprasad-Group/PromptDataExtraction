@@ -26,6 +26,7 @@ from backend.console import (
     llm_pipeline,
     token_count,
     fix_error,
+    fix_unit,
     filter_llm_data,
     extract_llm_data,
     filter_ner_data,
@@ -54,6 +55,7 @@ def parse_args() -> argparse.Namespace:
     llm_pipeline.add_args(subparsers)
     token_count.add_args(subparsers)
     fix_error.add_args(subparsers)
+    fix_unit.add_args(subparsers)
     filter_llm_data.add_args(subparsers)
     filter_ner_data.add_args(subparsers)
     filter_by_ner.add_args(subparsers)
@@ -161,6 +163,9 @@ def main():
 
     elif args.command == fix_error.ScriptName:
         fix_error.run(args)
+
+    elif args.command == fix_unit.ScriptName:
+        fix_unit.run(args)
 
     elif args.command == filter_llm_data.ScriptName:
         filter_llm_data.run(args)

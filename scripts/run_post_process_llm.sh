@@ -19,17 +19,17 @@ method_names=(
     # "is-gpt35-similar-full"
     # "lcst-gpt35-similar-full"
     # "loi-gpt35-similar-full"
-    # "methanol_perm-gpt35-similar-full"
+    "methanol_perm-gpt35-similar-full"
 #     "o2_perm-gpt35-similar-full"
     # "n2_perm-gpt35-similar-full"
     # "ch4_perm-gpt35-similar-full"
     # "ri-gpt35-similar-full"
-    "tc-gpt35-similar-full"
+    # "tc-gpt35-similar-full"
     # "tm-gpt35-similar-full"
 #     "ts-gpt35-similar-full"
     # "ucst-gpt35-similar-full"
     # "wca-gpt35-similar-full"
-#     "wu-gpt35-similar-full"
+    # "wu-gpt35-similar-full"
     # "ym-gpt35-similar-full"
 )
 
@@ -46,7 +46,7 @@ for method_name in "${method_names[@]}"; do
             filter-llm-data -m "$method_name" -f name --remove
 
     # @todo: Normalize units here (if needed).
-#     exit 0
+    # exit 0
 
     # 2b. Filter the values that have known property unit.
     python backend --logfile $log_dir/filter_unit.log \
