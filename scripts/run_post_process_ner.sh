@@ -20,17 +20,17 @@ prop_names=(
 # is
 # lcst
 # loi
-# methanol_perm
+meoh_perm
 # o2_perm
 # n2_perm
 # ch4_perm
 # ri
-# tc
 # tm
 # ts
 # ucst
 # wca
 # wu
+# tc
 # ym
 # scc
 # ocv
@@ -79,4 +79,4 @@ for prop_name in "${prop_names[@]}"; do
 done
 
 # 4. Export the final valid data for polymerscholar.
-# python backend --logfile $log_dir/export_data.log export-data
+python backend --logfile $log_dir/export_data.log export-data

@@ -36,7 +36,7 @@ method_property_map = {
     "o2_perm-gpt35-similar-full": "o2_perm",
     "ri-gpt35-similar-full": "ri",
     "sd-gpt35-similar-full": "sd",
-    "tc-gpt35-similar-full": "tc",
+    "tc-gpt35-similar-full": "therm_cond",
     "td-gpt35-similar-full": "td",
     "tm-gpt35-similar-full": "tm",
     "ts-gpt35-similar-full": "ts",
