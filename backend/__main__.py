@@ -25,7 +25,7 @@ from backend.console import (
     prop_meta,
     llm_pipeline,
     token_count,
-    fix_data,
+    fix_error,
     filter_llm_data,
     extract_llm_data,
     filter_ner_data,
@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     prop_meta.add_args(subparsers)
     llm_pipeline.add_args(subparsers)
     token_count.add_args(subparsers)
-    fix_data.add_args(subparsers)
+    fix_error.add_args(subparsers)
     filter_llm_data.add_args(subparsers)
     filter_ner_data.add_args(subparsers)
     filter_by_ner.add_args(subparsers)
@@ -159,8 +159,8 @@ def main():
     elif args.command == token_count.ScriptName:
         token_count.run(args)
 
-    elif args.command == fix_data.ScriptName:
-        fix_data.run(args)
+    elif args.command == fix_error.ScriptName:
+        fix_error.run(args)
 
     elif args.command == filter_llm_data.ScriptName:
         filter_llm_data.run(args)

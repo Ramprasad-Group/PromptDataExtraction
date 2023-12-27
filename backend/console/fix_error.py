@@ -4,7 +4,7 @@ from argparse import ArgumentParser, _SubParsersAction
 import pylogg
 from backend import postgres
 
-ScriptName = 'fix-data'
+ScriptName = 'fix-error'
 
 log = pylogg.New(ScriptName)
 
