@@ -24,7 +24,7 @@ import db
 import time
 from datetime import datetime
 
-if USESSH and not db.ssh_tunnel(
+if USESSH and db.ssh_tunnel(
     database.db_port, database.ssh_rpt, database.ssh_usr):
     exit(1)
 
