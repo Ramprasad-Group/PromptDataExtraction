@@ -19,3 +19,9 @@ openpyxl
 ChemDataExtractor @ git+https://github.com/akhlakm/ChemDataExtractor.git
 argcomplete
 tiktoken
+
+# ------------- DOWNLOADER ------------------
+crossref-commons
+lxml
+psycopg[binary]
+psycopg[pool]
