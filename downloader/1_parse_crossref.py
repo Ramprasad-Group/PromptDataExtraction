@@ -2,7 +2,9 @@
     Using cross-ref API.
 """
 ## --------- * --------------------- * -----------------------------------------
-QUERY   = 'ring opening metathesis'      # Crossref search query
+# Example queries: polymer, ring opening, ring opening metathesis, organic photovoltaic
+# organic solar cell, thermoset, thermo platic, elastomer, homopolymer
+QUERY   = 'polymer'      # Crossref search query
 CUTOFF  = '2022-01-01'                   # Crossref from cutoff yyyy-mm-dd
 USESSH  = False                          # Create ssh tunnel to db
 
