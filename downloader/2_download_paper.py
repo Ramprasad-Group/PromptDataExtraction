@@ -24,6 +24,7 @@ import db
 import time
 from tqdm import tqdm
 from datetime import datetime
+from playwright.sync_api import sync_playwright
 
 outdir = 'data/papers/'
 
@@ -73,6 +74,18 @@ rows = db.raw_sql(sql, pub=PUBLISHER)
 
 print("Found %d rows in DB." %len(rows))
 
+p = sync_playwright().start()
+browser = p.chromium.launch()
+
+if os.path.isfile('state.json'):
+    # Create a new context with the saved storage state.
+    context = browser.new_context(storage_state="state.json")
+    print("Load OK: state.json")
+else:
+    context = browser.new_context()
+
+page = context.new_page()
+
 for row in tqdm(rows):
     doi = row.doi
     url = "https://doi.org/" + doi
@@ -86,5 +99,21 @@ for row in tqdm(rows):
     print(doi, " ==> ", outfile)
 
     # Download the file.
+    page.goto(url)
+    print(page.title())
+    page.wait_for_timeout(60*1000)
 
+    print(page.title())
+    with open(outpath, 'w') as fp:
+        fp.write(page.content())
+        print("Save OK:", outpath)
+
+    # Save storage state into the file.
+    context.storage_state(path="state.json")
     break
+
+browser.close()
+p.stop()
+
+print("Bye!")
+
