@@ -27,11 +27,13 @@ from backend.console import (
     token_count,
     fix_error,
     fix_unit,
+    fix_material,
     filter_llm_data,
     extract_llm_data,
     filter_ner_data,
     extract_ner_data,
     export_data,
+    find_crossrefs,
 )
 
 def parse_args() -> argparse.Namespace:
@@ -56,12 +58,14 @@ def parse_args() -> argparse.Namespace:
     token_count.add_args(subparsers)
     fix_error.add_args(subparsers)
     fix_unit.add_args(subparsers)
+    fix_material.add_args(subparsers)
     filter_llm_data.add_args(subparsers)
     filter_ner_data.add_args(subparsers)
     filter_by_ner.add_args(subparsers)
     extract_llm_data.add_args(subparsers)
     extract_ner_data.add_args(subparsers)
     export_data.add_args(subparsers)
+    find_crossrefs.add_args(subparsers)
 
     # Additional arguments for the current run.
     parser.add_argument('--dir', default=None,
@@ -167,6 +171,9 @@ def main():
     elif args.command == fix_unit.ScriptName:
         fix_unit.run(args)
 
+    elif args.command == fix_material.ScriptName:
+        fix_material.run(args)
+
     elif args.command == filter_llm_data.ScriptName:
         filter_llm_data.run(args)
 
@@ -182,6 +189,8 @@ def main():
     elif args.command == export_data.ScriptName:
         export_data.run(args)
 
+    elif args.command == find_crossrefs.ScriptName:
+        find_crossrefs.run(args)
 
     # Finalize.
     postgres.disconnect()
