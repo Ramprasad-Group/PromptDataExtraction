@@ -236,7 +236,7 @@ def add_crossref(db, para : orm.PaperTexts, name : str, othername : str,
         Returns the id of the existing/inserted row.
     """
     refid = orm.ExtractedCrossrefs().exists(
-        db, name=name, reftype=reftype, para_id=para.id)
+        db, name=name, reftype=reftype, paper_id=para.pid)
     if refid:
         return refid
     
