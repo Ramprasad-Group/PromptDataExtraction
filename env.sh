@@ -32,4 +32,28 @@ update() {
     python backend/sett/__init__.py
 }
 
+install_docs() {
+    ## Install requirements to build docs.
+    conda install -c conda-forge sphinx myst-parser
+
+    ## Run the following to setup a new project.
+    # sphinx-quickstart
+}
+
+docs() {
+    ## Build docs as website for editing.
+    ## Run from the vscode terminal in the ssh session.
+    cd docs
+    make html
+    echo "Use vscode live preview to view docs/build/html/index.html"
+}
+
+docspdf() {
+    ## Build docs in pdf format to share with others
+    cd docs
+    make latexpdf && \
+        mv build/latex/rgthermosets.pdf ../User-Guide.pdf && \
+        echo "Saved as User-Guide.pdf"
+}
+
 "$@"
