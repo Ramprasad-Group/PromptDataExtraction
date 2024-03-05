@@ -2,15 +2,10 @@ pandas
 matplotlib
 pyyaml
 python-dotenv
-pylogg @ git+https://github.com/akhlakm/python-logg.git
+pylogg
 pytest
 matplotlib_venn
 
-# -------------- FRONTEND ----------------
-streamlit
-stqdm
-
-# -------------- BACKEND ----------------
 sshtunnel
 psycopg2-binary
 sqlalchemy >= 2.0
@@ -19,10 +14,3 @@ openpyxl
 ChemDataExtractor @ git+https://github.com/akhlakm/ChemDataExtractor.git
 argcomplete
 tiktoken
-
-# ------------- DOWNLOADER ------------------
-crossref-commons
-lxml
-psycopg[binary]
-psycopg[pool]
-playwright
