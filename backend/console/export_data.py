@@ -22,7 +22,7 @@ def add_args(subparsers : _SubParsersAction):
     """ Add module specific arguments. """
     parser : ArgumentParser = subparsers.add_parser(
         ScriptName,
-        help='Filter the extracted properties based on confidence scores.')
+        help='Export the extracted_data table using postgres dump.')
     parser.add_argument(
         "-t", "--table", default="extracted_data",
         help="Name of the table to export. Default: extracted_data")
