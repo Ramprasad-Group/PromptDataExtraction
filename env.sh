@@ -17,6 +17,8 @@ if [[ ! -f _conda_env/bin/pip ]]; then
     cde data download
 
     python -m spacy download en_core_web_sm
+
+    python backend/sett/__init__.py
 fi
 
 conda activate $(realpath _conda_env)
@@ -25,7 +27,6 @@ export PYTHONPATH=.
 
 # Use ssh tunnel on client to connect to the frontend
 # ssh -4 -L 8501:127.0.0.1:8501 tyrion.mse.gatech.edu
-
 
 update() {
     pip -v install -r requirements.txt

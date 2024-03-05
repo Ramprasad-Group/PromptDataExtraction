@@ -22,3 +22,4 @@ property.txt
 exports/
 /abstract_runs_gpt/
 db_pass.txt
+/.pytest_cache/
