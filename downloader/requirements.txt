@@ -1,5 +1,0 @@
-crossref-commons
-lxml
-psycopg[binary]
-psycopg[pool]
-playwright
