@@ -25,7 +25,7 @@ the model should be updated in the settings.
 ## Usage
 Edit the newly created `settings.yaml` file to update required paths, usernames, passwords, database connection details, API keys etc.
 
-The following scripts are available:
+The following scripts are available for running the pipeline on multiple properties:
 
 `run_heuristic_filters.sh`: Filter the paragraphs using property specific heuristic filters.
 
@@ -45,6 +45,12 @@ NER pipeline extracted data.
 
 `run_post_process_llm.sh`: Run post-processing validatation and filtering on the
 LLM pipeline extracted data.
+
+
+More fine-grained tasks can be performed by the `backend` module. To list the available commands, see help.
+```python
+python backend -h
+```
 
 ## About
 Developed by: Ramprasad Research Group, MSE, Goergia Institute of Technology.\
