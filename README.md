@@ -15,9 +15,7 @@ The extracted data can be visualized freely at [https://polymerscholar.org](http
 3. Source the `env.sh` script. It will setup a new conda environment and install the required python packages, C++ compilers and CUDA libraries.
 4. If the environment is already installed, source the `env.sh` script to activate it.
 
-This package depends on connecting to a PostgreSQL server to store and manage literature extracted data.
-
-The database connection details (including SSH tunnel configuration, if required) can be specified in the `settings.yaml` file.
+This package requires a PostgreSQL server to store and manage literature extracted data.
 
 The MaterialsBERT model should be downloaded from huggingfacehub and the path to
 the model should be updated in the settings.
@@ -25,34 +23,36 @@ the model should be updated in the settings.
 ## Usage
 Edit the newly created `settings.yaml` file to update required paths, usernames, passwords, database connection details, API keys etc.
 
-The following scripts are available for running the pipeline on multiple properties:
+The following scripts are available to process multiple properties, models and articles:
 
-`run_heuristic_filters.sh`: Filter the paragraphs using property specific heuristic filters.
+- `parse_papers.py`: Parse and extract paragraphs from a corpus directory containing full text html or xml articles.
 
-`run_ner_filters.sh`: Perform filtering of the hueristically filtered paragraphs
+- `filter_polymer_papers.py`: Identify the polymer papers using title and abstracts.
+
+- `run_heuristic_filters.sh`: Filter the paragraphs using property specific heuristic filters.
+
+- `run_ner_filters.sh`: Perform filtering of the hueristically filtered paragraphs
 using NER filter of MaterialsBERT.
 
-`run_methods.sh`: Add new extraction method to the database.
+- `run_methods.sh`: Add new extraction method to the database.
 
-`run_ner_pipeline.sh`: Perform data extraction on the NER-filtered paragraphs
+- `run_ner_pipeline.sh`: Perform data extraction on the NER-filtered paragraphs
 using NER-based MaterialsBERT pipeline.
 
-`run_gpt_pipeline.sh`: Perform data extraction on the NER-filtered paragraphs
+- `run_gpt_pipeline.sh`: Perform data extraction on the NER-filtered paragraphs
 using LLM pipeline.
 
-`run_post_process_ner.sh`: Run post-processing validatation and filtering on the
+- `run_post_process_ner.sh`: Run post-processing validatation and filtering on the
 NER pipeline extracted data.
 
-`run_post_process_llm.sh`: Run post-processing validatation and filtering on the
+- `run_post_process_llm.sh`: Run post-processing validatation and filtering on the
 LLM pipeline extracted data.
 
 
-More fine-grained tasks can be performed by the `backend` module. To list the available commands, see help.
-```python
-python backend -h
-```
+These scripts interface with the `backend` module. More fine-grained tasks can be performed by the module. To list the available commands, run `python backend -h`.
+
 
 ## About
-Developed by: Ramprasad Research Group, MSE, Goergia Institute of Technology.\
-Copyright 2024, Georgia Tech Research Corporation.\
+Developed by: Ramprasad Research Group, MSE, Georgia Institute of Technology. \
+Copyright 2024, Georgia Tech Research Corporation. \
 All Rights Reserved. See the [LICENSE](LICENSE) file for details.
