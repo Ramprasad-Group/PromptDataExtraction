@@ -2,8 +2,8 @@
 Python module and scripts to run automated data extraction pipelines built using MaterialsBERT, GPT-3.5 and LlaMa 2 models.
 
 Developed for data extraction method described in:
-> S. Gupta, A. Mahmood, P. Shetty, A. Adeboye and R. Ramprasad.
-> *Data Extraction from Polymer Literature using Large Language Models*,
+> S. Gupta, A. Mahmood, P. Shetty, A. Adeboye and R. Ramprasad \
+> *Data Extraction from Polymer Literature using Large Language Models* \
 > **Nature Machine Intelligence**, 2024 (Submitted)
 <!-- > DOI: [https://doi.org/](https://doi.org/ "DOI") -->
 
