@@ -1,16 +1,38 @@
+numpy
 pandas
+scipy
+scikit-learn
 matplotlib
+
 pyyaml
+argcomplete
 python-dotenv
-pylogg
+
+tqdm
+lxml
 pytest
-matplotlib_venn
+pylogg
 
 sshtunnel
+pymongo
 psycopg2-binary
 sqlalchemy >= 2.0
-tqdm
-openpyxl
-ChemDataExtractor @ git+https://github.com/akhlakm/ChemDataExtractor.git
-argcomplete
+
+openai
 tiktoken
+openpyxl
+
+spacy
+textacy
+chardet
+cchardet
+unidecode
+levenshtein
+charset-normalizer >= 3.1.0
+ChemDataExtractor @ git+https://github.com/akhlakm/ChemDataExtractor.git
+
+ninja
+tokenizers
+safetensors
+transformers
+huggingface-hub
