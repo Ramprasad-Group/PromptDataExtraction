@@ -5,7 +5,7 @@ Developed for data extraction method described in:
 > S. Gupta, A. Mahmood, P. Shetty, A. Adeboye and R. Ramprasad.
 > *Data Extraction from Polymer Literature using Large Language Models*,
 > **Nature Machine Intelligence**, 2024 (Submitted)
-> [doi:10.1021](https://doi.org/10.1021 "DOI")
+<!-- > DOI: [https://doi.org/](https://doi.org/ "DOI") -->
 
 The extracted data can be visualized freely at [https://polymerscholar.org](https://polymerscholar.org)
 
@@ -49,4 +49,4 @@ LLM pipeline extracted data.
 ## About
 Developed by: Ramprasad Research Group, MSE, Goergia Institute of Technology.\
 Copyright 2024, Georgia Tech Research Corporation.\
-All Rights Reserved. See the [LICENSE](blob/main/LICENSE) file for details.
+All Rights Reserved. See the [LICENSE](LICENSE) file for details.
