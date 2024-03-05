@@ -17,7 +17,7 @@ The extracted data can be visualized freely at [https://polymerscholar.org](http
 
 This package requires a PostgreSQL server to store and manage literature extracted data.
 
-The MaterialsBERT model should be downloaded from huggingfacehub and the path to
+The MaterialsBERT model should be downloaded from the Huggingface Hub and the path to
 the model should be updated in the settings.
 
 ## Usage
@@ -31,8 +31,8 @@ The following scripts are available to process multiple properties, models and a
 
 - `run_heuristic_filters.sh`: Filter the paragraphs using property specific heuristic filters.
 
-- `run_ner_filters.sh`: Perform filtering of the hueristically filtered paragraphs
-using NER filter of MaterialsBERT.
+- `run_ner_filters.sh`: Perform filtering of the heuristically filtered paragraphs
+using NER filters and MaterialsBERT.
 
 - `run_methods.sh`: Add new extraction method to the database.
 
