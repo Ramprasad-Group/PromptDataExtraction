@@ -60,9 +60,10 @@ def run(args: ArgumentParser):
         polyai.api.api_key = sett.LLMPipeline.polyai_key
 
     else:
-        log.critical("Unrecognized api '{}' defined in the method {}",
-                     method.api, args.method)
-        exit(1)
+        log.warn("No api being used.")
+        # log.critical("Unrecognized api '{}' defined in the method {}",
+        #              method.api, args.method)
+        # exit(1)
 
 
     para_filter_name = method.para_subset

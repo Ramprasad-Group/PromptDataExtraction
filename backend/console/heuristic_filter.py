@@ -45,7 +45,8 @@ class FilterPropertyName:
 	property_methanol_perm = 'methanol permeability'
 	property_n2_perm = 'N_{2} permeability'
 	property_ch4_perm = 'CH_{4} permeability'
-	
+	property_water_perm = 'water permeability'
+	# water_perm_hf_sel1k = 'water permeability'
 
 def add_args(subparsers: _SubParsersAction):
 	parser: ArgumentParser = subparsers.add_parser(
@@ -114,6 +115,7 @@ def run(args: ArgumentParser):
 	'''
 
 	# #Query for sel1k
+	# log.note("Filter for select-1k")
 	# query = '''
 	# SELECT pt.id AS para_id FROM paper_texts pt
 	# JOIN filtered_papers fp ON fp.doi = pt.doi

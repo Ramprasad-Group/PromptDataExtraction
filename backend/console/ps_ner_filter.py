@@ -46,6 +46,8 @@ class HeuristicFilterName:
 	n2_perm_ner_full = "property_n2_perm" 
 	ch4_perm_ner_full = "property_ch4_perm" 
 	methanol_perm_ner_full = "property_methanol_perm"
+	water_perm_ner_full = 'property_water_perm'
+	# water_perm_ner_sel1k = 'water_perm_hf_sel1k'
 
 
 def add_args(subparsers: _SubParsersAction):

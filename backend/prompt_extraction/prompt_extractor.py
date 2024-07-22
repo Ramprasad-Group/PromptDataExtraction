@@ -14,8 +14,16 @@ except:
 from backend.text.normalize import TextNormalizer
 from backend.prompt_extraction.shot_selection import ShotSelector
 from backend.postgres.orm import APIRequests, PaperTexts, ExtractionMethods
+from backend.prompt_extraction.exllama_model import ExLlamaV2Model
 
 log = pylogg.New('llm')
+
+model_name = 'llama3'
+max_seq_len = 4000
+max_new_tokens = 512
+model_directory= "/data/sonakshi/SynthesisRecipes/models/Llama-3-8B-Instruct-exl2"
+model = ExLlamaV2Model(model_directory, max_new_tokens= max_new_tokens, max_seq_len = max_seq_len, model_name=model_name)
+
 
 class LLMExtractor:
     PROMPTS = [
@@ -227,14 +235,18 @@ class LLMExtractor:
                     messages = messages
                 )
         else:
-            raise NotImplementedError("Unknown API", self.api)
+            response = model.generate_text(messages)
+            # raise NotImplementedError("Unknown API", self.api)
 
         return response
     
     def _extract_data(self, response : dict) -> list[dict]:
         """ Post process the LLM output and extract the embedded data. """
         data = []
-        str_output = response["choices"][0]["message"]["content"]
+        try:
+            str_output = response["choices"][0]["message"]["content"]
+        except:
+            str_output = response #when using exllama
         log.trace("Parsing LLM output: {}", str_output)
 
         try:
