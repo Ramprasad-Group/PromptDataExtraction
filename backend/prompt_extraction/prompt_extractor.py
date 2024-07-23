@@ -192,16 +192,52 @@ class LLMExtractor:
             reqinfo.status = 'failed'
             log.error("API request failed.")
         else:
+            # reqinfo.status = 'done'
+            # try:
+            #     reqinfo.response_obj = json.loads(str(output))
+            #     str_output = output["choices"][0]["message"]["content"]
+            #     reqtok = output["usage"]["prompt_tokens"]
+            #     resptok = output["usage"]["completion_tokens"]
+            #     reqinfo.response = str_output
+            #     reqinfo.request_tokens = reqtok
+            #     reqinfo.response_tokens = resptok
+            #     reqinfo.status = 'ok'
             reqinfo.status = 'done'
             try:
                 reqinfo.response_obj = json.loads(str(output))
-                str_output = output["choices"][0]["message"]["content"]
-                reqtok = output["usage"]["prompt_tokens"]
-                resptok = output["usage"]["completion_tokens"]
+                
+                # Assuming the output is in the expected format
+                if isinstance(output, dict) and "choices" in output and output["choices"]:
+                    str_output = output["choices"][0]["message"]["content"]
+                    reqtok = output["usage"]["prompt_tokens"]
+                    resptok = output["usage"]["completion_tokens"]
+                else:
+                    # If the expected structure is not present (i.e. using Exllama)
+                    str_output = str(output)
+                    reqtok = None
+                    resptok = None
+
                 reqinfo.response = str_output
                 reqinfo.request_tokens = reqtok
                 reqinfo.response_tokens = resptok
                 reqinfo.status = 'ok'
+                
+            except json.JSONDecodeError:
+                log.error("Failed to decode JSON from output.")
+                reqinfo.status = 'json decode error'
+                reqinfo.response_obj = str(output)
+                reqinfo.response = str(output)
+                reqinfo.request_tokens = None
+                reqinfo.response_tokens = None
+
+            except KeyError as err:
+                log.error("Key error when parsing output: {}", err)
+                reqinfo.status = 'key error'
+                reqinfo.response_obj = str(output)
+                reqinfo.response = str(output)
+                reqinfo.request_tokens = None
+                reqinfo.response_tokens = None
+
             except Exception as err:
                 log.error("Failed to parse API output: {}", err)
                 reqinfo.status = 'output parse error'
