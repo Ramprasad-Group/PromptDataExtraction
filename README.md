@@ -1,4 +1,7 @@
 # Prompt Data Extraction
+
+# IMPORTANT NOTE: The code and data shared here is available for academic non-commercial use only
+
 Python module and scripts to run automated data extraction pipelines built using MaterialsBERT, GPT-3.5 and LlaMa 2 models.
 
 Developed for the data extraction methods described in:
