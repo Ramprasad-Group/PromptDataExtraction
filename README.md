@@ -6,10 +6,9 @@ Python module and scripts to run automated data extraction pipelines built using
 
 Developed for the data extraction methods described in:
 > **Data Extraction from Polymer Literature using Large Language Models.** \
-> S. Gupta, A. Mahmood, P. Shetty, A. Adeboye and R. Ramprasad, \
-> 2024 (Submitted)
-<!-- > **Nature Machine Intelligence**, 2024 -->
-<!-- > DOI: [https://doi.org/](https://doi.org/ "DOI") -->
+> S. Gupta, A. Mahmood, P. Shetty, A. Adeboye and R. Ramprasad, \ 
+> Communications Materials, 5, 269 (2024). \
+> DOI: [https://doi.org/10.1038/s43246-024-00708-9]
 
 The extracted data can be visualized freely at [https://polymerscholar.org](https://polymerscholar.org).
 
