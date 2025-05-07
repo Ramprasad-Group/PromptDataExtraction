@@ -6,10 +6,9 @@ using title and abstracts.
 """
 
 import os
-import sett
 import pylogg as log
 
-from backend import postgres
+from backend import postgres, sett
 from backend.postgres.orm import Papers, FilteredPapers
 
 sett.load_settings()
