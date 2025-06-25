@@ -6,16 +6,14 @@ using title and abstracts.
 """
 
 import os
-import sett
+from backend import postgres, sett
 import pylogg as log
 
-from backend import postgres
 from backend.postgres.orm import Papers, FilteredPapers
 
 sett.load_settings()
 postgres.load_settings()
 db = postgres.connect()
-
 
 def add_to_postgres(doi : str, filter_name : str, filter_desc : str):
     """ Add a paper to the list of a specific filter.
@@ -115,7 +113,7 @@ def init_logger(run_name, log_level = 8):
 if __name__ == '__main__':
     runName = "runs/filters/polymer_papers"
     os.makedirs(runName, exist_ok=True)
-    t1 = init_logger(runName, log.INFO)
+    t1 = init_logger(runName)
 
     find_papers(debugCount = 0)
 
